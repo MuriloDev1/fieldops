@@ -1,0 +1,142 @@
+01 - Visão Geral
+1. Visão Geral
+1.1 Nome do produto
+FieldOps — Plataforma de Inspeção em Campo
+1.2 Resumo executivo
+O FieldOps é uma plataforma digital para planejamento, execução, acompanhamento e revisão de inspeções técnicas realizadas em campo.
+A solução substituirá processos baseados em formulários impressos, planilhas, mensagens e registros informais por um fluxo digital integrado. Técnicos utilizarão um aplicativo mobile para consultar as inspeções atribuídas, identificar equipamentos, responder checklists, registrar evidências e concluir atividades, inclusive em locais sem conexão com a internet.
+Administradores e supervisores utilizarão uma interface administrativa web para cadastrar informações, criar modelos de inspeção, agendar atividades, atribuir técnicos, acompanhar a execução, analisar não conformidades e aprovar ou reprovar os resultados.
+Uma API REST centralizará as regras de negócio, a autenticação, a autorização, a persistência, a auditoria e a integração entre o aplicativo mobile e a interface administrativa.
+1.3 Declaração da visão do produto
+Para organizações que precisam executar inspeções técnicas de forma padronizada e rastreável, o FieldOps é uma plataforma integrada que permite planejar, executar e revisar inspeções em campo, mesmo sem conexão com a internet. Diferentemente de formulários em papel, planilhas ou aplicativos genéricos, o FieldOps conecta o trabalho do técnico à gestão administrativa, preservando evidências, histórico, localização e regras de negócio em um único fluxo digital.
+1.4 Componentes da solução
+A solução será composta por quatro componentes principais:
+Aplicativo mobile
+Aplicação destinada principalmente aos técnicos de campo.
+Responsabilidades principais:
+autenticação e gerenciamento da sessão;
+consulta das inspeções atribuídas;
+identificação de equipamentos por QR Code;
+execução de checklists dinâmicos;
+captura de fotografias;
+registro de observações e não conformidades;
+captura de localização;
+armazenamento local;
+funcionamento offline;
+sincronização com o servidor.
+Interface administrativa web
+Aplicação destinada aos administradores e supervisores.
+Responsabilidades principais:
+gerenciamento de usuários e perfis;
+cadastro de clientes, locais e equipamentos;
+criação e versionamento de modelos de inspeção;
+agendamento e atribuição de inspeções;
+acompanhamento do andamento;
+visualização de respostas e evidências;
+revisão, aprovação e reprovação;
+acompanhamento de não conformidades;
+consulta de indicadores.
+API REST
+Aplicação central responsável pela segurança, pelas regras de negócio e pela persistência.
+Responsabilidades principais:
+autenticação e autorização;
+validação das operações;
+aplicação das regras de negócio;
+persistência em banco de dados;
+upload e consulta de evidências;
+sincronização de dados;
+histórico e auditoria;
+fornecimento de dados para mobile e web;
+documentação do contrato da API.
+Infraestrutura de dados
+Componente formado pelo banco de dados, armazenamento de arquivos e mecanismos locais do aplicativo.
+Elementos principais:
+PostgreSQL para os dados centrais;
+SQLite para a persistência local no dispositivo;
+armazenamento de arquivos compatível com objetos para evidências;
+logs e registros de auditoria;
+ambientes separados de desenvolvimento, teste e produção.
+1.5 Escopo do produto
+O FieldOps cobrirá o fluxo compreendido entre a preparação de uma inspeção e sua aprovação final:
+Configuração administrativa
+        ↓
+Criação do modelo de inspeção
+        ↓
+Agendamento e atribuição
+        ↓
+Disponibilização ao técnico
+        ↓
+Execução em campo
+        ↓
+Registro de respostas e evidências
+        ↓
+Sincronização
+        ↓
+Revisão do supervisor
+        ↓
+Aprovação ou solicitação de correção
+​
+1.6 Escopo do MVP
+O MVP deverá permitir uma demonstração completa do fluxo principal:
+o administrador cadastra os dados básicos;
+o supervisor cria um modelo de inspeção;
+o supervisor agenda a inspeção e a atribui a um técnico;
+o técnico recebe a inspeção no aplicativo;
+o técnico executa o checklist, registra fotos, QR Code e localização;
+o técnico consegue trabalhar temporariamente sem internet;
+o aplicativo sincroniza os dados pendentes;
+o supervisor revisa o resultado;
+o supervisor aprova ou reprova a inspeção.
+1.7 Fora do escopo do MVP
+Os seguintes recursos não são obrigatórios na primeira versão:
+aplicativo mobile exclusivo para clientes;
+portal público;
+multiempresa com isolamento completo de dados;
+pagamento ou faturamento;
+roteirização automática de equipes;
+transmissão contínua da localização do técnico;
+chamadas de vídeo;
+armazenamento de vídeos longos;
+assinatura eletrônica com validade jurídica;
+geração avançada de relatórios regulatórios;
+integração com ERPs;
+inteligência artificial para diagnóstico automático;
+integração com sensores IoT;
+resolução colaborativa de conflitos complexos de sincronização.
+1.8 Premissas
+A primeira versão terá o Android como plataforma mobile prioritária.
+O aplicativo poderá ser executado também em outros ambientes suportados pelo Expo, mas a validação obrigatória ocorrerá em Android.
+O sistema será utilizado inicialmente por uma organização operadora que presta inspeções para vários clientes.
+Cada inspeção terá um técnico responsável no MVP.
+O supervisor será responsável pela revisão do resultado.
+O equipamento poderá ser identificado por um QR Code único.
+As inspeções serão baseadas em modelos previamente configurados.
+O aplicativo deverá preservar dados não sincronizados mesmo após ser fechado.
+A API será o sistema oficial de registro após a sincronização.
+1.9 Glossário inicial
+Termo
+Definição
+Cliente
+Organização atendida pela empresa que executa as inspeções.
+Local
+Unidade, planta, prédio, setor ou área pertencente a um cliente.
+Equipamento
+Ativo físico que poderá ser inspecionado.
+Modelo de inspeção
+Estrutura reutilizável que define seções, itens e tipos de resposta.
+Inspeção
+Instância agendada de um modelo para um local ou equipamento.
+Checklist
+Conjunto de itens que devem ser respondidos durante a inspeção.
+Evidência
+Arquivo ou registro que comprova uma resposta ou ocorrência.
+Não conformidade
+Situação identificada que não atende a um requisito esperado.
+Sincronização
+Processo de troca de alterações entre o dispositivo e o servidor.
+Snapshot
+Cópia imutável do modelo utilizada por uma inspeção específica.
+Outbox
+Fila local de operações que aguardam envio ao servidor.
+MVP
+Menor versão capaz de demonstrar o fluxo de valor principal.
