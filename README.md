@@ -36,5 +36,5 @@ O ecossistema do projeto é dividido em quatro componentes principais:
 
 1. **Clone o repositório:**
    ```bash
-   git clone [https://github.com/seu-usuario/fieldops.git](https://github.com/seu-usuario/fieldops.git)
+   git clone https://github.com/MuriloDev1/fieldops.git
    cd fieldops
