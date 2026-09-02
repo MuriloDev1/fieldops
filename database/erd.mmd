@@ -1,0 +1,158 @@
+erDiagram
+  organizations ||--o{ users : has
+  organizations ||--o{ sites : has
+  organizations ||--o{ equipment_types : has
+  organizations ||--o{ equipment : has
+  organizations ||--o{ inspection_templates : has
+
+  sites ||--o{ equipment : contains
+  equipment_types ||--o{ equipment : classifies
+  users ||--o{ equipment : responsible_for
+
+  inspection_templates ||--o{ inspection_template_questions : contains
+  inspection_template_questions ||--o{ inspection_question_options : has
+
+  inspection_templates ||--o{ inspection_assignments : schedules
+  equipment ||--o{ inspection_assignments : receives
+  users ||--o{ inspection_assignments : assigned_to
+
+  inspection_assignments ||--o{ inspection_runs : executed_as
+  users ||--o{ inspection_runs : executed_by
+  inspection_runs ||--o{ inspection_answers : has
+  inspection_template_questions ||--o{ inspection_answers : answered_by
+
+  inspection_answers ||--o{ attachments : includes
+  inspection_answers ||--o{ non_conformities : may_generate
+
+  equipment ||--o{ non_conformities : has
+  inspection_runs ||--o{ non_conformities : identifies
+  users ||--o{ non_conformities : opened_by
+
+  non_conformities ||--o{ corrective_actions : requires
+  users ||--o{ corrective_actions : assigned_to
+
+  equipment ||--o{ equipment_status_history : changes
+  users ||--o{ equipment_status_history : changed_by
+
+  users ||--o{ audit_logs : performs
+
+  organizations {
+    uuid id PK
+    text name
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  users {
+    uuid id PK
+    uuid organization_id FK
+    text name
+    text email
+    user_role role
+    boolean active
+    timestamptz created_at
+    timestamptz updated_at
+  }
+
+  sites {
+    uuid id PK
+    uuid organization_id FK
+    text name
+    text code
+    text address
+    boolean active
+  }
+
+  equipment_types {
+    uuid id PK
+    uuid organization_id FK
+    text name
+    text description
+  }
+
+  equipment {
+    uuid id PK
+    uuid organization_id FK
+    uuid site_id FK
+    uuid equipment_type_id FK
+    uuid responsible_user_id FK
+    text name
+    text code
+    equipment_status status
+    text description
+  }
+
+  inspection_templates {
+    uuid id PK
+    uuid organization_id FK
+    text name
+    integer version
+    boolean published
+    boolean active
+  }
+
+  inspection_template_questions {
+    uuid id PK
+    uuid template_id FK
+    integer position
+    text prompt
+    question_type question_type
+    boolean required
+  }
+
+  inspection_question_options {
+    uuid id PK
+    uuid question_id FK
+    integer position
+    text label
+    text value
+  }
+
+  inspection_assignments {
+    uuid id PK
+    uuid template_id FK
+    uuid equipment_id FK
+    uuid assigned_to_user_id FK
+    assignment_status status
+    timestamptz due_at
+  }
+
+  inspection_runs {
+    uuid id PK
+    uuid assignment_id FK
+    uuid executed_by_user_id FK
+    run_status status
+    timestamptz started_at
+    timestamptz submitted_at
+  }
+
+  inspection_answers {
+    uuid id PK
+    uuid run_id FK
+    uuid question_id FK
+    text value_text
+    numeric value_number
+    boolean value_boolean
+    jsonb value_json
+  }
+
+  non_conformities {
+    uuid id PK
+    uuid equipment_id FK
+    uuid inspection_run_id FK
+    uuid answer_id FK
+    uuid opened_by_user_id FK
+    text title
+    severity severity
+    non_conformity_status status
+  }
+
+  corrective_actions {
+    uuid id PK
+    uuid non_conformity_id FK
+    uuid assigned_to_user_id FK
+    text title
+    corrective_action_status status
+    timestamptz due_at
+  }
+
