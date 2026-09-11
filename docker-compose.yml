@@ -1,0 +1,106 @@
+name: fieldops
+
+services:
+  # ---------------------------------------------------------------------------
+  # Banco de Dados Relacional Central (PostgreSQL 16)
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: fieldops_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fieldops_db}
+      POSTGRES_USER: ${POSTGRES_USER:-fieldops_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fieldops_secret_dev}
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fieldops_admin} -d ${POSTGRES_DB:-fieldops_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fieldops_network
+
+  # ---------------------------------------------------------------------------
+  # Object Storage S3 compatível para fotos de evidência (MinIO)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: fieldops_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-fieldops_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-fieldops_minio_secret}
+    ports:
+      - "${MINIO_API_PORT:-9002}:9000"
+      - "${MINIO_CONSOLE_PORT:-9003}:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - fieldops_network
+
+  # ---------------------------------------------------------------------------
+  # Provisionamento Automático de Bucket no MinIO
+  # ---------------------------------------------------------------------------
+  minio-setup:
+    image: minio/mc:latest
+    container_name: fieldops_minio_setup
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-fieldops_minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-fieldops_minio_secret}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-fieldops-evidence}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        echo "Aguardando inicializacao do MinIO..."
+        until (/usr/bin/mc alias set local http://minio:9000 "$$MINIO_ROOT_USER" "$$MINIO_ROOT_PASSWORD"); do
+          sleep 2
+        done
+        echo "Garantindo criacao do bucket $$MINIO_BUCKET_NAME..."
+        /usr/bin/mc mb --ignore-existing local/"$$MINIO_BUCKET_NAME"
+        /usr/bin/mc anonymous set download local/"$$MINIO_BUCKET_NAME"
+        echo "Bucket $$MINIO_BUCKET_NAME configurado com sucesso!"
+        exit 0
+    networks:
+      - fieldops_network
+
+  # ---------------------------------------------------------------------------
+  # Interface Visual de Administração do Banco de Dados (Adminer)
+  # ---------------------------------------------------------------------------
+  adminer:
+    image: adminer:latest
+    container_name: fieldops_adminer
+    restart: unless-stopped
+    ports:
+      - "${ADMINER_PORT:-8085}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: flat
+    networks:
+      - fieldops_network
+
+# -----------------------------------------------------------------------------
+# Persistência e Rede Isolada
+# -----------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    name: fieldops_postgres_data
+  minio_data:
+    name: fieldops_minio_data
+
+networks:
+  fieldops_network:
+    name: fieldops_network
+    driver: bridge
