@@ -1,0 +1,101 @@
+# =============================================================================
+# FieldOps - Git Ignore Configuration
+# =============================================================================
+
+# Environment variables & secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+!.env.example
+*.pem
+*.key
+
+# Node.js & Package Managers
+node_modules/
+jspm_packages/
+.pnpm-store/
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.pnp
+.pnp.js
+
+# Build & Output directories
+dist/
+build/
+out/
+.next/
+web-build/
+*.tsbuildinfo
+
+# Mobile & Expo (React Native / Android / iOS)
+.expo/
+.expo-shared/
+*.apk
+*.aab
+*.ipa
+*.xarchive/
+android/app/build/
+android/.gradle/
+android/app/debug/
+android/app/release/
+ios/build/
+ios/Pods/
+ios/DerivedData/
+
+# Database files & Local persistent data
+*.sqlite
+*.sqlite3
+*.db
+*.sqlite-journal
+postgres_data/
+minio_data/
+
+# Logs & Debugging
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+.pnpm-debug.log*
+*.tmp
+*.temp
+
+# Testing & Code Coverage
+coverage/
+.nyc_output/
+.clover/
+
+# Editor & IDE settings
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Docker local overrides
+docker-compose.override.yml
