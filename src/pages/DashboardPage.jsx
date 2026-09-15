@@ -1,84 +1,143 @@
-import Badge from '../components/Badge';
-import Card from '../components/Card';
-import Button from '../components/Button';
-import { dashboardMetrics, inspections } from '../data/mockData';
+import { StatCard } from '../shared/components/StatCard';
+import { DataTable } from '../shared/components/DataTable';
 
-export default function DashboardPage({ onNavigate, onOpenInspectionFlow }) {
-  const metricCards = dashboardMetrics;
-  const itemList = inspections.slice(0, 4);
+const quickItems = [
+  { label: 'Bomba Submersa 04', detail: 'Falha crítica reportada', status: 'danger' },
+  { label: 'Válvula de Pressão B', detail: 'Manutenção atrasada há 2 dias', status: 'warning' },
+  { label: 'Relatório Diário', detail: 'Pendente aprovação do supervisor', status: 'info' },
+];
 
+const columns = [
+  { header: 'Local', key: 'local' },
+  { header: 'Equipamento', key: 'equipment' },
+  { header: 'Data da inspeção', key: 'date' },
+  { header: 'Status', key: 'status' },
+];
+
+const rows = [
+  { id: '1', local: 'Unidade de Extração Alpha', equipment: 'Bomba Submersa 04', date: '24 Out 2023, 08:30', status: 'Crítico' },
+  { id: '2', local: 'Refinaria Central', equipment: 'Válvula de Pressão B', date: '23 Out 2023, 14:15', status: 'Alta' },
+  { id: '3', local: 'Terminal Marítimo Sul', equipment: 'Correia Transportadora 2', date: '22 Out 2023, 09:45', status: 'Baixa' },
+  { id: '4', local: 'Planta de Processamento', equipment: 'Compressor Principal', date: '21 Out 2023, 11:20', status: 'Alta' },
+  { id: '5', local: 'Unidade de Extração Beta', equipment: 'Painel Elétrico Leste', date: '21 Out 2023, 16:00', status: 'Crítico' },
+];
+
+export const DashboardPage = () => {
   return (
     <>
-      <div className="page-header">
-        <div>
-          <span className="eyebrow">Visão geral</span>
-          <h1>Dashboard</h1>
-        </div>
-        <Button onClick={() => onNavigate('inspections')}>Ver inspeções</Button>
+      <div className="page-title-wrap">
+        <h1>Dashboard</h1>
+        <p>Visão geral operacional e acompanhamento de campo.</p>
       </div>
 
       <div className="stats-grid">
-        {metricCards.map((metric) => (
-          <Card key={metric.label} className={`metric-card ${metric.tone}`}>
-            <div className="metric-top">
-              <span>{metric.label}</span>
-              <span className="metric-bullet" />
-            </div>
-            <strong>{metric.value}</strong>
-            <small>{metric.delta}</small>
-          </Card>
-        ))}
+        <StatCard
+          title="Inspeções Concluídas"
+          value="1,284"
+          footerText="+5.2% vs mês anterior"
+          type="positive"
+          icon="✓"
+        />
+        <StatCard
+          title="Taxa de Não Conformidade"
+          value="12.5%"
+          footerText="Atenção requerida"
+          type="warning"
+          icon="!"
+        />
+        <StatCard
+          title="Técnicos em Campo"
+          value="42"
+          footerText="● Status ativo"
+          type="positive"
+          icon="◌"
+        />
+        <StatCard
+          title="Inspeções Atrasadas"
+          value="15"
+          footerText="Ação imediata necessária"
+          type="danger"
+          icon="!"
+        />
       </div>
 
       <div className="two-column">
-        <Card title="Andamento semanal" className="chart-panel">
-          <div className="chart-wrap">
-            <div className="chart-bars">
-              {[42, 58, 78, 48, 90, 74, 100].map((height, idx) => (
-                <div className="bar-block" key={idx}>
-                  <div className="bar" style={{ height: `${height}%` }} />
-                  <span>{['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][idx]}</span>
-                </div>
-              ))}
+        <section className="panel">
+          <div className="panel-header">
+            <div>
+              <h2>Andamento Semanal</h2>
+            </div>
+            <button type="button" className="pill-button">7 dias ▾</button>
+          </div>
+
+          <div className="chart" aria-label="Gráfico semanal">
+            <div className="y-axis">
+              <span>200</span>
+              <span>150</span>
+              <span>100</span>
+              <span>50</span>
+              <span>0</span>
+            </div>
+
+            <div className="chart-area">
+              <div className="grid-line" />
+              <div className="grid-line" />
+              <div className="grid-line" />
+              <div className="grid-line" />
+
+              <div className="bars">
+                {[65, 95, 72, 125, 105, 155, 142].map((value, index) => (
+                  <div key={index} className="bar-column">
+                    <div className="bar" style={{ height: `${(value / 200) * 100}%` }} />
+                    <span>{['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][index]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </Card>
+        </section>
 
-        <Card title="Ações rápidas" className="quick-panel">
-          <div className="quick-actions">
-            <button type="button" onClick={() => onNavigate('equipment')}>Equipamentos</button>
-            <button type="button" onClick={() => onNavigate('orders')}>Ordens</button>
-            <button type="button" onClick={() => onOpenInspectionFlow()}>Executar inspeção</button>
+        <section className="panel actions-panel">
+          <div className="panel-header small-header">
+            <div>
+              <h2>Ação Rápida</h2>
+            </div>
+            <button type="button" className="menu-button">⋮</button>
           </div>
-        </Card>
+
+          <div className="quick-list">
+            {quickItems.map((item) => (
+              <div key={item.label} className="quick-item">
+                <div className={`quick-icon ${item.status}`} aria-hidden="true">
+                  {item.status === 'danger' && '!'}
+                  {item.status === 'warning' && '◔'}
+                  {item.status === 'info' && '▣'}
+                </div>
+
+                <div className="quick-copy">
+                  <strong>{item.label}</strong>
+                  <span>{item.detail}</span>
+                </div>
+
+                <button type="button" className="link-button">Ver</button>
+              </div>
+            ))}
+          </div>
+
+          <button type="button" className="primary-button">Atribuir Tarefas</button>
+        </section>
       </div>
 
-      <Card title="Inspeções recentes" actions={<Button variant="ghost" size="sm" onClick={() => onNavigate('inspections')}>Abrir lista</Button>}>
-        <div className="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Equipamento</th>
-                <th>Técnico</th>
-                <th>Status</th>
-                <th>Ação</th>
-              </tr>
-            </thead>
-            <tbody>
-              {itemList.map((inspection) => (
-                <tr key={inspection.id}>
-                  <td>{inspection.id}</td>
-                  <td>{inspection.equipment}</td>
-                  <td>{inspection.technician}</td>
-                  <td><Badge tone={inspection.status === 'Não conforme' ? 'danger' : inspection.status === 'Em andamento' ? 'info' : inspection.status === 'Pendente' ? 'warning' : 'success'}>{inspection.status}</Badge></td>
-                  <td><button type="button" className="link-button" onClick={() => onOpenInspectionFlow(inspection)}>Detalhes</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        title="Acompanhamento de Não Conformidades"
+        columns={columns}
+        data={rows}
+        totalCount={24}
+        currentPage={1}
+        onRowAction={(row) => alert(`Detalhes de: ${row.equipment}`)}
+        onFilterClick={() => alert('Filtro acionado')}
+        onExportClick={() => alert('Exportação iniciada')}
+      />
     </>
   );
-}
+};
