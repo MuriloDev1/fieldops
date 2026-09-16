@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  SUPERVISOR
+  TECHNICIAN
+}
+
+enum InspectionStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum EquipmentStatus {
+  ACTIVE
+  MAINTENANCE
+  INACTIVE
+}
+
+enum QuestionKind {
+  SHORT_TEXT
+  PARAGRAPH
+  MULTIPLE_CHOICE
+  COMPLIANCE
+  PHOTO
+  SIGNATURE
+}
+
+model User {
+  id          String       @id @default(uuid())
+  name        String
+  email       String       @unique
+  password    String
+  role        UserRole     @default(TECHNICIAN)
+
+  inspections Inspection[] @relation("ResponsibleInspections")
+  answers     Answer[]
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("users")
+}
+
+model Equipment {
+  id          String          @id @default(uuid())
+  name        String
+  code        String          @unique
+  location    String
+  description String?
+  status      EquipmentStatus @default(ACTIVE)
+
+  inspections Inspection[]
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("equipment")
+}
+
+model Inspection {
+  id            String           @id @default(uuid())
+  title         String
+  description   String?
+  status        InspectionStatus @default(DRAFT)
+
+  responsibleId String?
+  responsible   User?            @relation("ResponsibleInspections", fields: [responsibleId], references: [id])
+
+  equipmentId   String?
+  equipment     Equipment?       @relation(fields: [equipmentId], references: [id])
+
+  questions     Question[]
+  answers       Answer[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([responsibleId])
+  @@index([equipmentId])
+  @@index([status])
+
+  @@map("inspections")
+}
+
+model Question {
+  id                       String       @id @default(uuid())
+  inspectionId             String
+
+  inspection               Inspection   @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  type                     QuestionKind
+  title                    String
+  required                 Boolean      @default(false)
+  requireObservationOnFail Boolean      @default(false)
+  requirePhotoEvidence     Boolean      @default(false)
+  order                    Int          @default(0)
+
+  answers                  Answer[]
+
+  createdAt                DateTime     @default(now())
+  updatedAt                DateTime     @updatedAt
+
+  @@index([inspectionId])
+
+  @@map("questions")
+}
+
+model Answer {
+  id           String      @id @default(uuid())
+
+  inspectionId String
+  inspection   Inspection  @relation(fields: [inspectionId], references: [id], onDelete: Cascade)
+
+  questionId   String
+  question     Question   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id])
+
+  value        String?
+  observation  String?
+  photoUrl     String?
+  signatureUrl String?
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([inspectionId])
+  @@index([questionId])
+  @@index([userId])
+
+  @@map("answers")
+}
