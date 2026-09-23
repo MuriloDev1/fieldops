@@ -27,7 +27,7 @@ const navItems = [
   { path: '/settings', label: 'Configurações', icon: Settings },
 ];
 
-export const Sidebar = () => {
+export const Sidebar = ({ onNavigate }) => {
   const { user, logout } = useAuth();
 
   return (
@@ -44,6 +44,7 @@ export const Sidebar = () => {
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={onNavigate}
               className={({ isActive }) =>
                 `nav-item ${isActive ? 'active' : ''}`
               }

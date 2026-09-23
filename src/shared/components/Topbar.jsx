@@ -1,11 +1,19 @@
-import { Search, Bell, CircleHelp, UserRound } from 'lucide-react';
+import { Search, Bell, CircleHelp, UserRound, Menu } from 'lucide-react';
 import { useAuth } from '../../core/context/AuthContext';
 
-export const Topbar = () => {
+export const Topbar = ({ onOpenMobileMenu }) => {
   const { user } = useAuth();
 
   return (
     <header className="topbar">
+      <button
+        type="button"
+        className="mobile-menu-button"
+        onClick={onOpenMobileMenu}
+        aria-label="Abrir menu"
+      >
+        <Menu size={20} />
+      </button>
       <div className="search-box">
         <Search
           size={19}
