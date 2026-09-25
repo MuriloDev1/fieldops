@@ -16,11 +16,11 @@ export const StatCard = ({ title, value, footerText, type = 'default', icon }) =
   return (
     <article className={`stat-card ${type === 'danger' ? 'danger' : ''}`}>
       <div className="stat-head">
-        <span>{title}</span>
+        <span className="stat-title">{title}</span>
         <span className={getIconClass()}>{icon || '◌'}</span>
       </div>
       <div className={`stat-value ${type === 'danger' ? 'red' : ''}`}>{value}</div>
-      <div className={getFootClass()}>{footerText}</div>
+      <div className={`${getFootClass()} stat-footer`}>{footerText}</div>
     </article>
   );
 };
