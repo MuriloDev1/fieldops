@@ -9,7 +9,9 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ClientsPage } from './pages/ClientsPage';
 import { LocationsPage } from './pages/LocationsPage';
 import { EquipmentPage } from './pages/EquipmentPage';
+import { TemplatesPage } from './pages/TemplatesPage';
 import { OperationsPage } from './pages/OperationsPage';
+import { NonConformitiesPage } from './pages/NonConformitiesPage';
 import { TeamManagementPage } from './pages/TeamManagementPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ReportsPage } from './pages/ReportsPage';
@@ -37,7 +39,9 @@ function App() {
               <Route path="clients" element={<ClientsPage />} />
               <Route path="locations" element={<LocationsPage />} />
               <Route path="equipment" element={<EquipmentPage />} />
+              <Route path="templates" element={<TemplatesPage />} />
               <Route path="operations" element={<OperationsPage />} />
+              <Route path="non-conformities" element={<NonConformitiesPage />} />
               <Route path="team" element={<TeamManagementPage />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="reports" element={<ReportsPage />} />

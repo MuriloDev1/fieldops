@@ -12,7 +12,9 @@ import {
   FileText,
   Settings,
   LogOut,
-  UserRound
+  UserRound,
+  ListChecks,
+  AlertTriangle
 } from 'lucide-react';
 
 const navItems = [
@@ -20,7 +22,9 @@ const navItems = [
   { path: '/clients', label: 'Clientes', icon: Building2 },
   { path: '/locations', label: 'Locais & Plantas', icon: MapPin },
   { path: '/equipment', label: 'Equipamentos', icon: Settings2 },
+  { path: '/templates', label: 'Modelos Checklist', icon: ListChecks },
   { path: '/operations', label: 'Operações', icon: ClipboardList },
+  { path: '/non-conformities', label: 'Não Conformidades', icon: AlertTriangle },
   { path: '/team', label: 'Equipe de Campo', icon: Users },
   { path: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
   { path: '/reports', label: 'Relatórios', icon: FileText },

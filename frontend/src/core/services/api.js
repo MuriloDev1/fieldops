@@ -93,8 +93,51 @@ export const dashboardApi = {
 export const inspectionsApi = {
   getAll: () => api.get('/inspections'),
   getById: (id) => api.get(`/inspections/${id}`),
+  listForMobile: (technicianId) => {
+    const query = technicianId ? `?technicianId=${technicianId}` : '';
+    return api.get(`/mobile/inspections${query}`);
+  },
   create: (inspectionData) => api.post('/inspections', inspectionData),
-  start: (id) => api.post(`/inspections/${id}/start`, {}),
+  start: (id, deviceTime) => api.post(`/inspections/${id}/start`, deviceTime ? { deviceTime } : {}),
   submit: (id, answers) => api.post(`/inspections/${id}/submit`, { answers }),
   cancel: (id, reason) => api.post(`/inspections/${id}/cancel`, { reason }),
+};
+
+export const templatesApi = {
+  getAll: () => api.get('/inspection-templates'),
+  getById: (id) => api.get(`/inspection-templates/${id}`),
+  getActiveVersion: (id) => api.get(`/inspection-templates/${id}/active-version`),
+  getVersionById: (versionId) => api.get(`/inspection-template-versions/${versionId}`),
+  create: (templateData) => api.post('/inspection-templates', templateData),
+  publish: (id, payload) => api.post(`/inspection-templates/${id}/publish`, payload || {}),
+};
+
+export const nonConformitiesApi = {
+  getAll: () => api.get('/non-conformities'),
+  getById: (id) => api.get(`/non-conformities/${id}`),
+  getByInspection: (inspectionId) => api.get(`/inspections/${inspectionId}/non-conformities`),
+  create: (inspectionId, ncData) => api.post(`/inspections/${inspectionId}/non-conformities`, ncData),
+  updateStatus: (id, status) => api.patch(`/non-conformities/${id}/status`, { status }),
+};
+
+export const reviewsApi = {
+  getByInspection: (inspectionId) => api.get(`/inspections/${inspectionId}/reviews`),
+  beginReview: (inspectionId) => api.post(`/inspections/${inspectionId}/begin-review`, {}),
+  approve: (inspectionId, comments) => api.post(`/inspections/${inspectionId}/approve`, { decision: 'APPROVED', comments }),
+  reject: (inspectionId, reason) => api.post(`/inspections/${inspectionId}/reject`, { decision: 'REJECTED', reason }),
+};
+
+export const usersApi = {
+  getAll: () => api.get('/users'),
+  getById: (id) => api.get(`/users/${id}`),
+  create: (userData) => api.post('/users', userData),
+  updateStatus: (id, status) => api.patch(`/users/${id}/status`, { status }),
+};
+
+export const mobileSyncApi = {
+  pull: (lastPulledAt) => {
+    const query = lastPulledAt ? `?lastPulledAt=${encodeURIComponent(lastPulledAt)}` : '';
+    return api.get(`/mobile/sync/pull${query}`);
+  },
+  push: (payload) => api.post('/mobile/sync/push', payload),
 };

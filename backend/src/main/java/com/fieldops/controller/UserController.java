@@ -1,11 +1,14 @@
 package com.fieldops.controller;
 
 import com.fieldops.domain.enums.UserStatus;
+import com.fieldops.dto.auth.CreateUserDTO;
 import com.fieldops.dto.auth.UserResponseDTO;
 import com.fieldops.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,6 +34,13 @@ public class UserController {
     @Operation(summary = "Busca usuário por ID")
     public ResponseEntity<UserResponseDTO> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getById(id));
+    }
+
+    @PostMapping
+    @Operation(summary = "Cadastra um novo usuário / colaborador")
+    public ResponseEntity<UserResponseDTO> create(@Valid @RequestBody CreateUserDTO dto) {
+        UserResponseDTO created = userService.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PatchMapping("/{id}/status")
