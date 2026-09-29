@@ -42,9 +42,8 @@ public class SecurityConfig {
                                 "/v3/api-docs/**",
                                 "/actuator/health"
                         ).permitAll()
-                        // Rotas abertas para visualização e integração inicial com front-end
-                        .requestMatchers(HttpMethod.GET, "/api/v1/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/clients", "/api/v1/sites", "/api/v1/equipment").permitAll()
+                        // Rotas abertas para integração com front-end (desenvolvimento)
+                        .requestMatchers("/api/v1/**").permitAll()
                         // Demais rotas requerem autenticação
                         .anyRequest().authenticated()
                 )

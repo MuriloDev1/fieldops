@@ -112,3 +112,39 @@ Com o backend em execução, acesse a documentação interativa no navegador:
 - `GET /api/v1/users`: Lista de colaboradores cadastrados.
 - `GET /api/v1/users/{id}`: Detalhes de um colaborador.
 - `PATCH /api/v1/users/{id}/status`: Alteração de status.
+
+### Modelos de Inspeção e Versões (`/api/v1/inspection-templates`)
+- `GET /api/v1/inspection-templates`: Lista todos os modelos de checklist.
+- `GET /api/v1/inspection-templates/{id}`: Detalhes do modelo.
+- `GET /api/v1/inspection-templates/{id}/active-version`: Versão ativa com seções e itens.
+- `GET /api/v1/inspection-template-versions/{versionId}`: Versão imutável específica.
+- `POST /api/v1/inspection-templates`: Cadastro de modelo com seções e itens.
+- `POST /api/v1/inspection-templates/{id}/publish`: Publicação de nova versão imutável.
+
+### Inspeções em Campo (`/api/v1/inspections`)
+- `GET /api/v1/inspections`: Lista todas as inspeções (painel administrativo).
+- `GET /api/v1/inspections/{id}`: Detalhes da inspeção com snapshot de itens e respostas.
+- `GET /api/v1/mobile/inspections`: Lista inspeções atribuídas ao técnico autenticado.
+- `POST /api/v1/inspections`: Agenda inspeção e gera snapshot imutável dos itens.
+- `POST /api/v1/inspections/{id}/start`: Inicia a inspeção em campo.
+- `POST /api/v1/inspections/{id}/submit`: Envia respostas preenchidas para revisão.
+- `POST /api/v1/inspections/{id}/cancel`: Cancela inspeção com justificativa.
+
+### Não Conformidades (`/api/v1/non-conformities`)
+- `GET /api/v1/non-conformities`: Lista todas as não conformidades.
+- `GET /api/v1/inspections/{inspectionId}/non-conformities`: Não conformidades de uma inspeção.
+- `POST /api/v1/inspections/{inspectionId}/non-conformities`: Registra ocorrência.
+- `PATCH /api/v1/non-conformities/{id}/status`: Altera status (OPEN, RESOLVED, etc.).
+
+### Ciclos de Revisão (`/api/v1/inspections/{id}`)
+- `GET /api/v1/inspections/{id}/reviews`: Histórico de rodadas de revisão.
+- `POST /api/v1/inspections/{id}/begin-review`: Inicia revisão pelo supervisor.
+- `POST /api/v1/inspections/{id}/approve`: Aprova a inspeção.
+- `POST /api/v1/inspections/{id}/reject`: Reprova a inspeção com motivo obrigatório.
+
+### Dashboard e Indicadores (`/api/v1/dashboard`)
+- `GET /api/v1/dashboard/summary`: Métricas em tempo real (clientes, plantas, equipamentos críticos, inspeções concluídas/pendentes, não conformidades).
+
+### Sincronização Offline (`/api/v1/mobile/sync`)
+- `GET /api/v1/mobile/sync/pull`: Baixa dados pendentes para o SQLite local.
+- `POST /api/v1/mobile/sync/push`: Envia lote de operações da Outbox com idempotência.
