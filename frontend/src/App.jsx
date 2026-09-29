@@ -1,57 +1,167 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './core/context/AuthContext';
-import { AuthGuard } from './core/guards/AuthGuard';
-import { ErrorBoundary } from './core/components/ErrorBoundary';
-
-import { Layout } from './shared/components/Layout';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { ClientsPage } from './pages/ClientsPage';
-import { LocationsPage } from './pages/LocationsPage';
-import { EquipmentPage } from './pages/EquipmentPage';
-import { TemplatesPage } from './pages/TemplatesPage';
-import { OperationsPage } from './pages/OperationsPage';
-import { NonConformitiesPage } from './pages/NonConformitiesPage';
-import { TeamManagementPage } from './pages/TeamManagementPage';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { NotFoundPage } from './pages/NotFoundPage';
+import { useMemo, useState } from 'react';
+import AppLayout from './layouts/AppLayout';
+import SplashPage from './pages/SplashPage';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import InspectionListPage from './pages/InspectionListPage';
+import MyInspectionsPage from './pages/MyInspectionsPage';
+import EquipmentPage from './pages/EquipmentPage';
+import TechniciansPage from './pages/TechniciansPage';
+import NonConformitiesPage from './pages/NonConformitiesPage';
+import ServiceOrdersPage from './pages/ServiceOrdersPage';
+import HistoryPage from './pages/HistoryPage';
+import ProfilePage from './pages/ProfilePage';
+import ClientsPage from './pages/ClientsPage';
+import TemplatesPage from './pages/TemplatesPage';
+import InspectionWorkflowPage from './pages/InspectionWorkflowPage';
+import SuccessState from './components/SuccessState';
 
 function App() {
-  return (
-    <ErrorBoundary>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
+  const [view, setView] = useState('splash');
+  const [page, setPage] = useState('dashboard');
+  const [search, setSearch] = useState('');
+  const [selectedInspection, setSelectedInspection] = useState(null);
+  const [isInspectionFinished, setIsInspectionFinished] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-            <Route
-              path="/"
-              element={
-                <AuthGuard>
-                  <Layout />
-                </AuthGuard>
-              }
-            >
-              <Route index element={<Navigate to="/dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardPage />} />
-              <Route path="clients" element={<ClientsPage />} />
-              <Route path="locations" element={<LocationsPage />} />
-              <Route path="equipment" element={<EquipmentPage />} />
-              <Route path="templates" element={<TemplatesPage />} />
-              <Route path="operations" element={<OperationsPage />} />
-              <Route path="non-conformities" element={<NonConformitiesPage />} />
-              <Route path="team" element={<TeamManagementPage />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="reports" element={<ReportsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="*" element={<NotFoundPage />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </ErrorBoundary>
+  const onLogin = () => {
+    setView('app');
+    setPage('dashboard');
+  };
+
+  const openInspectionFlow = (inspection = null) => {
+    setSelectedInspection(
+      inspection ?? {
+        id: 'INS-2048',
+        name: 'Inspeção de segurança de bomba',
+        equipment: 'Bomba centrífuga 04',
+        technician: 'Ana Costa',
+        date: '14/09/2026',
+      },
+    );
+    setView('inspection');
+    setIsInspectionFinished(false);
+  };
+
+  const onCompleteInspection = () => {
+    setIsInspectionFinished(true);
+  };
+
+  const onNavigate = (nextPage) => {
+    if (nextPage === 'inspection-flow') {
+      openInspectionFlow();
+      return;
+    }
+    setPage(nextPage);
+    setView('app');
+  };
+
+  const onLogout = () => {
+    localStorage.removeItem('fieldops_token');
+    localStorage.removeItem('fieldops_user');
+    setView('login');
+  };
+
+  const renderPage = useMemo(() => {
+    if (page === 'dashboard') {
+      return <DashboardPage onNavigate={onNavigate} onOpenInspectionFlow={openInspectionFlow} />;
+    }
+    if (page === 'inspections') {
+      return <InspectionListPage onOpenInspectionFlow={openInspectionFlow} onNavigate={onNavigate} />;
+    }
+    if (page === 'my-inspections') {
+      return <MyInspectionsPage onOpenInspectionFlow={openInspectionFlow} onNavigate={onNavigate} />;
+    }
+    if (page === 'clients') return <ClientsPage />;
+    if (page === 'equipment') return <EquipmentPage />;
+    if (page === 'technicians') return <TechniciansPage />;
+    if (page === 'nonconformities') return <NonConformitiesPage />;
+    if (page === 'templates') return <TemplatesPage />;
+    if (page === 'orders') return <ServiceOrdersPage />;
+    if (page === 'history') return <HistoryPage />;
+    if (page === 'profile') return <ProfilePage />;
+
+    return <DashboardPage onNavigate={onNavigate} onOpenInspectionFlow={openInspectionFlow} />;
+  }, [page]);
+
+  const pageTitle = useMemo(() => {
+    switch (page) {
+      case 'dashboard': return 'Dashboard';
+      case 'inspections': return 'Lista de inspeções';
+      case 'my-inspections': return 'Minhas inspeções';
+      case 'clients': return 'Clientes & Locais';
+      case 'equipment': return 'Equipamentos';
+      case 'technicians': return 'Técnicos';
+      case 'nonconformities': return 'Não conformidades';
+      case 'templates': return 'Modelos de Checklist';
+      case 'orders': return 'Ordens de serviço';
+      case 'history': return 'Histórico';
+      case 'profile': return 'Perfil';
+      default: return 'Dashboard';
+    }
+  }, [page]);
+
+  if (view === 'splash') {
+    return <SplashPage onContinue={() => setView('login')} />;
+  }
+
+  if (view === 'login') {
+    return <LoginPage onLogin={onLogin} />;
+  }
+
+  if (view === 'inspection') {
+    return (
+      <AppLayout
+        title="Execução de inspeção"
+        activePage={page}
+        onNavigate={onNavigate}
+        search={search}
+        setSearch={setSearch}
+        onLogout={onLogout}
+        mobileMenuOpen={mobileMenuOpen}
+        setMobileMenuOpen={setMobileMenuOpen}
+      >
+        {isInspectionFinished ? (
+          <SuccessState
+            title="Inspeção concluída com sucesso"
+            description="A inspeção foi registrada, com evidências e observações salvas."
+            action={
+              <button
+                type="button"
+                className="link-button"
+                onClick={() => {
+                  setView('app');
+                  setPage('dashboard');
+                }}
+              >
+                Voltar ao dashboard
+              </button>
+            }
+          />
+        ) : (
+          <InspectionWorkflowPage
+            inspection={selectedInspection}
+            onComplete={onCompleteInspection}
+            onBack={() => setView('app')}
+          />
+        )}
+      </AppLayout>
+    );
+  }
+
+  return (
+    <AppLayout
+      title={pageTitle}
+      activePage={page}
+      onNavigate={onNavigate}
+      search={search}
+      setSearch={setSearch}
+      onLogout={onLogout}
+      mobileMenuOpen={mobileMenuOpen}
+      setMobileMenuOpen={setMobileMenuOpen}
+    >
+      {renderPage}
+    </AppLayout>
   );
 }
 

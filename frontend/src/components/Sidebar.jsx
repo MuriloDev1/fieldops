@@ -4,9 +4,11 @@ const menu = [
   { id: 'dashboard', label: 'Dashboard', icon: '▦' },
   { id: 'inspections', label: 'Inspeções', icon: '✓' },
   { id: 'my-inspections', label: 'Minhas inspeções', icon: '◌' },
+  { id: 'clients', label: 'Clientes & Locais', icon: '🏢' },
   { id: 'equipment', label: 'Equipamentos', icon: '◫' },
   { id: 'technicians', label: 'Técnicos', icon: '◍' },
   { id: 'nonconformities', label: 'Não conformidades', icon: '⚠' },
+  { id: 'templates', label: 'Modelos Checklist', icon: '📋' },
   { id: 'orders', label: 'Ordens de serviço', icon: '▣' },
   { id: 'history', label: 'Histórico', icon: '⎘' },
   { id: 'profile', label: 'Perfil', icon: '◔' },
@@ -23,7 +25,7 @@ export default function Sidebar({ activePage, onNavigate, onLogout }) {
         </div>
       </div>
 
-      <Button className="new-dispatch" variant="primary" size="md" onClick={() => onNavigate('inspections')}>
+      <Button className="new-dispatch" variant="primary" size="md" onClick={() => onNavigate('inspection-flow')}>
         + Nova inspeção
       </Button>
 
