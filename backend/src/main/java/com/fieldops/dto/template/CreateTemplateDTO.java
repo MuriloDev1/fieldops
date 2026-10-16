@@ -27,16 +27,19 @@ public class CreateTemplateDTO {
     private List<CreateSectionDTO> sections = new ArrayList<>();
 
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateSectionDTO {
         private String title;
         private String description;
         private int displayOrder;
+        @Builder.Default
         private List<CreateItemDTO> items = new ArrayList<>();
     }
 
     @Data
+    @Builder
     @NoArgsConstructor
     @AllArgsConstructor
     public static class CreateItemDTO {
