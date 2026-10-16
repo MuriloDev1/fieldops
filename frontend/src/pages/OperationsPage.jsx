@@ -11,6 +11,7 @@ import {
   usersApi,
   reviewsApi
 } from '../core/services/api';
+import { InspectionTimeline } from '../shared/components/InspectionTimeline';
 import { Plus, CheckCircle2, XCircle, Play, Eye } from 'lucide-react';
 
 const priorityTones = {
@@ -726,6 +727,15 @@ export const OperationsPage = () => {
                 </div>
               </div>
             )}
+
+            {/* Linha do Tempo e Trilha de Auditoria (Task #51 e RN-086) */}
+            <div style={{ marginTop: '1.25rem', borderTop: '1px solid #334155', paddingTop: '1.25rem' }}>
+              <InspectionTimeline
+                key={selectedInspection.id}
+                inspectionId={selectedInspection.id}
+                inspectionData={selectedInspection}
+              />
+            </div>
           </div>
         )}
       </ModalDrawer>

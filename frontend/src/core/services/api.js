@@ -93,6 +93,7 @@ export const dashboardApi = {
 export const inspectionsApi = {
   getAll: () => api.get('/inspections'),
   getById: (id) => api.get(`/inspections/${id}`),
+  getHistory: (id) => api.get(`/inspections/${id}/history`),
   listForMobile: (technicianId) => {
     const query = technicianId ? `?technicianId=${technicianId}` : '';
     return api.get(`/mobile/inspections${query}`);
