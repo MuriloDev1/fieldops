@@ -1,6 +1,7 @@
 package com.fieldops.controller;
 
 import com.fieldops.domain.entity.User;
+import com.fieldops.dto.audit.AuditEventResponseDTO;
 import com.fieldops.dto.inspection.CreateInspectionDTO;
 import com.fieldops.dto.inspection.InspectionResponseDTO;
 import com.fieldops.dto.inspection.SubmitResponsesDTO;
@@ -22,7 +23,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@Tag(name = "Inspeções", description = "Endpoints de agendamento, execução e respostas de inspeções em campo (Seção 12.10 e 12.11)")
+@Tag(name = "Inspeções", description = "Endpoints de agendamento, execução, histórico de auditoria e respostas de inspeções em campo (Seção 12.10, 12.11 e RN-086)")
 public class InspectionController {
 
     private final InspectionService inspectionService;
@@ -37,6 +38,12 @@ public class InspectionController {
     @Operation(summary = "Busca detalhes de uma inspeção por ID com snapshots e respostas")
     public ResponseEntity<InspectionResponseDTO> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(inspectionService.getById(id));
+    }
+
+    @GetMapping("/inspections/{id}/history")
+    @Operation(summary = "Retorna a linha do tempo e eventos de auditoria das mudanças de estado da inspeção (RN-086, Issue #51)")
+    public ResponseEntity<List<AuditEventResponseDTO>> getHistory(@PathVariable UUID id) {
+        return ResponseEntity.ok(inspectionService.getInspectionHistory(id));
     }
 
     @GetMapping("/mobile/inspections")

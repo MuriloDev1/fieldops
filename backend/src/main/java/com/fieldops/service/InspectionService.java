@@ -4,6 +4,7 @@ import com.fieldops.common.exception.BusinessException;
 import com.fieldops.common.exception.ResourceNotFoundException;
 import com.fieldops.domain.entity.*;
 import com.fieldops.domain.enums.*;
+import com.fieldops.dto.audit.AuditEventResponseDTO;
 import com.fieldops.dto.inspection.CreateInspectionDTO;
 import com.fieldops.dto.inspection.InspectionResponseDTO;
 import com.fieldops.dto.inspection.SubmitResponsesDTO;
@@ -30,6 +31,16 @@ public class InspectionService {
     private final InspectionResponseRepository responseRepository;
     private final NonConformityRepository nonConformityRepository;
     private final AuditEventRepository auditEventRepository;
+
+    @Transactional(readOnly = true)
+    public List<AuditEventResponseDTO> getInspectionHistory(UUID inspectionId) {
+        if (!inspectionRepository.existsById(inspectionId)) {
+            throw new ResourceNotFoundException("INSPECTION_NOT_FOUND", "Inspeção não encontrada.");
+        }
+        return auditEventRepository.findByInspectionIdOrderByOccurredAtAsc(inspectionId).stream()
+                .map(AuditEventResponseDTO::fromEntity)
+                .toList();
+    }
 
     @Transactional(readOnly = true)
     public List<InspectionResponseDTO> listAll() {
@@ -136,8 +147,12 @@ public class InspectionService {
             }
         }
 
-        // 5. Registrar evento de auditoria (Seção 10.12)
-        recordAuditEvent(savedInspection, creator != null ? creator : supervisor, "INSPECTION_CREATED");
+        // 5. Registrar eventos de auditoria (Seção 10.12 e RN-086)
+        User actor = creator != null ? creator : supervisor;
+        recordAuditEvent(savedInspection, actor, "INSPECTION_CREATED");
+        if (technician != null) {
+            recordAuditEvent(savedInspection, actor, "INSPECTION_ASSIGNED");
+        }
 
         return getById(savedInspection.getId());
     }

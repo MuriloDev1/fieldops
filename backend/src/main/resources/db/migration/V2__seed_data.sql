@@ -78,3 +78,106 @@ VALUES
     ('i4444444-4444-4444-4444-444444444444', 's2222222-2222-2222-2222-222222222222', 'ITEM-04', 'Qual a pressão atual indicada no manômetro (bar)?', 'Informar o valor numérico em bar.', 'NUMBER', true, false, false, 4),
     ('i5555555-5555-5555-5555-555555555555', 's3333333-3333-3333-3333-333333333333', 'ITEM-05', 'O botão de parada de emergência está operante?', 'Testar atuação física e destravamento.', 'CONFORMITY', true, true, true, 5)
 ON CONFLICT (id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 6. Demonstração de Inspeções em Todos os Estados do Ciclo de Vida (Task #34 e #51)
+-- -----------------------------------------------------------------------------
+INSERT INTO inspections (id, template_version_id, client_id, site_id, equipment_id, technician_id, supervisor_id, created_by, title, instructions, priority, status, scheduled_for, started_at_server, submitted_at_server, completed_at_device)
+VALUES 
+    -- 6.1 ASSIGNED (Atribuída / Agendada)
+    ('c1111111-1111-1111-1111-111111111111', 'v1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'e1111111-1111-1111-1111-111111111111', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Preventiva Bomba Submersa 04', 'Verificar vedação e temperatura dos mancais.', 'HIGH', 'ASSIGNED', CURRENT_TIMESTAMP + INTERVAL '2 days', NULL, NULL, NULL),
+
+    -- 6.2 IN_PROGRESS (Em Andamento)
+    ('c2222222-2222-2222-2222-222222222222', 'v1111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'a4444444-4444-4444-4444-444444444444', 'e4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Compressor Principal Atlas Copco', 'Checagem de filtros e ruídos com medidor acústico.', 'CRITICAL', 'IN_PROGRESS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '2 hours', NULL, NULL),
+
+    -- 6.3 SUBMITTED (Em Revisão com Não Conformidade gerada)
+    ('c3333333-3333-3333-3333-333333333333', 'v1111111-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333333', 'a5555555-5555-5555-5555-555555555555', 'e5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Auditoria Elétrica Painel Leste Klabin', 'Verificar aquecimento térmico nos barramentos principais.', 'HIGH', 'SUBMITTED', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP - INTERVAL '6 hours', CURRENT_TIMESTAMP - INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '3 hours'),
+
+    -- 6.4 APPROVED (Aprovada)
+    ('c4444444-4444-4444-4444-444444444444', 'v1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a2222222-2222-2222-2222-222222222222', 'e2222222-2222-2222-2222-222222222222', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Periódica Válvula de Pressão B', 'Calibração e teste de vedação em bancada.', 'MEDIUM', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '2 hours', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '4 hours', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '4 hours'),
+
+    -- 6.5 REJECTED (Reprovada com Justificativa)
+    ('c5555555-5555-5555-5555-555555555555', 'v1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a3333333-3333-3333-3333-333333333333', 'e3333333-3333-3333-3333-333333333333', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Correia Transportadora 2', 'Verificação de alinhamento e roletes de carga.', 'HIGH', 'REJECTED', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '1 hour', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '3 hours')
+ON CONFLICT (id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 7. Snapshots de Itens
+-- -----------------------------------------------------------------------------
+INSERT INTO inspection_item_snapshots (id, inspection_id, section_title, section_order, item_title, response_type, required, item_order)
+VALUES 
+    ('b1111111-1111-1111-1111-111111111111', 'c1111111-1111-1111-1111-111111111111', 'Identificação e Condições Gerais', 1, 'A proteção do equipamento está íntegra?', 'CONFORMITY', true, 1),
+    ('b1111111-1111-1111-1111-111111111112', 'c1111111-1111-1111-1111-111111111111', 'Identificação e Condições Gerais', 1, 'A área ao redor está limpa e desobstruída?', 'BOOLEAN', true, 2),
+
+    ('b2222222-2222-2222-2222-222222222221', 'c2222222-2222-2222-2222-222222222222', 'Sistema Mecânico e Lubrificação', 1, 'O nível de óleo está na faixa indicada no visor?', 'CONFORMITY', true, 1),
+
+    ('b3333333-3333-3333-3333-333333333331', 'c3333333-3333-3333-3333-333333333333', 'Sistema Elétrico e Segurança', 1, 'O botão de parada de emergência está operante?', 'CONFORMITY', true, 1),
+    ('b3333333-3333-3333-3333-333333333332', 'c3333333-3333-3333-3333-333333333333', 'Sistema Elétrico e Segurança', 1, 'Barramentos sem sinais de sobreaquecimento térmico?', 'CONFORMITY', true, 2),
+
+    ('b4444444-4444-4444-4444-444444444441', 'c4444444-4444-4444-4444-444444444444', 'Identificação e Condições Gerais', 1, 'A proteção do equipamento está íntegra?', 'CONFORMITY', true, 1),
+    ('b5555555-5555-5555-5555-555555555551', 'c5555555-5555-5555-5555-555555555555', 'Identificação e Condições Gerais', 1, 'A proteção do equipamento está íntegra?', 'CONFORMITY', true, 1)
+ON CONFLICT (id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 8. Respostas e Não Conformidades
+-- -----------------------------------------------------------------------------
+INSERT INTO inspection_responses (id, inspection_id, inspection_item_id, conformity, observation, answered_by)
+VALUES 
+    ('r3333333-3333-3333-3333-333333333331', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333331', 'CONFORMING', 'Atuação mecânica e elétrica testada com sucesso.', '90000000-0000-0000-0000-000000000003'),
+    ('r3333333-3333-3333-3333-333333333332', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333332', 'NON_CONFORMING', 'Ponto quente de 78°C detectado na fase S do barramento primário.', '90000000-0000-0000-0000-000000000003'),
+    ('r4444444-4444-4444-4444-444444444441', 'c4444444-4444-4444-4444-444444444444', 'b4444444-4444-4444-4444-444444444441', 'CONFORMING', 'Conforme especificação do fabricante.', '90000000-0000-0000-0000-000000000003'),
+    ('r5555555-5555-5555-5555-555555555551', 'c5555555-5555-5555-5555-555555555555', 'b5555555-5555-5555-5555-555555555551', 'NON_CONFORMING', 'Proteção lateral com folga excessiva e parafuso espanado.', '90000000-0000-0000-0000-000000000003')
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO non_conformities (id, inspection_id, inspection_item_id, response_id, title, description, severity, status, created_by)
+VALUES 
+    ('nc333333-3333-3333-3333-333333333331', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333332', 'r3333333-3333-3333-3333-333333333332', 'Sobreaquecimento em barramento primário do Painel Leste', 'Temperatura de 78°C acima do limite operacional seguro de 65°C.', 'HIGH', 'OPEN', '90000000-0000-0000-0000-000000000003'),
+    ('nc555555-5555-5555-5555-555555555551', 'c5555555-5555-5555-5555-555555555555', 'b5555555-5555-5555-5555-555555555551', 'r5555555-5555-5555-5555-555555555551', 'Proteção mecânica solta na correia transportadora', 'Risco de desprendimento durante operação de carregamento de minério.', 'CRITICAL', 'OPEN', '90000000-0000-0000-0000-000000000003')
+ON CONFLICT (id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 9. Ciclos de Revisão (Aprovado e Reprovado)
+-- -----------------------------------------------------------------------------
+INSERT INTO inspection_reviews (id, inspection_id, reviewer_id, decision, comments, reviewed_at, review_cycle)
+VALUES 
+    ('rev44444-4444-4444-4444-444444444444', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000002', 'APPROVED', 'Inspeção aprovada. Todos os parâmetros operacionais em conformidade.', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '6 hours', 1),
+    ('rev55555-5555-5555-5555-555555555555', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000002', 'REJECTED', 'Reprovada por ausência de foto detalhada da folga mecânica. Favor refazer evidência.', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '5 hours', 1)
+ON CONFLICT (id) DO NOTHING;
+
+-- -----------------------------------------------------------------------------
+-- 10. Trilha de Auditoria e Linha do Tempo de Mudanças de Estado (RN-086 / Task #51)
+-- -----------------------------------------------------------------------------
+INSERT INTO audit_events (id, inspection_id, actor_id, action, entity_type, entity_id, occurred_at, metadata_json)
+VALUES 
+    -- Eventos da Inspeção 1 (SCHEDULED)
+    ('d1111111-1111-1111-1111-111111111111', 'c1111111-1111-1111-1111-111111111111', '90000000-0000-0000-0000-000000000002', 'INSPECTION_CREATED', 'INSPECTION', 'c1111111-1111-1111-1111-111111111111', CURRENT_TIMESTAMP - INTERVAL '24 hours', '{"details":"Inspeção agendada para parada programada."}'::jsonb),
+    ('d1111111-1111-1111-1111-111111111112', 'c1111111-1111-1111-1111-111111111111', '90000000-0000-0000-0000-000000000002', 'INSPECTION_ASSIGNED', 'INSPECTION', 'c1111111-1111-1111-1111-111111111111', CURRENT_TIMESTAMP - INTERVAL '24 hours', '{"details":"Atribuída ao técnico Carlos Lima."}'::jsonb),
+
+    -- Eventos da Inspeção 2 (IN_PROGRESS)
+    ('d2222222-2222-2222-2222-222222222221', 'c2222222-2222-2222-2222-222222222222', '90000000-0000-0000-0000-000000000002', 'INSPECTION_CREATED', 'INSPECTION', 'c2222222-2222-2222-2222-222222222222', CURRENT_TIMESTAMP - INTERVAL '1 day', '{"details":"Ordem gerada por monitoramento de rotina."}'::jsonb),
+    ('d2222222-2222-2222-2222-222222222222', 'c2222222-2222-2222-2222-222222222222', '90000000-0000-0000-0000-000000000002', 'INSPECTION_ASSIGNED', 'INSPECTION', 'c2222222-2222-2222-2222-222222222222', CURRENT_TIMESTAMP - INTERVAL '1 day', '{"details":"Atribuída a Carlos Lima."}'::jsonb),
+    ('d2222222-2222-2222-2222-222222222223', 'c2222222-2222-2222-2222-222222222222', '90000000-0000-0000-0000-000000000003', 'INSPECTION_STARTED', 'INSPECTION', 'c2222222-2222-2222-2222-222222222222', CURRENT_TIMESTAMP - INTERVAL '2 hours', '{"details":"Check-in via QR-COMP-01-CARAJAS e início das medições em campo."}'::jsonb),
+
+    -- Eventos da Inspeção 3 (SUBMITTED)
+    ('d3333333-3333-3333-3333-333333333331', 'c3333333-3333-3333-3333-333333333333', '90000000-0000-0000-0000-000000000002', 'INSPECTION_CREATED', 'INSPECTION', 'c3333333-3333-3333-3333-333333333333', CURRENT_TIMESTAMP - INTERVAL '2 days', '{"details":"Criação de rotina de segurança elétrica."}'::jsonb),
+    ('d3333333-3333-3333-3333-333333333332', 'c3333333-3333-3333-3333-333333333333', '90000000-0000-0000-0000-000000000002', 'INSPECTION_ASSIGNED', 'INSPECTION', 'c3333333-3333-3333-3333-333333333333', CURRENT_TIMESTAMP - INTERVAL '2 days', '{"details":"Técnico encarregado: Carlos Lima."}'::jsonb),
+    ('d3333333-3333-3333-3333-333333333333', 'c3333333-3333-3333-3333-333333333333', '90000000-0000-0000-0000-000000000003', 'INSPECTION_STARTED', 'INSPECTION', 'c3333333-3333-3333-3333-333333333333', CURRENT_TIMESTAMP - INTERVAL '6 hours', '{"details":"Início da termografia no painel elétrico."}'::jsonb),
+    ('d3333333-3333-3333-3333-333333333334', 'c3333333-3333-3333-3333-333333333333', '90000000-0000-0000-0000-000000000003', 'INSPECTION_SUBMITTED', 'INSPECTION', 'c3333333-3333-3333-3333-333333333333', CURRENT_TIMESTAMP - INTERVAL '3 hours', '{"details":"Envio com 1 Não Conformidade aberta (aquecimento em fase S)."}'::jsonb),
+    ('d3333333-3333-3333-3333-333333333335', 'c3333333-3333-3333-3333-333333333333', '90000000-0000-0000-0000-000000000002', 'REVIEW_STARTED', 'INSPECTION', 'c3333333-3333-3333-3333-333333333333', CURRENT_TIMESTAMP - INTERVAL '1 hour', '{"details":"Supervisor Roberto Silva iniciou a homologação."}'::jsonb),
+
+    -- Eventos da Inspeção 4 (APPROVED)
+    ('d4444444-4444-4444-4444-444444444441', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000002', 'INSPECTION_CREATED', 'INSPECTION', 'c4444444-4444-4444-4444-444444444444', CURRENT_TIMESTAMP - INTERVAL '4 days', '{"details":"Inspeção periódica criada."}'::jsonb),
+    ('d4444444-4444-4444-4444-444444444442', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000002', 'INSPECTION_ASSIGNED', 'INSPECTION', 'c4444444-4444-4444-4444-444444444444', CURRENT_TIMESTAMP - INTERVAL '4 days', '{"details":"Atribuída a Carlos Lima."}'::jsonb),
+    ('d4444444-4444-4444-4444-444444444443', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000003', 'INSPECTION_STARTED', 'INSPECTION', 'c4444444-4444-4444-4444-444444444444', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '2 hours', '{"details":"Check-in confirmado via QR Code."}'::jsonb),
+    ('d4444444-4444-4444-4444-444444444444', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000003', 'INSPECTION_SUBMITTED', 'INSPECTION', 'c4444444-4444-4444-4444-444444444444', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '4 hours', '{"details":"Respostas enviadas com conformidade total."}'::jsonb),
+    ('d4444444-4444-4444-4444-444444444445', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000002', 'REVIEW_STARTED', 'INSPECTION', 'c4444444-4444-4444-4444-444444444444', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '5 hours', '{"details":"Revisão iniciada."}'::jsonb),
+    ('d4444444-4444-4444-4444-444444444446', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000002', 'INSPECTION_APPROVED', 'INSPECTION', 'c4444444-4444-4444-4444-444444444444', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '6 hours', '{"details":"Aprovada sem ressalvas pelo supervisor Roberto Silva."}'::jsonb),
+
+    -- Eventos da Inspeção 5 (REJECTED)
+    ('d5555555-5555-5555-5555-555555555551', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000002', 'INSPECTION_CREATED', 'INSPECTION', 'c5555555-5555-5555-5555-555555555555', CURRENT_TIMESTAMP - INTERVAL '6 days', '{"details":"Inspeção cadastrada."}'::jsonb),
+    ('d5555555-5555-5555-5555-555555555552', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000002', 'INSPECTION_ASSIGNED', 'INSPECTION', 'c5555555-5555-5555-5555-555555555555', CURRENT_TIMESTAMP - INTERVAL '6 days', '{"details":"Atribuída a Carlos Lima."}'::jsonb),
+    ('d5555555-5555-5555-5555-555555555553', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000003', 'INSPECTION_STARTED', 'INSPECTION', 'c5555555-5555-5555-5555-555555555555', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '1 hour', '{"details":"Execução presencial iniciada."}'::jsonb),
+    ('d5555555-5555-5555-5555-555555555554', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000003', 'INSPECTION_SUBMITTED', 'INSPECTION', 'c5555555-5555-5555-5555-555555555555', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '3 hours', '{"details":"Checklist finalizado pelo técnico."}'::jsonb),
+    ('d5555555-5555-5555-5555-555555555555', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000002', 'REVIEW_STARTED', 'INSPECTION', 'c5555555-5555-5555-5555-555555555555', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '4 hours', '{"details":"Revisão técnica iniciada."}'::jsonb),
+    ('d5555555-5555-5555-5555-555555555556', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000002', 'INSPECTION_REJECTED', 'INSPECTION', 'c5555555-5555-5555-5555-555555555555', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '5 hours', '{"details":"Reprovada: Foto da folga mecânica ausente no anexo."}'::jsonb)
+ON CONFLICT (id) DO NOTHING;
+
