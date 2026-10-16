@@ -198,49 +198,128 @@ A base de conhecimento do FieldOps foi estruturada de forma modular na pasta `/d
 
 ---
 
-## 7. Guia de Inicialização Rápida (Quick Start)
+## 7. Guia de Inicialização Rápida (Execução Reproduzível — PBI-067 / Task #34)
 
-### Pré-requisitos
-- **Git** instalado;
-- **Docker & Docker Compose** (para serviços de infraestrutura e PostgreSQL);
-- **Java JDK 17+** e **Maven** (para o backend);
-- **Node.js (v18+)** e **npm** / **yarn** / **pnpm**;
-- **Expo Go** no smartphone ou emulador Android/iOS.
+O ecossistema FieldOps foi projetado para execução reproduzível imediata pelo avaliador, com passos documentados por aplicação.
 
-### 1. Clonar o Repositório
+### 🔑 Credenciais para Demonstração (Seed Inicial)
+
+Senha padrão para todos os perfis: `123456`
+
+| Papel | Nome | E-mail | Senha |
+|---|---|---|---|
+| **Administrador Geral** | Administrador do Sistema | `admin@fieldops.com` | `123456` |
+| **Supervisor Operacional** | Roberto Silva | `supervisor@fieldops.com` | `123456` |
+| **Técnico em Campo** | Carlos Lima | `tecnico@fieldops.com` | `123456` |
+
+---
+
+### Passo 1: Executar o Backend (API REST)
+
+O backend possui suporte a execução imediata em memória (**H2**, sem dependência de banco de dados externo) ou com **PostgreSQL** via Docker Compose:
+
+#### Opção A: Execução Imediata com H2 (Recomendada para Avaliação Rápida)
 ```bash
-git clone https://github.com/MuriloDev1/fieldops.git
-cd fieldops
+cd backend
+
+# No Linux / macOS:
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+
+# No Windows (PowerShell / CMD):
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=local
 ```
+*O perfil local popula automaticamente a base em memória com dados completos de clientes, equipamentos, modelos, inspeções em múltiplos estados e trilhas de auditoria (DevDataLoader).*
 
-### 2. Inicializar Infraestrutura e Banco de Dados (PostgreSQL)
+#### Opção B: Execução com PostgreSQL (Via Docker Compose)
 ```bash
-docker-compose up -d
+# Na raiz do repositório:
+docker compose up -d postgres
+
+# Na pasta backend:
+cd backend
+./mvnw spring-boot:run   # (ou .\mvnw.cmd spring-boot:run no Windows)
 ```
-*O container PostgreSQL estará disponível na porta `5432` com os scripts de schema inicializados automaticamente.*
+*O Flyway executará automaticamente as migrações `V1__initial_schema.sql` e `V2__seed_data.sql`.*
 
-### 3. Executar o Backend (Spring Boot API)
-```bash
-cd api
-./mvnw spring-boot:run
-```
-*A API REST estará disponível em `http://localhost:8080/api/v1` e a documentação OpenAPI Swagger em `http://localhost:8080/swagger-ui.html`.*
+---
 
-### 4. Executar o Painel Web Administrativo
+### Passo 2: Executar o Painel Web Administrativo
+
 ```bash
-cd web
+cd frontend
 npm install
 npm run dev
 ```
-*A interface administrativa estará acessível em `http://localhost:3000` ou `http://localhost:4200`.*
+👉 Acesse no navegador: **[http://localhost:5173](http://localhost:5173)**  
+*(Ou se executando em ambiente de preview após `npm run build`: `http://localhost:4173`)*
 
-### 5. Executar o Aplicativo Mobile (Expo)
+---
+
+### Passo 3: Executar o Aplicativo Mobile (Expo)
+
 ```bash
 cd fieldops-mobile
 npm install
 npx expo start
 ```
-*Escaneie o QR Code com o aplicativo Expo Go (Android/iOS) ou pressione `a` para iniciar no emulador Android.*
+*Abra no aplicativo **Expo Go** escaneando o QR Code pelo celular ou pressione `a` para emulador Android.*
+
+---
+
+## 📖 Documentação da API REST (OpenAPI 3 / Swagger UI — PBI-071)
+
+Com o backend em execução, a documentação OpenAPI completa e interativa pode ser consultada em:
+
+- **Swagger UI Interativo:** 👉 **[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)**
+- **Contrato OpenAPI JSON:** 👉 **[http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)**
+
+A especificação inclui autenticação Bearer JWT, esquemas DTO de requisição/resposta, tratamento padronizado de erros e o endpoint de trilha de auditoria:
+- `GET /api/v1/inspections/{id}/history`: Linha do tempo completa de mudanças de estado com auditoria de quem, quando e ação (RN-086 / Task #51).
+
+---
+
+## 🕒 Histórico de Mudanças de Estado e Trilha de Auditoria (Task #51 / RN-086)
+
+A plataforma provê rastreabilidade completa do ciclo de vida das inspeções:
+
+1. **Origem dos Dados:** Registros imutáveis na tabela `audit_events` com duplo carimbo de data (`occurred_at` e `device_occurred_at`), identificação do usuário ator e ação executada.
+2. **Visualização no Painel Web:**
+   - **Menu Lateral → Histórico (`/history`):** Tela dedicada com listagem filtrável de inspeções e painel de detalhamento da linha do tempo (`InspectionTimeline`).
+   - **Menu Lateral → Operações (`/operations`):** Ao abrir qualquer inspeção no drawer de detalhes, a seção de linha do tempo apresenta cada estágio registrado:
+     - 🔵 **Criação da Inspeção** (quem criou, data/hora e ativo)
+     - 🟣 **Atribuição do Técnico** (técnico encarregado)
+     - 🟠 **Execução Iniciada** (check-in presencial validado via QR Code)
+     - 🔷 **Respostas Enviadas** (submissão do checklist com ou sem não conformidades)
+     - 🟣 **Revisão Técnica Iniciada** (supervisor responsável)
+     - 🟢 **Inspeção Aprovada** / 🔴 **Inspeção Reprovada** (parecer e justificativa formal registrada)
+
+---
+
+## 📊 Dados de Demonstração e Execução Reproduzível (Task #34 / PBI-066)
+
+O projeto inclui um dataset completo e realista pronto para validação de ponta a ponta:
+
+- **3 Grandes Clientes Industriais:** Petrobras S.A., Vale S.A., Klabin Papel e Celulose.
+- **5 Locais / Plantas:** Refinaria RPBC, Refinaria Central, Terminal Portuário de Tubarão, Complexo Carajás, Fábrica Monte Alegre.
+- **5 Equipamentos Industriais com QR Code:** Bomba Centrífuga KSB 01 (`QR-KSB-01`), Painel Elétrico CCM-02 (`QR-CCM-02`), Caldeira de Alta Pressão 03 (`QR-CALD-03`), Compressor Principal (`QR-COMP-01`), Válvula de Pressão B (`QR-VALV-02-CENTRAL`).
+- **Checklists Especializados:** Modelos dinâmicos com seções e perguntas de conformidade, booleano e valor numérico.
+- **5 Inspeções em Todos os Estágios do Ciclo de Vida:**
+  - `INS-8001`: **Em Andamento (IN_PROGRESS)** com respostas parciais.
+  - `INS-8002`: **Agendada (ASSIGNED)** pronta para despacho.
+  - `INS-8003`: **Em Revisão (SUBMITTED)** com 1 Não Conformidade aberta (sobreaquecimento térmico).
+  - `INS-8004`: **Aprovada (APPROVED)** com homologação formal do supervisor.
+  - `INS-8005`: **Reprovada (REJECTED)** com justificativa de ausência de foto de folga mecânica.
+
+---
+
+## ⚠️ Limitações Conhecidas Registradas (PBI-066 / Task #34)
+
+Em conformidade com as boas práticas de Engenharia de Software e o escopo do MVP acadêmico, as seguintes limitações e decisões arquiteturais estão registradas:
+
+1. **Organização e Escopo Multi-tenancy:** O sistema opera com isolamento relacional padrão focado na organização matriz para a demonstração do MVP acadêmico. Criação dinâmica de novas organizações isoladas em tempo de execução está prevista para o ciclo comercial pós-MVP.
+2. **Armazenamento de Fotos e Mídias:** Em ambiente de desenvolvimento local, evidências fotográficas utilizam identificadores e metadados na base relacional e cache local do dispositivo; em ambiente de homologação/nuvem, o backend integra-se via driver S3/MinIO.
+3. **Resolução de Conflitos Offline:** Adotada a política orientada a eventos *Last-Write-Wins* combinada com duplo carimbo de data (`device_occurred_at` no celular e `server_received_at` na API) e chaves UUID geradas no dispositivo móvel para assegurar idempotência estrita no processamento da fila Outbox (RN-068 e RN-074).
+4. **Homologação Mobile:** O aplicativo React Native/Expo foi testado e homologado prioritariamente em dispositivos Android (físicos e emuladores). No iOS via Expo Go, recursos nativos dependem da concessão manual de permissões de câmera e localização no sistema operacional.
 
 ---
 
@@ -248,13 +327,16 @@ npx expo start
 
 O desenvolvimento do FieldOps segue práticas ágeis de Engenharia de Software com papéis bem definidos:
 
-| Papel de Engenharia | Atribuições |
-| --- | --- |
-| **Software Engineer Lead & Solutions Architect** | Arquitetura geral, governança de dados, contratos de API e conformidade com regras RN-001 a RN-090 |
-| **Mobile Software Engineer** | Aplicativo Expo/React Native, banco SQLite local, Outbox Pattern e sincronização resiliente |
-| **Backend & Data Engineer** | API REST Spring Boot, segurança JWT, migrações relacional PostgreSQL e auditoria |
-| **Fullstack Web Engineer** | Painel Web administrativo, construtor de checklists, fluxo de agendamento e módulo de revisão |
+| Integrante | Papel de Foco Principal | Responsabilidades |
+|---|---|---|
+| **Murilo** | **Backend / Arquitetura & Integração** | Estruturação da API REST, segurança JWT, regras de idempotência e auditoria |
+| **Gizela** | **Mobile (UX & Lógica de Inspeção)** | Telas de execução do checklist no Expo, formulários dinâmicos e captura de evidências |
+| **Pedro** | **Frontend Web (Dashboard & Revisão)** | Telas do supervisor no React/Vite, gráficos analíticos, gestão de ativos e histórico |
+| **Julio** | **Mobile (Recursos Nativos & Offline)** | Configuração do SQLite local, persistência da fila Outbox, leitor de QR Code e GPS |
+| **Matheus** | **Banco de Dados & Backend** | Schema PostgreSQL, DDL, seeds de dados e endpoints de suporte aos cadastros |
+| **Juan** | **QA, Testes & Documentação Acadêmica** | Critérios de aceitação BDD, relatórios de testes e documentação acadêmica do PI |
 
 ---
 
 *Projeto desenvolvido no âmbito do SENAI como referência prática de Engenharia de Software e Arquitetura de Sistemas Distribuídos.*
+
