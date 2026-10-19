@@ -14,7 +14,8 @@ import {
   LogOut,
   UserRound,
   ListChecks,
-  AlertTriangle
+  AlertTriangle,
+  History
 } from 'lucide-react';
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
   { path: '/templates', label: 'Modelos Checklist', icon: ListChecks },
   { path: '/operations', label: 'Operações', icon: ClipboardList },
   { path: '/non-conformities', label: 'Não Conformidades', icon: AlertTriangle },
+  { path: '/history', label: 'Histórico & Auditoria', icon: History },
   { path: '/team', label: 'Equipe de Campo', icon: Users },
   { path: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
   { path: '/reports', label: 'Relatórios', icon: FileText },

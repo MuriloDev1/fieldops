@@ -87,8 +87,17 @@ public class AuditEventResponseDTO {
     }
 
     private static String resolveDescription(String action, AuditEvent event) {
-        if (event.getMetadataJson() != null && !event.getMetadataJson().isBlank() && !event.getMetadataJson().equals("{}")) {
-            return event.getMetadataJson();
+        String meta = event.getMetadataJson();
+        if (meta != null && !meta.isBlank() && !meta.equals("{}")) {
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("\"details\"\\s*:\\s*\"([^\"]*)\"")
+                    .matcher(meta);
+            if (m.find() && !m.group(1).isBlank()) {
+                return m.group(1);
+            }
+            if (!meta.trim().startsWith("{")) {
+                return meta;
+            }
         }
         if (action == null) return "Transição de estado registrada na trilha de auditoria.";
         return switch (action.toUpperCase()) {

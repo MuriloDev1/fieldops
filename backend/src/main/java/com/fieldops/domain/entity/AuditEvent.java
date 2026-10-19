@@ -2,7 +2,8 @@ package com.fieldops.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
@@ -44,12 +45,15 @@ public class AuditEvent {
     @Column(name = "device_occurred_at")
     private OffsetDateTime deviceOccurredAt;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "previous_value_json", columnDefinition = "jsonb")
     private String previousValueJson;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "new_value_json", columnDefinition = "jsonb")
     private String newValueJson;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata_json", columnDefinition = "jsonb")
     private String metadataJson;
 

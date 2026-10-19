@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StatCard } from '../shared/components/StatCard';
 import { dashboardApi } from '../core/services/api';
-import { Activity, CheckCircle, AlertTriangle, Building2, MapPin, Settings2 } from 'lucide-react';
+import { Activity, Building2 } from 'lucide-react';
 
 export const AnalyticsPage = () => {
   const [summary, setSummary] = useState({
@@ -13,14 +13,14 @@ export const AnalyticsPage = () => {
     inProgressInspections: 1,
     completedInspections: 1,
     openNonConformities: 1,
-    conformanceRate: 91.6,
+    conformanceRate: 94.2,
   });
 
   useEffect(() => {
     dashboardApi
       .getSummary()
       .then((data) => {
-        if (data) setSummary(data);
+        if (data) setSummary((prev) => ({ ...prev, ...data }));
       })
       .catch((err) => {
         console.warn('Usando métricas de fallback:', err);
@@ -31,37 +31,37 @@ export const AnalyticsPage = () => {
     <>
       <div className="page-title-wrap">
         <h1>Analytics & Indicadores</h1>
-        <p>Métricas consolidadas de conformidade, produtividade de campo e auditorias.</p>
+        <p>Métricas consolidadas de eficiência e tempo médio de atendimento.</p>
       </div>
 
       <div className="stats-grid" style={{ marginBottom: '2rem' }}>
         <StatCard
-          title="Taxa de Conformidade Geral"
-          value={`${Math.round(summary.conformanceRate || 95)}%`}
-          footerText="Meta operacional: > 90%"
+          title="Tempo Médio de Inspeção"
+          value="38 min"
+          footerText="-4 min vs média"
+          type="positive"
+          icon="⏱"
+        />
+        <StatCard
+          title="Conformidade Geral"
+          value={`${summary.conformanceRate != null ? Number(summary.conformanceRate).toFixed(1) : '94.2'}%`}
+          footerText="+1.8% no trimestre"
           type={summary.conformanceRate >= 90 ? 'positive' : 'warning'}
           icon="📈"
         />
         <StatCard
-          title="Não Conformidades em Aberto"
-          value={summary.openNonConformities?.toString() || '0'}
-          footerText="Apontamentos requerendo ação"
-          type={summary.openNonConformities > 0 ? 'warning' : 'positive'}
+          title="Alertas de Manutenção"
+          value={String((summary.openNonConformities || 0) + (summary.criticalEquipments || 0) || 8)}
+          footerText={`${summary.openNonConformities || 2} necessitam auditoria`}
+          type="warning"
           icon="⚠️"
         />
         <StatCard
           title="Inspeções Realizadas"
-          value={summary.completedInspections?.toString() || '0'}
+          value={String(summary.completedInspections || 0)}
           footerText={`${summary.inProgressInspections || 0} em andamento`}
           type="positive"
           icon="✅"
-        />
-        <StatCard
-          title="Equipamentos Críticos"
-          value={summary.criticalEquipments?.toString() || '0'}
-          footerText={`De ${summary.totalEquipments || 0} cadastrados`}
-          type={summary.criticalEquipments > 0 ? 'warning' : 'positive'}
-          icon="⚙️"
         />
       </div>
 
@@ -111,3 +111,5 @@ export const AnalyticsPage = () => {
     </>
   );
 };
+
+export default AnalyticsPage;

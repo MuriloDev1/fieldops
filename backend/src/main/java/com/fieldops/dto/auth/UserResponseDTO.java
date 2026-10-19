@@ -20,8 +20,14 @@ public class UserResponseDTO {
     private String role;
     private String status;
     private String phone;
+    private String region;
+    private long completed;
 
     public static UserResponseDTO fromEntity(User user) {
+        return fromEntity(user, 0L, "Sudeste / Operação Central");
+    }
+
+    public static UserResponseDTO fromEntity(User user, long completedCount, String region) {
         return UserResponseDTO.builder()
                 .id(user.getId())
                 .name(user.getName())
@@ -29,6 +35,8 @@ public class UserResponseDTO {
                 .role(user.getRole().name())
                 .status(user.getStatus().name())
                 .phone(user.getPhone())
+                .region(region != null ? region : "Sudeste / Operação Central")
+                .completed(completedCount)
                 .build();
     }
 }

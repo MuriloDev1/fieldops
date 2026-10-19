@@ -4,7 +4,7 @@ import Input from '../components/Input';
 import Select from '../components/Select';
 import { InspectionTimeline } from '../shared/components/InspectionTimeline';
 import { inspectionsApi } from '../core/services/api';
-import { History, ShieldCheck, Clock, Search, ChevronRight, FileText, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { History, ShieldCheck, Search } from 'lucide-react';
 
 const fallbackInspections = [
   {
@@ -89,7 +89,7 @@ const fallbackInspections = [
   }
 ];
 
-export default function HistoryPage() {
+export function HistoryPage() {
   const [inspectionsList, setInspectionsList] = useState(fallbackInspections);
   const [selectedInspection, setSelectedInspection] = useState(fallbackInspections[0]);
   const [search, setSearch] = useState('');
@@ -104,18 +104,18 @@ export default function HistoryPage() {
         if (Array.isArray(data) && data.length > 0) {
           const mapped = data.map((item) => ({
             id: item.id,
-            templateTitle: item.templateVersionTitle || item.title || 'Inspeção de Campo',
+            templateTitle: item.templateTitle || item.templateVersionTitle || item.title || 'Inspeção de Campo',
             clientName: item.clientName || 'Cliente Industrial',
             siteName: item.siteName || 'Planta Operacional',
             equipmentName: item.equipmentName || 'Equipamento',
             technicianName: item.technicianName || 'Carlos Lima',
-            scheduledDate: item.scheduledFor ? item.scheduledFor.substring(0, 10) : '2026-10-01',
+            scheduledDate: item.scheduledDate || (item.scheduledFor ? item.scheduledFor.substring(0, 10) : '2026-10-01'),
             priority: item.priority || 'Média',
             status: item.status,
             statusLabel: mapStatusLabel(item.status),
-            itemsCount: item.items?.length || 10,
-            answeredCount: item.items?.filter((i) => i.answered).length || 0,
-            nonConformityCount: item.nonConformitiesCount || 0,
+            itemsCount: item.itemsCount ?? item.items?.length ?? 10,
+            answeredCount: item.answeredCount ?? 0,
+            nonConformityCount: item.nonConformityCount ?? item.nonConformitiesCount ?? 0,
             tone: mapStatusTone(item.status)
           }));
           setInspectionsList(mapped);
@@ -133,9 +133,11 @@ export default function HistoryPage() {
 
   function mapStatusLabel(status) {
     switch (status) {
+      case 'ASSIGNED':
       case 'SCHEDULED': return 'Agendada';
       case 'IN_PROGRESS': return 'Em Andamento';
-      case 'SUBMITTED': return 'Em Revisão';
+      case 'SUBMITTED':
+      case 'UNDER_REVIEW': return 'Em Revisão';
       case 'APPROVED': return 'Aprovada';
       case 'REJECTED': return 'Reprovada';
       case 'CANCELED':
@@ -148,9 +150,11 @@ export default function HistoryPage() {
     switch (status) {
       case 'APPROVED': return 'success';
       case 'REJECTED': return 'danger';
+      case 'ASSIGNED':
       case 'SCHEDULED': return 'warning';
       case 'IN_PROGRESS':
-      case 'SUBMITTED': return 'info';
+      case 'SUBMITTED':
+      case 'UNDER_REVIEW': return 'info';
       default: return 'slate';
     }
   }
@@ -159,13 +163,13 @@ export default function HistoryPage() {
     return inspectionsList.filter((item) => {
       const q = search.toLowerCase();
       const matchSearch =
-        item.id.toLowerCase().includes(q) ||
+        String(item.id).toLowerCase().includes(q) ||
         (item.equipmentName || '').toLowerCase().includes(q) ||
         (item.technicianName || '').toLowerCase().includes(q) ||
         (item.clientName || '').toLowerCase().includes(q) ||
         (item.templateTitle || '').toLowerCase().includes(q);
 
-      const matchStatus = !statusFilter || item.status === statusFilter;
+      const matchStatus = !statusFilter || item.status === statusFilter || (statusFilter === 'SCHEDULED' && item.status === 'ASSIGNED');
       return matchSearch && matchStatus;
     });
   }, [inspectionsList, search, statusFilter]);
@@ -333,3 +337,5 @@ export default function HistoryPage() {
     </div>
   );
 }
+
+export default HistoryPage;

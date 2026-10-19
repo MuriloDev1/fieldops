@@ -21,10 +21,17 @@ public class TemplateResponseDTO {
     private String category;
     private String status;
     private int currentVersion;
+    private int versionNumber;
+    private int sectionsCount;
+    private int itemsCount;
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
 
     public static TemplateResponseDTO fromEntity(InspectionTemplate template) {
+        return fromEntity(template, 0, 0);
+    }
+
+    public static TemplateResponseDTO fromEntity(InspectionTemplate template, int sectionsCount, int itemsCount) {
         return TemplateResponseDTO.builder()
                 .id(template.getId())
                 .title(template.getTitle())
@@ -32,6 +39,9 @@ public class TemplateResponseDTO {
                 .category(template.getCategory())
                 .status(template.getStatus().name())
                 .currentVersion(template.getCurrentVersion())
+                .versionNumber(template.getCurrentVersion())
+                .sectionsCount(sectionsCount)
+                .itemsCount(itemsCount)
                 .createdAt(template.getCreatedAt())
                 .updatedAt(template.getUpdatedAt())
                 .build();

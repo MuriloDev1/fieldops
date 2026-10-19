@@ -4,7 +4,9 @@ import com.fieldops.domain.enums.ConformityStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,6 +46,7 @@ public class InspectionResponse {
     @Column(name = "value_date")
     private LocalDate valueDate;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "value_json", columnDefinition = "jsonb")
     @Builder.Default
     private String valueJson = "{}";

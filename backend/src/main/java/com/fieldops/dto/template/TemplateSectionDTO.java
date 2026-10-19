@@ -20,6 +20,7 @@ public class TemplateSectionDTO {
     private String title;
     private String description;
     private int displayOrder;
+    private int orderIndex;
     @Builder.Default
     private List<TemplateItemDTO> items = new ArrayList<>();
 
@@ -28,11 +29,15 @@ public class TemplateSectionDTO {
                 ? section.getItems().stream().map(TemplateItemDTO::fromEntity).toList()
                 : new ArrayList<>();
 
+        int dispOrder = section.getDisplayOrder();
+        int idx = dispOrder > 0 ? dispOrder - 1 : 0;
+
         return TemplateSectionDTO.builder()
                 .id(section.getId())
                 .title(section.getTitle())
                 .description(section.getDescription())
-                .displayOrder(section.getDisplayOrder())
+                .displayOrder(dispOrder)
+                .orderIndex(idx)
                 .items(itemDTOs)
                 .build();
     }

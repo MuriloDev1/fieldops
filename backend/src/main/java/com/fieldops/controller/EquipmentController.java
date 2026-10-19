@@ -63,13 +63,21 @@ public class EquipmentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    @PatchMapping("/equipment/{id}")
+    @Operation(summary = "Atualiza dados ou status do equipamento")
+    public ResponseEntity<EquipmentResponseDTO> updatePartial(
+            @PathVariable UUID id,
+            @RequestBody Map<String, Object> body) {
+        return ResponseEntity.ok(equipmentService.updatePartial(id, body));
+    }
+
     @PatchMapping("/equipment/{id}/status")
     @Operation(summary = "Altera status operacional do equipamento")
     public ResponseEntity<EquipmentResponseDTO> updateStatus(
             @PathVariable UUID id,
             @RequestBody Map<String, String> body) {
-        String statusStr = body.get("status");
-        EquipmentStatus status = EquipmentStatus.valueOf(statusStr.toUpperCase());
+        String statusStr = body != null ? body.get("status") : null;
+        EquipmentStatus status = equipmentService.parseStatus(statusStr, EquipmentStatus.ACTIVE);
         return ResponseEntity.ok(equipmentService.updateStatus(id, status));
     }
 }

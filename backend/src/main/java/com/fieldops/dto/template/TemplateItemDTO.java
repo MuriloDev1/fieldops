@@ -17,6 +17,7 @@ public class TemplateItemDTO {
     private UUID id;
     private String code;
     private String title;
+    private String text;
     private String description;
     private String responseType;
     private boolean required;
@@ -24,19 +25,24 @@ public class TemplateItemDTO {
     private boolean evidenceRequiredOnFailure;
     private String optionsJson;
     private int displayOrder;
+    private int orderIndex;
 
     public static TemplateItemDTO fromEntity(TemplateItem item) {
+        int dispOrder = item.getDisplayOrder();
+        int idx = dispOrder > 0 ? dispOrder - 1 : 0;
         return TemplateItemDTO.builder()
                 .id(item.getId())
                 .code(item.getCode())
                 .title(item.getTitle())
+                .text(item.getTitle())
                 .description(item.getDescription())
                 .responseType(item.getResponseType().name())
                 .required(item.getRequired())
                 .observationRequiredOnFailure(item.getObservationRequiredOnFailure())
                 .evidenceRequiredOnFailure(item.getEvidenceRequiredOnFailure())
                 .optionsJson(item.getOptionsJson())
-                .displayOrder(item.getDisplayOrder())
+                .displayOrder(dispOrder)
+                .orderIndex(idx)
                 .build();
     }
 }

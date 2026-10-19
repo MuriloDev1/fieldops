@@ -3,7 +3,7 @@ import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
 import { StatusBadge } from '../shared/components/StatusBadge';
 import { templatesApi } from '../core/services/api';
-import { Plus, ListChecks, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { Plus, ArrowUpRight, Trash2 } from 'lucide-react';
 
 const fallbackTemplates = [
   {
@@ -85,6 +85,50 @@ export const TemplatesPage = () => {
     } catch (err) {
       console.warn('Erro ao carregar versão ativa:', err);
     }
+  };
+
+  const handleAddItem = () => {
+    setFormData((prev) => {
+      const sec = prev.sections[0];
+      const nextItems = [
+        ...sec.items,
+        {
+          text: '',
+          responseType: 'CONFORM_NON_CONFORM',
+          required: true,
+          orderIndex: sec.items.length,
+        },
+      ];
+      return {
+        ...prev,
+        sections: [{ ...sec, items: nextItems }],
+      };
+    });
+  };
+
+  const handleRemoveItem = (idx) => {
+    setFormData((prev) => {
+      const sec = prev.sections[0];
+      if (sec.items.length <= 1) return prev;
+      const nextItems = sec.items
+        .filter((_, i) => i !== idx)
+        .map((it, i) => ({ ...it, orderIndex: i }));
+      return {
+        ...prev,
+        sections: [{ ...sec, items: nextItems }],
+      };
+    });
+  };
+
+  const handleItemTextChange = (idx, val) => {
+    setFormData((prev) => {
+      const sec = prev.sections[0];
+      const nextItems = sec.items.map((it, i) => (i === idx ? { ...it, text: val } : it));
+      return {
+        ...prev,
+        sections: [{ ...sec, items: nextItems }],
+      };
+    });
   };
 
   const handleCreateTemplate = async (e) => {
@@ -236,12 +280,12 @@ export const TemplatesPage = () => {
                   {activeVersionDetails.sections.map((section, sIdx) => (
                     <div key={section.id || sIdx} style={{ backgroundColor: '#0f172a', borderRadius: '6px', padding: '0.75rem', border: '1px solid #334155' }}>
                       <strong style={{ color: '#38bdf8', fontSize: '0.85rem', display: 'block', marginBottom: '0.5rem' }}>
-                        {section.orderIndex + 1}. {section.title}
+                        {(section.orderIndex ?? sIdx) + 1}. {section.title}
                       </strong>
                       <ul style={{ margin: 0, paddingLeft: '1.2rem', color: '#cbd5e1', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         {section.items?.map((item, iIdx) => (
                           <li key={item.id || iIdx}>
-                            {item.text} {item.required && <span style={{ color: '#ef4444' }}>*</span>}
+                            {item.text || item.prompt} {item.required && <span style={{ color: '#ef4444' }}>*</span>}
                           </li>
                         ))}
                       </ul>
@@ -332,6 +376,60 @@ export const TemplatesPage = () => {
                 color: '#fff',
               }}
             />
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <label style={{ fontSize: '0.875rem', color: '#cbd5e1', fontWeight: 500 }}>
+                Perguntas do Checklist ({formData.sections[0].items.length})
+              </label>
+              <button
+                type="button"
+                onClick={handleAddItem}
+                className="toolbar-button"
+                style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+              >
+                + Adicionar Item
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {formData.sections[0].items.map((item, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    required
+                    value={item.text}
+                    onChange={(e) => handleItemTextChange(idx, e.target.value)}
+                    placeholder={`Pergunta #${idx + 1}`}
+                    style={{
+                      flex: 1,
+                      padding: '0.5rem 0.625rem',
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #334155',
+                      borderRadius: '6px',
+                      color: '#fff',
+                      fontSize: '0.85rem',
+                    }}
+                  />
+                  {formData.sections[0].items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(idx)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#ef4444',
+                        cursor: 'pointer',
+                        padding: '0.25rem',
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>

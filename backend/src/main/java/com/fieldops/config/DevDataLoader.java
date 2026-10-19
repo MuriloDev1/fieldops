@@ -52,7 +52,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .role(UserRole.ADMIN)
                 .status(UserStatus.ACTIVE)
                 .phone("(11) 99999-0001")
-                .version(1)
                 .build());
 
         User supervisor = userRepository.save(User.builder()
@@ -62,7 +61,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .role(UserRole.SUPERVISOR)
                 .status(UserStatus.ACTIVE)
                 .phone("(11) 99999-0002")
-                .version(1)
                 .build());
 
         User tecnico = userRepository.save(User.builder()
@@ -72,7 +70,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .role(UserRole.TECHNICIAN)
                 .status(UserStatus.ACTIVE)
                 .phone("(11) 99999-0003")
-                .version(1)
                 .build());
 
         // 2. Clientes
@@ -83,7 +80,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .email("contato@petrobras.com.br")
                 .phone("(11) 3000-1000")
                 .status(ClientStatus.ACTIVE)
-                .version(1)
                 .build());
 
         Client vale = clientRepository.save(Client.builder()
@@ -93,7 +89,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .email("operacoes@vale.com")
                 .phone("(27) 3333-2000")
                 .status(ClientStatus.ACTIVE)
-                .version(1)
                 .build());
 
         Client klabin = clientRepository.save(Client.builder()
@@ -103,7 +98,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .email("manutencao@klabin.com.br")
                 .phone("(42) 3271-5000")
                 .status(ClientStatus.ACTIVE)
-                .version(1)
                 .build());
 
         // 3. Locais / Plantas
@@ -114,7 +108,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .city("Cubatão")
                 .state("SP")
                 .status(SiteStatus.ACTIVE)
-                .version(1)
                 .build());
 
         InspectionSite tubarao = siteRepository.save(InspectionSite.builder()
@@ -124,7 +117,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .city("Vitória")
                 .state("ES")
                 .status(SiteStatus.ACTIVE)
-                .version(1)
                 .build());
 
         InspectionSite monteAlegre = siteRepository.save(InspectionSite.builder()
@@ -134,48 +126,85 @@ public class DevDataLoader implements CommandLineRunner {
                 .city("Telêmaco Borba")
                 .state("PR")
                 .status(SiteStatus.ACTIVE)
-                .version(1)
                 .build());
 
-        // 4. Equipamentos
+        // 4. Equipamentos (Web & Mobile Gizella)
         Equipment bomba = equipmentRepository.save(Equipment.builder()
                 .site(rpbc)
-                .name("Bomba Centrífuga KSB 01")
-                .qrCode("QR-KSB-01")
-                .manufacturer("KSB")
-                .model("Meganorm 125-250")
-                .status(EquipmentStatus.ACTIVE)
-                .version(1)
+                .name("Bomba Submersa 04")
+                .assetNumber("PAT-2023-001")
+                .serialNumber("SN-SUB-2023-88")
+                .qrCode("QR-BOMBA-04-ALPHA")
+                .manufacturer("Sulzer")
+                .model("ABS XFP")
+                .type("Bomba Hidráulica")
+                .description("Bomba submersível para escoamento de efluentes")
+                .status(EquipmentStatus.CRITICAL)
                 .build());
 
         Equipment painel = equipmentRepository.save(Equipment.builder()
                 .site(tubarao)
                 .name("Painel Elétrico CCM-02")
-                .qrCode("QR-CCM-02")
+                .assetNumber("PAT-2023-104")
+                .serialNumber("SN-PNL-2023-55")
+                .qrCode("PAIN-001")
                 .manufacturer("WEG")
                 .model("CCM 480V 60Hz")
+                .type("Painel de Automação")
+                .description("Painel principal de distribuição elétrica")
                 .status(EquipmentStatus.ACTIVE)
-                .version(1)
                 .build());
 
         Equipment caldeira = equipmentRepository.save(Equipment.builder()
                 .site(monteAlegre)
                 .name("Caldeira de Alta Pressão 03")
+                .assetNumber("PAT-2022-045")
+                .serialNumber("SN-CALD-2022-14")
                 .qrCode("QR-CALD-03")
                 .manufacturer("CBC")
                 .model("Vapor 120 ton/h")
-                .status(EquipmentStatus.ACTIVE)
-                .version(1)
+                .type("Vaso de Pressão")
+                .description("Caldeira industrial de alta pressão")
+                .status(EquipmentStatus.HIGH)
                 .build());
 
         Equipment compressor = equipmentRepository.save(Equipment.builder()
                 .site(rpbc)
-                .name("Compressor Principal GA 90")
-                .qrCode("QR-COMP-01")
+                .name("Compressor de Ar 01")
+                .assetNumber("COMP-001")
+                .serialNumber("SN-CMP-2023-01")
+                .qrCode("COMP-001")
                 .manufacturer("Atlas Copco")
                 .model("GA 90 VSD")
+                .type("Compressor de Ar")
+                .description("Compressor industrial de alta pressão - Galpão A, Setor 2")
                 .status(EquipmentStatus.ACTIVE)
-                .version(1)
+                .build());
+
+        equipmentRepository.save(Equipment.builder()
+                .site(tubarao)
+                .name("Esteira Transportadora A")
+                .assetNumber("EST-001")
+                .serialNumber("SN-COR-2021-99")
+                .qrCode("EST-001")
+                .manufacturer("Metso Outotec")
+                .model("TR-800")
+                .type("Esteira Industrial")
+                .description("Esteira da linha de produção principal - Galpão B, Setor 1")
+                .status(EquipmentStatus.ACTIVE)
+                .build());
+
+        equipmentRepository.save(Equipment.builder()
+                .site(monteAlegre)
+                .name("Empilhadeira Elétrica 03")
+                .assetNumber("EMP-001")
+                .serialNumber("SN-EMP-2023-03")
+                .qrCode("EMP-001")
+                .manufacturer("Toyota")
+                .model("8FBE18")
+                .type("Movimentação")
+                .description("Empilhadeira elétrica 2.5 toneladas - Pátio de Logística")
+                .status(EquipmentStatus.MAINTENANCE)
                 .build());
 
         // 5. Modelo de Checklist
@@ -185,7 +214,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .category("Mecânica")
                 .status(TemplateStatus.ACTIVE)
                 .createdBy(admin)
-                .version(1)
                 .build());
 
         InspectionTemplateVersion version = InspectionTemplateVersion.builder()
@@ -201,31 +229,34 @@ public class DevDataLoader implements CommandLineRunner {
         TemplateSection section1 = TemplateSection.builder()
                 .templateVersion(version)
                 .title("Inspeção Visual e Segurança")
-                .displayOrder(0)
+                .displayOrder(1)
                 .build();
 
         TemplateItem item1 = TemplateItem.builder()
                 .section(section1)
+                .code("ITEM-01")
                 .title("Equipamento desobstruído e limpo?")
-                .responseType(ResponseType.CONFORMITY)
-                .required(true)
-                .displayOrder(0)
-                .build();
-
-        TemplateItem item2 = TemplateItem.builder()
-                .section(section1)
-                .title("Presença de ruídos ou vibrações fora do padrão?")
                 .responseType(ResponseType.CONFORMITY)
                 .required(true)
                 .displayOrder(1)
                 .build();
 
-        TemplateItem item3 = TemplateItem.builder()
+        TemplateItem item2 = TemplateItem.builder()
                 .section(section1)
-                .title("Vazamento de fluido no selo mecânico?")
+                .code("ITEM-02")
+                .title("Presença de ruídos ou vibrações fora do padrão?")
                 .responseType(ResponseType.CONFORMITY)
                 .required(true)
                 .displayOrder(2)
+                .build();
+
+        TemplateItem item3 = TemplateItem.builder()
+                .section(section1)
+                .code("ITEM-03")
+                .title("Vazamento de fluido no selo mecânico?")
+                .responseType(ResponseType.CONFORMITY)
+                .required(true)
+                .displayOrder(3)
                 .build();
 
         section1.setItems(List.of(item1, item2, item3));
@@ -234,7 +265,7 @@ public class DevDataLoader implements CommandLineRunner {
 
         // 6. Demonstração de Inspeções em Diversos Estados do Ciclo de Vida (Task #34 e #51)
 
-        // 6.1 Inspeção 1: SCHEDULED (Agendada)
+        // 6.1 Inspeção 1: SCHEDULED / ASSIGNED (Agendada)
         Inspection insp1 = inspectionRepository.save(Inspection.builder()
                 .templateVersion(version)
                 .client(petrobras)
@@ -247,7 +278,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .scheduledFor(OffsetDateTime.now().plusDays(2))
                 .priority(InspectionPriority.HIGH)
                 .status(InspectionStatus.ASSIGNED)
-                .version(1)
                 .build());
 
         createItemSnapshots(insp1);
@@ -269,19 +299,20 @@ public class DevDataLoader implements CommandLineRunner {
                 .startedAtDevice(OffsetDateTime.now().minusHours(2))
                 .priority(InspectionPriority.CRITICAL)
                 .status(InspectionStatus.IN_PROGRESS)
-                .version(1)
                 .build());
 
         List<InspectionItemSnapshot> snaps2 = createItemSnapshots(insp2);
         recordAudit(insp2, supervisor, "INSPECTION_CREATED", OffsetDateTime.now().minusDays(1), "Agendamento de emergência por indicação termográfica.");
         recordAudit(insp2, supervisor, "INSPECTION_ASSIGNED", OffsetDateTime.now().minusDays(1), "Atribuída ao técnico Carlos Lima.");
-        recordAudit(insp2, tecnico, "INSPECTION_STARTED", OffsetDateTime.now().minusHours(2), "Check-in realizado com leitura de QR Code QR-CCM-02.");
+        recordAudit(insp2, tecnico, "INSPECTION_STARTED", OffsetDateTime.now().minusHours(2), "Check-in realizado com leitura de QR Code PAIN-001.");
 
         // Resposta parcial
         if (!snaps2.isEmpty()) {
             responseRepository.save(InspectionResponse.builder()
                     .inspection(insp2)
                     .inspectionItem(snaps2.get(0))
+                    .valueText("Sim")
+                    .valueBoolean(true)
                     .conformity(ConformityStatus.CONFORMING)
                     .answeredBy(tecnico)
                     .answeredAtDevice(OffsetDateTime.now().minusMinutes(90))
@@ -305,7 +336,6 @@ public class DevDataLoader implements CommandLineRunner {
                 .completedAtDevice(OffsetDateTime.now().minusHours(3))
                 .priority(InspectionPriority.HIGH)
                 .status(InspectionStatus.SUBMITTED)
-                .version(1)
                 .build());
 
         List<InspectionItemSnapshot> snaps3 = createItemSnapshots(insp3);
@@ -319,6 +349,8 @@ public class DevDataLoader implements CommandLineRunner {
             responseRepository.save(InspectionResponse.builder()
                     .inspection(insp3)
                     .inspectionItem(snaps3.get(0))
+                    .valueText("Sim")
+                    .valueBoolean(true)
                     .conformity(ConformityStatus.CONFORMING)
                     .answeredBy(tecnico)
                     .build());
@@ -326,6 +358,8 @@ public class DevDataLoader implements CommandLineRunner {
             InspectionResponse respFailure = responseRepository.save(InspectionResponse.builder()
                     .inspection(insp3)
                     .inspectionItem(snaps3.get(1))
+                    .valueText("Não")
+                    .valueBoolean(false)
                     .conformity(ConformityStatus.NON_CONFORMING)
                     .observation("Vibração anômala detectada no rotor principal (acima de 4.5 mm/s).")
                     .answeredBy(tecnico)
@@ -334,6 +368,8 @@ public class DevDataLoader implements CommandLineRunner {
             responseRepository.save(InspectionResponse.builder()
                     .inspection(insp3)
                     .inspectionItem(snaps3.get(2))
+                    .valueText("Sim")
+                    .valueBoolean(true)
                     .conformity(ConformityStatus.CONFORMING)
                     .answeredBy(tecnico)
                     .build());
@@ -365,12 +401,23 @@ public class DevDataLoader implements CommandLineRunner {
                 .startedAtServer(OffsetDateTime.now().minusDays(3).plusHours(2))
                 .submittedAtServer(OffsetDateTime.now().minusDays(3).plusHours(4))
                 .completedAtDevice(OffsetDateTime.now().minusDays(3).plusHours(4))
+                .approvedAt(OffsetDateTime.now().minusDays(3).plusHours(6))
                 .priority(InspectionPriority.MEDIUM)
                 .status(InspectionStatus.APPROVED)
-                .version(1)
                 .build());
 
-        createItemSnapshots(insp4);
+        List<InspectionItemSnapshot> snaps4 = createItemSnapshots(insp4);
+        for (InspectionItemSnapshot s4 : snaps4) {
+            responseRepository.save(InspectionResponse.builder()
+                    .inspection(insp4)
+                    .inspectionItem(s4)
+                    .valueText("Sim")
+                    .valueBoolean(true)
+                    .conformity(ConformityStatus.CONFORMING)
+                    .observation("Conforme especificação técnica.")
+                    .answeredBy(tecnico)
+                    .build());
+        }
         recordAudit(insp4, supervisor, "INSPECTION_CREATED", OffsetDateTime.now().minusDays(4), "Inspeção criada.");
         recordAudit(insp4, supervisor, "INSPECTION_ASSIGNED", OffsetDateTime.now().minusDays(4), "Atribuída ao técnico.");
         recordAudit(insp4, tecnico, "INSPECTION_STARTED", OffsetDateTime.now().minusDays(3).plusHours(2), "Execução iniciada.");
@@ -382,6 +429,7 @@ public class DevDataLoader implements CommandLineRunner {
                 .inspection(insp4)
                 .reviewer(supervisor)
                 .decision(ReviewDecision.APPROVED)
+                .reason("Todos os parâmetros verificados estão dentro das normas operacionais.")
                 .comments("Todos os parâmetros verificados estão dentro das normas operacionais.")
                 .reviewedAt(OffsetDateTime.now().minusDays(3).plusHours(6))
                 .reviewCycle(1)
@@ -403,10 +451,32 @@ public class DevDataLoader implements CommandLineRunner {
                 .completedAtDevice(OffsetDateTime.now().minusDays(5).plusHours(3))
                 .priority(InspectionPriority.HIGH)
                 .status(InspectionStatus.REJECTED)
-                .version(1)
                 .build());
 
-        createItemSnapshots(insp5);
+        List<InspectionItemSnapshot> snaps5 = createItemSnapshots(insp5);
+        if (!snaps5.isEmpty()) {
+            InspectionResponse r5 = responseRepository.save(InspectionResponse.builder()
+                    .inspection(insp5)
+                    .inspectionItem(snaps5.get(0))
+                    .valueText("Não")
+                    .valueBoolean(false)
+                    .conformity(ConformityStatus.NON_CONFORMING)
+                    .observation("Aquecimento anômalo verificado na borneira secundária.")
+                    .answeredBy(tecnico)
+                    .build());
+
+            nonConformityRepository.save(NonConformity.builder()
+                    .inspection(insp5)
+                    .inspectionItem(snaps5.get(0))
+                    .response(r5)
+                    .title("Aquecimento anômalo na borneira secundária")
+                    .description("Temperatura elevada sem evidência fotográfica anexada.")
+                    .severity(NonConformitySeverity.CRITICAL)
+                    .status(NonConformityStatus.OPEN)
+                    .createdBy(tecnico)
+                    .createdAtDevice(OffsetDateTime.now().minusDays(5).plusHours(3))
+                    .build());
+        }
         recordAudit(insp5, supervisor, "INSPECTION_CREATED", OffsetDateTime.now().minusDays(6), "Inspeção criada.");
         recordAudit(insp5, supervisor, "INSPECTION_ASSIGNED", OffsetDateTime.now().minusDays(6), "Atribuída ao técnico.");
         recordAudit(insp5, tecnico, "INSPECTION_STARTED", OffsetDateTime.now().minusDays(5).plusHours(1), "Execução iniciada.");
@@ -431,37 +501,41 @@ public class DevDataLoader implements CommandLineRunner {
         InspectionItemSnapshot s1 = snapshotRepository.save(InspectionItemSnapshot.builder()
                 .inspection(inspection)
                 .sectionTitle("Inspeção Visual e Segurança")
-                .sectionOrder(0)
+                .sectionOrder(1)
+                .itemCode("ITEM-01")
                 .itemTitle("Equipamento desobstruído e limpo?")
-                .responseType(ResponseType.CONFORMITY)
-                .required(true)
-                .itemOrder(0)
-                .build());
-
-        InspectionItemSnapshot s2 = snapshotRepository.save(InspectionItemSnapshot.builder()
-                .inspection(inspection)
-                .sectionTitle("Inspeção Visual e Segurança")
-                .sectionOrder(0)
-                .itemTitle("Presença de ruídos ou vibrações fora do padrão?")
                 .responseType(ResponseType.CONFORMITY)
                 .required(true)
                 .itemOrder(1)
                 .build());
 
-        InspectionItemSnapshot s3 = snapshotRepository.save(InspectionItemSnapshot.builder()
+        InspectionItemSnapshot s2 = snapshotRepository.save(InspectionItemSnapshot.builder()
                 .inspection(inspection)
                 .sectionTitle("Inspeção Visual e Segurança")
-                .sectionOrder(0)
-                .itemTitle("Vazamento de fluido no selo mecânico?")
+                .sectionOrder(1)
+                .itemCode("ITEM-02")
+                .itemTitle("Presença de ruídos ou vibrações fora do padrão?")
                 .responseType(ResponseType.CONFORMITY)
                 .required(true)
                 .itemOrder(2)
+                .build());
+
+        InspectionItemSnapshot s3 = snapshotRepository.save(InspectionItemSnapshot.builder()
+                .inspection(inspection)
+                .sectionTitle("Inspeção Visual e Segurança")
+                .sectionOrder(1)
+                .itemCode("ITEM-03")
+                .itemTitle("Vazamento de fluido no selo mecânico?")
+                .responseType(ResponseType.CONFORMITY)
+                .required(true)
+                .itemOrder(3)
                 .build());
 
         return List.of(s1, s2, s3);
     }
 
     private void recordAudit(Inspection inspection, User actor, String action, OffsetDateTime occurredAt, String details) {
+        String safeJson = "{\"details\":\"" + (details != null ? details.replace("\"", "\\\"") : "") + "\"}";
         AuditEvent event = AuditEvent.builder()
                 .inspection(inspection)
                 .actor(actor)
@@ -469,7 +543,7 @@ public class DevDataLoader implements CommandLineRunner {
                 .entityType("INSPECTION")
                 .entityId(inspection.getId())
                 .occurredAt(occurredAt)
-                .metadataJson(details)
+                .metadataJson(safeJson)
                 .build();
         auditEventRepository.save(event);
     }

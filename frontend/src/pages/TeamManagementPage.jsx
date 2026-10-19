@@ -3,12 +3,12 @@ import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
 import { StatusBadge } from '../shared/components/StatusBadge';
 import { usersApi } from '../core/services/api';
-import { UserPlus, Mail, Phone, Shield } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 
 const fallbackTeam = [
-  { id: '1', name: 'Administrador do Sistema', email: 'admin@fieldops.com', role: 'ADMIN', status: 'ACTIVE', phone: '(11) 99999-0001' },
-  { id: '2', name: 'Roberto Silva', email: 'supervisor@fieldops.com', role: 'SUPERVISOR', status: 'ACTIVE', phone: '(11) 99999-0002' },
-  { id: '3', name: 'Carlos Lima', email: 'tecnico@fieldops.com', role: 'TECHNICIAN', status: 'ACTIVE', phone: '(11) 99999-0003' },
+  { id: '1', name: 'Carlos Lima', email: 'tecnico@fieldops.com', role: 'TECHNICIAN', region: 'Refinaria Central', completed: 142, status: 'ACTIVE', phone: '(11) 99999-0003' },
+  { id: '2', name: 'Roberto Silva', email: 'supervisor@fieldops.com', role: 'SUPERVISOR', region: 'Terminal Sul', completed: 210, status: 'ACTIVE', phone: '(11) 99999-0002' },
+  { id: '3', name: 'Administrador do Sistema', email: 'admin@fieldops.com', role: 'ADMIN', region: 'Matriz Operacional', completed: 98, status: 'ACTIVE', phone: '(11) 99999-0001' },
 ];
 
 const roleLabels = {
@@ -115,14 +115,19 @@ export const TeamManagementPage = () => {
       ),
     },
     {
-      header: 'Função',
+      header: 'Especialidade',
       key: 'role',
       render: (val) => roleLabels[val] || val,
     },
     {
-      header: 'Telefone',
-      key: 'phone',
-      render: (val) => val || '-',
+      header: 'Região',
+      key: 'region',
+      render: (val) => val || 'Refinaria Central',
+    },
+    {
+      header: 'Inspeções Realizadas',
+      key: 'completed',
+      render: (val) => val ?? 0,
     },
     {
       header: 'Status',
@@ -136,7 +141,7 @@ export const TeamManagementPage = () => {
       <div className="page-title-wrap" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1>Gestão de Equipe</h1>
-          <p>Acompanhamento de técnicos de campo, supervisores e credenciais de acesso.</p>
+          <p>Acompanhamento de técnicos de campo e distribuição de trabalho.</p>
         </div>
 
         <button
@@ -161,7 +166,7 @@ export const TeamManagementPage = () => {
       </div>
 
       <DataTable
-        title="Membros da Equipe"
+        title="Técnicos de Campo"
         columns={columns}
         data={users}
         totalCount={users.length}
@@ -330,6 +335,8 @@ export const TeamManagementPage = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', color: '#94a3b8', fontSize: '0.875rem' }}>
                 <span>✉ {selectedUser.email}</span>
                 <span>📞 {selectedUser.phone || 'Sem telefone cadastrado'}</span>
+                <span>📍 Região: {selectedUser.region || 'Refinaria Central'}</span>
+                <span>✓ Inspeções Realizadas: {selectedUser.completed ?? 0}</span>
               </div>
             </div>
 
@@ -360,3 +367,5 @@ export const TeamManagementPage = () => {
     </>
   );
 };
+
+export default TeamManagementPage;

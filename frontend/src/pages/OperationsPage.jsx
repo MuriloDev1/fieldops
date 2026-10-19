@@ -12,7 +12,7 @@ import {
   reviewsApi
 } from '../core/services/api';
 import { InspectionTimeline } from '../shared/components/InspectionTimeline';
-import { Plus, CheckCircle2, XCircle, Play, Eye } from 'lucide-react';
+import { Plus, CheckCircle2, XCircle, Play, Send } from 'lucide-react';
 
 const priorityTones = {
   LOW: { label: 'Baixa', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
@@ -22,11 +22,14 @@ const priorityTones = {
 };
 
 const statusLabels = {
+  ASSIGNED: 'Atribuída',
   SCHEDULED: 'Agendada',
   IN_PROGRESS: 'Em Andamento',
   SUBMITTED: 'Em Revisão',
+  UNDER_REVIEW: 'Em Revisão',
   APPROVED: 'Aprovada',
   REJECTED: 'Reprovada',
+  CANCELED: 'Cancelada',
   CANCELLED: 'Cancelada',
 };
 
@@ -90,6 +93,7 @@ export const OperationsPage = () => {
   // Drawers & Modals
   const [isNewDrawerOpen, setIsNewDrawerOpen] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState(null);
+  const [checklistAnswers, setChecklistAnswers] = useState({});
   const [reviewReason, setReviewReason] = useState('');
   const [isReviewing, setIsReviewing] = useState(false);
 
@@ -157,6 +161,28 @@ export const OperationsPage = () => {
     (e) => (e.siteId || e.locationId) === formData.siteId
   );
 
+  const handleOpenInspection = async (row) => {
+    setSelectedInspection(row);
+    setReviewReason('');
+    try {
+      const detail = await inspectionsApi.getById(row.id);
+      if (detail) {
+        setSelectedInspection(detail);
+        const initialAnswers = {};
+        (detail.items || []).forEach((item) => {
+          initialAnswers[item.id] = {
+            compliant: item.compliant !== null && item.compliant !== undefined ? item.compliant : true,
+            observation: item.observation || '',
+            answerJson: item.answerJson || 'CONFORM',
+          };
+        });
+        setChecklistAnswers(initialAnswers);
+      }
+    } catch (err) {
+      console.warn('Usando dados resumidos da inspeção:', err);
+    }
+  };
+
   const handleCreateInspection = async (e) => {
     e.preventDefault();
     if (!formData.clientId || !formData.siteId) {
@@ -169,6 +195,7 @@ export const OperationsPage = () => {
         clientId: formData.clientId,
         siteId: formData.siteId,
         equipmentId: formData.equipmentId || null,
+        templateId: formData.templateId || null,
         technicianId: formData.technicianId || null,
         scheduledDate: formData.scheduledDate,
         priority: formData.priority,
@@ -188,10 +215,42 @@ export const OperationsPage = () => {
     try {
       const updated = await inspectionsApi.start(id);
       setInspections((prev) => prev.map((item) => (item.id === id ? updated : item)));
-      if (selectedInspection?.id === id) setSelectedInspection(updated);
-      alert('Inspeção iniciada com sucesso!');
+      setSelectedInspection(updated);
+      const initialAnswers = {};
+      (updated.items || []).forEach((item) => {
+        initialAnswers[item.id] = {
+          compliant: item.compliant !== null && item.compliant !== undefined ? item.compliant : true,
+          observation: item.observation || '',
+          answerJson: item.answerJson || 'CONFORM',
+        };
+      });
+      setChecklistAnswers(initialAnswers);
     } catch (err) {
       alert('Erro ao iniciar: ' + err.message);
+    }
+  };
+
+  const handleSubmitInspection = async (id) => {
+    try {
+      setIsReviewing(true);
+      const items = selectedInspection?.items || [];
+      const answersPayload = items.map((item) => {
+        const ans = checklistAnswers[item.id] || { compliant: true, observation: '' };
+        return {
+          snapshotItemId: item.id,
+          answerJson: ans.compliant ? 'CONFORM' : 'NON_CONFORM',
+          compliant: ans.compliant,
+          observation: ans.observation || '',
+        };
+      });
+      const updated = await inspectionsApi.submit(id, answersPayload);
+      setInspections((prev) => prev.map((item) => (item.id === id ? updated : item)));
+      setSelectedInspection(updated);
+      alert('Checklist enviado para revisão do supervisor!');
+    } catch (err) {
+      alert('Erro ao submeter checklist: ' + err.message);
+    } finally {
+      setIsReviewing(false);
     }
   };
 
@@ -242,7 +301,7 @@ export const OperationsPage = () => {
       key: 'templateTitle',
       render: (val, row) => (
         <div>
-          <strong style={{ color: '#f8fafc', display: 'block' }}>{val || row.title || 'Checklist Padrão'}</strong>
+          <strong style={{ color: '#f8fafc', display: 'block' }}>{val || row.templateVersionTitle || row.title || 'Checklist Padrão'}</strong>
           <small style={{ color: '#94a3b8' }}>{row.clientName} • {row.siteName}</small>
         </div>
       ),
@@ -269,6 +328,7 @@ export const OperationsPage = () => {
     {
       header: 'Data Prevista',
       key: 'scheduledDate',
+      render: (val, row) => val || (row.scheduledFor ? row.scheduledFor.substring(0, 10) : '-'),
     },
     {
       header: 'Prioridade',
@@ -296,11 +356,11 @@ export const OperationsPage = () => {
       key: 'status',
       render: (val) => {
         let badgeStatus = 'Pendente';
-        if (val === 'IN_PROGRESS') badgeStatus = 'Atrasado'; // tone warning
-        if (val === 'SUBMITTED') badgeStatus = 'Em Revisão';
+        if (val === 'IN_PROGRESS') badgeStatus = 'Atrasado';
+        if (val === 'SUBMITTED' || val === 'UNDER_REVIEW') badgeStatus = 'Em Revisão';
         if (val === 'APPROVED') badgeStatus = 'OK';
         if (val === 'REJECTED') badgeStatus = 'Crítico';
-        if (val === 'CANCELLED') badgeStatus = 'Desativado';
+        if (val === 'CANCELLED' || val === 'CANCELED') badgeStatus = 'Desativado';
         return <StatusBadge status={badgeStatus} />;
       },
     },
@@ -341,7 +401,7 @@ export const OperationsPage = () => {
         data={inspections}
         totalCount={inspections.length}
         currentPage={1}
-        onRowAction={(row) => setSelectedInspection(row)}
+        onRowAction={handleOpenInspection}
       />
 
       {/* Modal Drawer: Agendar Nova Inspeção */}
@@ -600,7 +660,7 @@ export const OperationsPage = () => {
                 </span>
               </div>
               <h3 style={{ margin: '0 0 0.5rem 0', color: '#fff', fontSize: '1.1rem' }}>
-                {selectedInspection.templateTitle || 'Checklist Operacional'}
+                {selectedInspection.templateTitle || selectedInspection.templateVersionTitle || 'Checklist Operacional'}
               </h3>
               <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem' }}>
                 {selectedInspection.clientName} • {selectedInspection.siteName}
@@ -616,7 +676,7 @@ export const OperationsPage = () => {
               <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px' }}>
                 <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>Progresso Itens</span>
                 <strong style={{ color: '#fff', fontSize: '1.1rem' }}>
-                  {selectedInspection.answeredCount || 0} / {selectedInspection.itemsCount || 0}
+                  {selectedInspection.answeredCount || 0} / {selectedInspection.itemsCount || (selectedInspection.items?.length || 0)}
                 </strong>
               </div>
               <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px' }}>
@@ -627,7 +687,7 @@ export const OperationsPage = () => {
               </div>
             </div>
 
-            {selectedInspection.status === 'SCHEDULED' && (
+            {(selectedInspection.status === 'SCHEDULED' || selectedInspection.status === 'ASSIGNED') && (
               <div style={{ marginTop: '1rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
                 <p style={{ fontSize: '0.875rem', color: '#cbd5e1' }}>
                   Esta inspeção está agendada e pronta para início em campo.
@@ -656,7 +716,120 @@ export const OperationsPage = () => {
               </div>
             )}
 
-            {selectedInspection.status === 'SUBMITTED' && (
+            {(selectedInspection.status === 'IN_PROGRESS' || selectedInspection.status === 'REJECTED') &&
+              Array.isArray(selectedInspection.items) &&
+              selectedInspection.items.length > 0 && (
+                <div style={{ marginTop: '0.5rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
+                  <h4 style={{ margin: '0 0 0.75rem 0', color: '#38bdf8', fontSize: '0.95rem' }}>
+                    Execução do Checklist Imutável
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                    {selectedInspection.items.map((item) => {
+                      const currentAns = checklistAnswers[item.id] || { compliant: true, observation: '' };
+                      return (
+                        <div key={item.id} style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                          <div style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 500, marginBottom: '0.5rem' }}>
+                            {item.prompt || item.text}
+                          </div>
+                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setChecklistAnswers((prev) => ({
+                                  ...prev,
+                                  [item.id]: { ...currentAns, compliant: true },
+                                }))
+                              }
+                              style={{
+                                flex: 1,
+                                padding: '0.35rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                borderRadius: '4px',
+                                border: '1px solid',
+                                borderColor: currentAns.compliant ? '#10b981' : '#334155',
+                                backgroundColor: currentAns.compliant ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
+                                color: currentAns.compliant ? '#34d399' : '#94a3b8',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              ✓ Conforme
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setChecklistAnswers((prev) => ({
+                                  ...prev,
+                                  [item.id]: { ...currentAns, compliant: false },
+                                }))
+                              }
+                              style={{
+                                flex: 1,
+                                padding: '0.35rem',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                borderRadius: '4px',
+                                border: '1px solid',
+                                borderColor: !currentAns.compliant ? '#ef4444' : '#334155',
+                                backgroundColor: !currentAns.compliant ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+                                color: !currentAns.compliant ? '#f87171' : '#94a3b8',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              ✕ Não Conforme
+                            </button>
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Observação técnica (opcional)..."
+                            value={currentAns.observation}
+                            onChange={(e) =>
+                              setChecklistAnswers((prev) => ({
+                                ...prev,
+                                [item.id]: { ...currentAns, observation: e.target.value },
+                              }))
+                            }
+                            style={{
+                              width: '100%',
+                              padding: '0.4rem 0.6rem',
+                              backgroundColor: '#1e293b',
+                              border: '1px solid #334155',
+                              borderRadius: '4px',
+                              color: '#fff',
+                              fontSize: '0.8rem',
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isReviewing}
+                    onClick={() => handleSubmitInspection(selectedInspection.id)}
+                    style={{
+                      width: '100%',
+                      marginTop: '0.75rem',
+                      padding: '0.75rem',
+                      backgroundColor: '#0284c7',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <Send size={16} />
+                    Finalizar e Enviar para Revisão
+                  </button>
+                </div>
+              )}
+
+            {(selectedInspection.status === 'SUBMITTED' || selectedInspection.status === 'UNDER_REVIEW') && (
               <div style={{ marginTop: '1rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
                 <h4 style={{ margin: '0 0 0.5rem 0', color: '#fbbf24' }}>Revisão de Auditoria (Supervisor)</h4>
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
@@ -742,3 +915,5 @@ export const OperationsPage = () => {
     </>
   );
 };
+
+export default OperationsPage;

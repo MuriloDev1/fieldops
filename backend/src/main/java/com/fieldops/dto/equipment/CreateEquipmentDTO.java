@@ -17,13 +17,15 @@ public class CreateEquipmentDTO {
     @NotBlank(message = "O nome do equipamento é obrigatório")
     private String name;
 
+    private String code; // Enviado pelo app mobile (gizella)
     private String qrCode;
-    private String qrCodeId; // Permite envio direto do front-end
+    private String qrCodeId; // Permite envio direto do front-end web
 
     private String type; // Categoria do equipamento
 
     private UUID siteId;
-    private UUID locationId; // Permite envio direto do front-end
+    private UUID locationId; // Permite envio direto do front-end web
+    private String location; // Nome do local enviado pelo app mobile (gizella)
 
     private String serialNumber;
     private String assetNumber;
@@ -37,6 +39,9 @@ public class CreateEquipmentDTO {
     }
 
     public String getEffectiveQrCode() {
-        return qrCode != null && !qrCode.isBlank() ? qrCode : qrCodeId;
+        if (qrCode != null && !qrCode.isBlank()) return qrCode.trim();
+        if (qrCodeId != null && !qrCodeId.isBlank()) return qrCodeId.trim();
+        if (code != null && !code.isBlank()) return code.trim();
+        return null;
     }
 }

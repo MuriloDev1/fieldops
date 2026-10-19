@@ -33,17 +33,21 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .authorizeHttpRequests(auth -> auth
-                        // Rotas públicas de documentação e autenticação
+                        // Rotas públicas de documentação, autenticação e compatibilidade Mobile/Web
                         .requestMatchers(
+                                "/auth/**",
+                                "/equipments/**",
+                                "/inspections/**",
                                 "/api/v1/auth/**",
+                                "/api/v1/**",
+                                "/h2-console/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**",
                                 "/actuator/health"
                         ).permitAll()
-                        // Rotas abertas para integração com front-end (desenvolvimento)
-                        .requestMatchers("/api/v1/**").permitAll()
                         // Demais rotas requerem autenticação
                         .anyRequest().authenticated()
                 )

@@ -17,7 +17,7 @@ public interface InspectionTemplateVersionRepository extends JpaRepository<Inspe
 
     Optional<InspectionTemplateVersion> findByTemplateIdAndVersionNumber(UUID templateId, Integer versionNumber);
 
-    @Query("SELECT v FROM InspectionTemplateVersion v LEFT JOIN FETCH v.sections s LEFT JOIN FETCH s.items WHERE v.id = :id")
+    @Query("SELECT DISTINCT v FROM InspectionTemplateVersion v LEFT JOIN FETCH v.sections s WHERE v.id = :id")
     Optional<InspectionTemplateVersion> findByIdWithSectionsAndItems(@Param("id") UUID id);
 
     Optional<InspectionTemplateVersion> findFirstByTemplateIdAndActiveForNewInspectionsTrueOrderByVersionNumberDesc(UUID templateId);

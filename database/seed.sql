@@ -12,8 +12,8 @@
 INSERT INTO users (id, name, email, password_hash, role, status, phone)
 VALUES 
     ('90000000-0000-0000-0000-000000000001', 'Administrador Geral', 'admin@fieldops.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'ADMIN', 'ACTIVE', '(11) 98765-4321'),
-    ('90000000-0000-0000-0000-000000000002', 'Supervisor Profile', 'supervisor@fieldops.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'SUPERVISOR', 'ACTIVE', '(11) 98888-1111'),
-    ('90000000-0000-0000-0000-000000000003', 'Carlos Técnico', 'tecnico@fieldops.local', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'TECHNICIAN', 'ACTIVE', '(11) 97777-2222')
+    ('90000000-0000-0000-0000-000000000002', 'Roberto Silva', 'supervisor@fieldops.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'SUPERVISOR', 'ACTIVE', '(11) 98888-1111'),
+    ('90000000-0000-0000-0000-000000000003', 'Carlos Lima', 'tecnico@fieldops.com', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', 'TECHNICIAN', 'ACTIVE', '(11) 97777-2222')
 ON CONFLICT (email) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
@@ -39,15 +39,17 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
--- 4. Equipamentos
+-- 4. Equipamentos (Compatível com Web e Mobile Gizella)
 -- -----------------------------------------------------------------------------
 INSERT INTO equipment (id, site_id, name, asset_number, serial_number, manufacturer, model, type, description, qr_code, status, installed_at)
 VALUES 
     ('e1111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'Bomba Submersa 04', 'PAT-2023-001', 'SN-SUB-2023-88', 'Sulzer', 'ABS XFP', 'Bomba Hidráulica', 'Bomba submersível para escoamento de efluentes', 'QR-BOMBA-04-ALPHA', 'CRITICAL', '2023-01-15'),
     ('e2222222-2222-2222-2222-222222222222', 'a2222222-2222-2222-2222-222222222222', 'Válvula de Pressão B', 'PAT-2022-045', 'SN-VAL-2022-14', 'Emerson', 'Fisher 657', 'Válvula de Segurança', 'Válvula de alívio e controle de alta pressão', 'QR-VALV-02-CENTRAL', 'HIGH', '2022-06-20'),
-    ('e3333333-3333-3333-3333-333333333333', 'a3333333-3333-3333-3333-333333333333', 'Correia Transportadora 2', 'PAT-2021-089', 'SN-COR-2021-99', 'Metso Outotec', 'TR-800', 'Esteira Industrial', 'Correia transportadora de granéis sólidos', 'QR-CORR-02-MARITIMO', 'LOW', '2021-11-10'),
-    ('e4444444-4444-4444-4444-444444444444', 'a4444444-4444-4444-4444-444444444444', 'Compressor Principal', 'PAT-2023-012', 'SN-CMP-2023-01', 'Atlas Copco', 'GA 90 VSD', 'Compressor de Ar', 'Compressor de ar rotativo de parafuso', 'QR-COMP-01-CARAJAS', 'HIGH', '2023-03-05'),
-    ('e5555555-5555-5555-5555-555555555555', 'a5555555-5555-5555-5555-555555555555', 'Painel Elétrico Leste', 'PAT-2023-104', 'SN-PNL-2023-55', 'WEG', 'CCM-01', 'Painel de Automação', 'Painel de distribuição e comando de motores', 'QR-PAINEL-LESTE-KLABIN', 'CRITICAL', '2023-08-18')
+    ('e3333333-3333-3333-3333-333333333333', 'a3333333-3333-3333-3333-333333333333', 'Correia Transportadora 2', 'EST-001', 'SN-COR-2021-99', 'Metso Outotec', 'TR-800', 'Esteira Industrial', 'Esteira da linha de produção principal', 'EST-001', 'LOW', '2021-11-10'),
+    ('e4444444-4444-4444-4444-444444444444', 'a4444444-4444-4444-4444-444444444444', 'Compressor Principal', 'COMP-001', 'SN-CMP-2023-01', 'Atlas Copco', 'GA 90 VSD', 'Compressor de Ar', 'Compressor industrial de alta pressão', 'COMP-001', 'HIGH', '2023-03-05'),
+    ('e5555555-5555-5555-5555-555555555555', 'a5555555-5555-5555-5555-555555555555', 'Painel Elétrico Leste', 'PAIN-001', 'SN-PNL-2023-55', 'WEG', 'CCM-01', 'Painel de Automação', 'Painel principal de distribuição elétrica', 'PAIN-001', 'CRITICAL', '2023-08-18'),
+    ('e6666666-6666-6666-6666-666666666666', 'a4444444-4444-4444-4444-444444444444', 'Empilhadeira Elétrica 03', 'EMP-001', 'SN-EMP-2023-03', 'Toyota', '8FBE18', 'Movimentação', 'Empilhadeira elétrica 2.5 toneladas', 'EMP-001', 'MAINTENANCE', '2023-05-12'),
+    ('e7777777-7777-7777-7777-777777777777', 'a5555555-5555-5555-5555-555555555555', 'Máquina de Solda MIG', 'SOLD-001', 'SN-SLD-2022-09', 'Esab', 'Smashweld 250', 'Soldagem', 'Equipamento de solda industrial', 'SOLD-001', 'ACTIVE', '2022-09-01')
 ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------

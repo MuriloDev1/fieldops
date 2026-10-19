@@ -17,6 +17,7 @@ public class EquipmentResponseDTO {
 
     private UUID id;
     private String name;
+    private String code; // Compatibilidade com mobile (gizella)
     private String qrCode;
     private String qrCodeId; // Conveniência para EquipmentPage do front-end
     private String type;
@@ -24,6 +25,7 @@ public class EquipmentResponseDTO {
     private String customerName;
     private UUID locationId; // Conveniência (siteId)
     private UUID siteId;
+    private String location; // Compatibilidade com mobile (gizella)
     private String locationName;
     private String siteName;
     private String serialNumber;
@@ -56,6 +58,7 @@ public class EquipmentResponseDTO {
         return EquipmentResponseDTO.builder()
                 .id(eq.getId())
                 .name(eq.getName())
+                .code(eq.getQrCode())
                 .qrCode(eq.getQrCode())
                 .qrCodeId(eq.getQrCode())
                 .type(eq.getType() != null ? eq.getType() : "Equipamento Geral")
@@ -63,6 +66,7 @@ public class EquipmentResponseDTO {
                 .customerName(clientName)
                 .locationId(sId)
                 .siteId(sId)
+                .location(siteName)
                 .locationName(siteName)
                 .siteName(siteName)
                 .serialNumber(eq.getSerialNumber())

@@ -3,10 +3,12 @@ package com.fieldops.service;
 import com.fieldops.common.exception.ConflictException;
 import com.fieldops.common.exception.ResourceNotFoundException;
 import com.fieldops.domain.entity.User;
+import com.fieldops.domain.enums.InspectionStatus;
 import com.fieldops.domain.enums.UserRole;
 import com.fieldops.domain.enums.UserStatus;
 import com.fieldops.dto.auth.CreateUserDTO;
 import com.fieldops.dto.auth.UserResponseDTO;
+import com.fieldops.repository.InspectionRepository;
 import com.fieldops.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,12 +23,13 @@ import java.util.UUID;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final InspectionRepository inspectionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<UserResponseDTO> listAll() {
         return userRepository.findAll().stream()
-                .map(UserResponseDTO::fromEntity)
+                .map(this::toDto)
                 .toList();
     }
 
@@ -34,7 +37,7 @@ public class UserService {
     public UserResponseDTO getById(UUID id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "Usuário não encontrado"));
-        return UserResponseDTO.fromEntity(user);
+        return toDto(user);
     }
 
     @Transactional
@@ -58,10 +61,9 @@ public class UserService {
                 .role(role)
                 .status(UserStatus.ACTIVE)
                 .phone(dto.getPhone())
-                .version(1)
                 .build();
 
-        return UserResponseDTO.fromEntity(userRepository.save(user));
+        return toDto(userRepository.save(user));
     }
 
     @Transactional
@@ -69,6 +71,18 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "Usuário não encontrado"));
         user.setStatus(status);
-        return UserResponseDTO.fromEntity(userRepository.save(user));
+        return toDto(userRepository.save(user));
+    }
+
+    private UserResponseDTO toDto(User user) {
+        long completed = inspectionRepository.findByTechnicianIdOrderByScheduledForDesc(user.getId()).stream()
+                .filter(i -> i.getStatus() == InspectionStatus.APPROVED || i.getStatus() == InspectionStatus.SUBMITTED)
+                .count();
+        String region = switch (user.getRole()) {
+            case ADMIN -> "Nacional / Matriz";
+            case SUPERVISOR -> "Sudeste / Regional";
+            default -> "Sudeste / Operação Campo";
+        };
+        return UserResponseDTO.fromEntity(user, completed, region);
     }
 }

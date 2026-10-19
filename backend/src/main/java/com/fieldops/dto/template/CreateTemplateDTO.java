@@ -20,7 +20,6 @@ public class CreateTemplateDTO {
 
     private String description;
 
-    @NotBlank(message = "A categoria é obrigatória")
     private String category;
 
     @Builder.Default
@@ -34,6 +33,7 @@ public class CreateTemplateDTO {
         private String title;
         private String description;
         private int displayOrder;
+        private Integer orderIndex;
         @Builder.Default
         private List<CreateItemDTO> items = new ArrayList<>();
     }
@@ -45,6 +45,7 @@ public class CreateTemplateDTO {
     public static class CreateItemDTO {
         private String code;
         private String title;
+        private String text;
         private String description;
         private String responseType;
         private boolean required;
@@ -52,5 +53,6 @@ public class CreateTemplateDTO {
         private boolean evidenceRequiredOnFailure;
         private String optionsJson;
         private int displayOrder;
+        private Integer orderIndex;
     }
 }

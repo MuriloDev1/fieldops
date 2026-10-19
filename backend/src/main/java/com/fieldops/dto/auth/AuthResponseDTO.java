@@ -11,8 +11,13 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AuthResponseDTO {
 
+    private String token;
     private String accessToken;
     private String refreshToken;
     private long expiresIn;
     private UserResponseDTO user;
+
+    public String getToken() {
+        return token != null ? token : accessToken;
+    }
 }
