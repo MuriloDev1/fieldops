@@ -47,7 +47,7 @@ public class InspectionResponse {
     private LocalDate valueDate;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "value_json", columnDefinition = "jsonb")
+    @Column(name = "value_json")
     @Builder.Default
     private String valueJson = "{}";
 

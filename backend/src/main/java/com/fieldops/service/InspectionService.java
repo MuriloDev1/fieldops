@@ -142,6 +142,8 @@ public class InspectionService {
             }
         }
 
+        final User finalSupervisor = supervisor;
+
         // 3. Obter a versão publicada do modelo (Seção 10.8.2)
         InspectionTemplateVersion templateVersion = null;
         if (dto.getTemplateVersionId() != null) {
@@ -160,7 +162,7 @@ public class InspectionService {
                     .flatMap(v -> versionRepository.findByIdWithSectionsAndItems(v.getId()))
                     .orElseGet(() -> versionRepository.findAll().stream().findFirst()
                             .flatMap(v -> versionRepository.findByIdWithSectionsAndItems(v.getId()))
-                            .orElseGet(() -> createFallbackTemplateVersion(supervisor)));
+                            .orElseGet(() -> createFallbackTemplateVersion(finalSupervisor)));
         }
 
         InspectionPriority priority = InspectionPriority.MEDIUM;

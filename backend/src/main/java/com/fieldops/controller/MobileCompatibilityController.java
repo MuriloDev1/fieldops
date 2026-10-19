@@ -25,6 +25,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -69,8 +70,8 @@ public class MobileCompatibilityController {
     @Operation(summary = "Atualiza equipamento pelo app móvel")
     public ResponseEntity<EquipmentResponseDTO> patchEquipment(
             @PathVariable UUID id,
-            @RequestBody CreateEquipmentDTO dto) {
-        EquipmentResponseDTO updated = equipmentService.patch(id, dto);
+            @RequestBody Map<String, Object> body) {
+        EquipmentResponseDTO updated = equipmentService.updatePartial(id, body);
         return ResponseEntity.ok(normalizeEquipmentForMobile(updated));
     }
 

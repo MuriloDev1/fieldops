@@ -6,6 +6,7 @@ public enum ResponseType {
     NUMBER,
     BOOLEAN,
     CONFORMITY,
+    CONFORM_NON_CONFORM,
     SINGLE_CHOICE,
     DATE,
     PHOTO

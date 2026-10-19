@@ -46,15 +46,15 @@ public class AuditEvent {
     private OffsetDateTime deviceOccurredAt;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "previous_value_json", columnDefinition = "jsonb")
+    @Column(name = "previous_value_json")
     private String previousValueJson;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "new_value_json", columnDefinition = "jsonb")
+    @Column(name = "new_value_json")
     private String newValueJson;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata_json", columnDefinition = "jsonb")
+    @Column(name = "metadata_json")
     private String metadataJson;
 
     @Column(name = "request_id")

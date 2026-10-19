@@ -52,7 +52,7 @@ public class TemplateItem {
     private Boolean evidenceRequiredOnFailure = false;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "options_json", columnDefinition = "jsonb")
+    @Column(name = "options_json")
     @Builder.Default
     private String optionsJson = "[]";
 

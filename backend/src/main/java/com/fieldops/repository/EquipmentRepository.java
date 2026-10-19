@@ -17,6 +17,9 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
     @Query("SELECT e FROM Equipment e JOIN FETCH e.site s JOIN FETCH s.client ORDER BY e.createdAt DESC")
     List<Equipment> findAllWithSiteAndClient();
 
+    @Query("SELECT e FROM Equipment e JOIN FETCH e.site s JOIN FETCH s.client WHERE e.id = :id")
+    Optional<Equipment> findByIdWithSiteAndClient(@Param("id") UUID id);
+
     @Query("SELECT e FROM Equipment e JOIN FETCH e.site s JOIN FETCH s.client WHERE e.site.id = :siteId ORDER BY e.createdAt DESC")
     List<Equipment> findBySiteId(@Param("siteId") UUID siteId);
 

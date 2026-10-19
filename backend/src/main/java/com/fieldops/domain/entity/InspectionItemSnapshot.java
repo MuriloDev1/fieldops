@@ -58,12 +58,12 @@ public class InspectionItemSnapshot {
     private Boolean required = false;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "rules_json", columnDefinition = "jsonb")
+    @Column(name = "rules_json")
     @Builder.Default
     private String rulesJson = "{}";
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "options_json", columnDefinition = "jsonb")
+    @Column(name = "options_json")
     @Builder.Default
     private String optionsJson = "[]";
 
