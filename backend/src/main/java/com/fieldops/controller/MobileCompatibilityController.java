@@ -44,6 +44,22 @@ public class MobileCompatibilityController {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @PostMapping({"/auth/refresh", "/api/v1/auth/refresh"})
+    @Operation(summary = "Renovação de sessão para o aplicativo móvel")
+    public ResponseEntity<AuthResponseDTO> refreshMobile(@RequestBody(required = false) Map<String, String> request) {
+        String refreshToken = request != null ? request.get("refreshToken") : null;
+        if (refreshToken == null || refreshToken.isBlank()) {
+            refreshToken = request != null ? request.get("token") : null;
+        }
+        return ResponseEntity.ok(authService.refresh(refreshToken));
+    }
+
+    @PostMapping({"/auth/logout", "/api/v1/auth/logout"})
+    @Operation(summary = "Encerra sessão pelo aplicativo móvel")
+    public ResponseEntity<Void> logoutMobile() {
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping({"/equipments", "/api/v1/equipments"})
     @Operation(summary = "Lista equipamentos no formato esperado pelo app móvel")
     public ResponseEntity<List<EquipmentResponseDTO>> listEquipments() {

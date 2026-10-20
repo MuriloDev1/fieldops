@@ -63,6 +63,30 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
+    public AuthResponseDTO refresh(String refreshToken) {
+        if (refreshToken == null || !tokenProvider.validateToken(refreshToken)) {
+            throw new BadCredentialsException("Token de renovação inválido ou expirado.");
+        }
+        UUID userId = tokenProvider.getUserIdFromToken(refreshToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "Usuário não encontrado."));
+
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw new BusinessException("USER_NOT_ACTIVE", "O usuário está inativo ou bloqueado.");
+        }
+
+        String newToken = tokenProvider.generateToken(user);
+
+        return AuthResponseDTO.builder()
+                .token(newToken)
+                .accessToken(newToken)
+                .refreshToken(newToken)
+                .expiresIn(86400) // 24h
+                .user(UserResponseDTO.fromEntity(user))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
     public UserResponseDTO getMe(UUID userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("USER_NOT_FOUND", "Usuário não encontrado."));

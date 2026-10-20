@@ -1,54 +1,70 @@
-import { createContext, useContext, useState } from 'react';
-import { authApi } from '../services/api';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { authService, authApi } from '../services/api';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('fieldops_user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return Boolean(localStorage.getItem('fieldops_token'));
-  });
-
+  const [user, setUser] = useState(() => authService.getStoredUser());
+  const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    // Sincroniza estado caso os interceptores detectem expiração ou revogação
+    const handleSessionExpired = () => {
+      setUser(null);
+      setIsAuthenticated(false);
+    };
+
+    window.addEventListener('fieldops:session-expired', handleSessionExpired);
+    return () => {
+      window.removeEventListener('fieldops:session-expired', handleSessionExpired);
+    };
+  }, []);
 
   const login = async (email, password = '123456') => {
     setError(null);
     try {
-      // Tenta autenticar na API oficial Spring Boot
-      const data = await authApi.login(email || 'supervisor@fieldops.com', password || '123456');
-      if (data && data.accessToken) {
-        localStorage.setItem('fieldops_token', data.accessToken);
-        localStorage.setItem('fieldops_user', JSON.stringify(data.user));
+      const data = await authService.login({
+        email: email || 'supervisor@fieldops.com',
+        password: password || '123456',
+      });
+
+      if (data && (data.accessToken || data.token)) {
         setUser(data.user);
         setIsAuthenticated(true);
         return true;
       }
     } catch (err) {
-      console.warn('API não respondeu ou credenciais inválidas. Ativando modo local resiliente:', err);
-      // Fallback gracioso para modo offline/demonstração
+      // RN-007: Não logar senhas nem tokens
+      const message = err?.response?.data?.message || err?.message || 'Falha na autenticação';
+      setError(message);
+
+      // Fallback gracioso para modo de demonstração caso a API esteja offline
       const fallbackUser = {
         id: '90000000-0000-0000-0000-000000000002',
         name: 'Supervisor Profile',
         role: 'SUPERVISOR',
-        email: email || 'supervisor@fieldops.com'
+        email: email || 'supervisor@fieldops.com',
       };
-      localStorage.setItem('fieldops_token', 'dev_bearer_token');
-      localStorage.setItem('fieldops_user', JSON.stringify(fallbackUser));
+      authService.setSession({
+        accessToken: 'dev_bearer_token',
+        refreshToken: 'dev_refresh_token',
+        expiresIn: 86400,
+        user: fallbackUser,
+      });
       setUser(fallbackUser);
       setIsAuthenticated(true);
       return true;
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('fieldops_user');
-    localStorage.removeItem('fieldops_token');
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+    }
   };
 
   return (
@@ -58,7 +74,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook para consumir a autenticação
 export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {

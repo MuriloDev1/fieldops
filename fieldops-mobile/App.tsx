@@ -24,6 +24,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as ImagePicker from "expo-image-picker";
 import Svg, { Path } from "react-native-svg";
 
+import { authService } from "./src/services/authService";
+import { tokenStorage } from "./src/services/tokenStorage";
+import { onUnauthorized } from "./src/services/api";
+
 const API_URL = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api\/v1\/?$/, "");
 
 const OFFLINE_INSPECTIONS_STORAGE_KEY = "@fieldops/inspecoes-pendentes-offline";
@@ -329,6 +333,30 @@ export default function App() {
   const [online, setOnline] = useState(false);
   const [inspecoesPendentesOffline, setInspecoesPendentesOffline] =
     useState<InspecaoPendenteOffline[]>([]);
+
+  useEffect(() => {
+    // Escuta eventos de revogação/expiração de sessão da camada HTTP para resetar para a tela de Login
+    const unsubscribeUnauthorized = onUnauthorized(() => {
+      sair();
+    });
+
+    // Restaura sessão existente caso já persistida no SecureStore
+    tokenStorage.getAccessToken().then(async (savedToken) => {
+      if (savedToken) {
+        const savedUser = await tokenStorage.getUser();
+        if (savedUser) {
+          setUsuario(savedUser as unknown as UsuarioLogado);
+          setToken(savedToken);
+          setAutenticado(true);
+        }
+      }
+    }).catch(() => {});
+
+    return () => {
+      unsubscribeUnauthorized();
+    };
+  }, []);
+
   useEffect(() => {
     let ativo = true;
     let intervalo: ReturnType<typeof setInterval> | null = null;
@@ -691,6 +719,7 @@ export default function App() {
   }
 
   function sair() {
+    authService.logout().catch(() => {});
     setToken("");
     setUsuario(null);
     setAutenticado(false);
@@ -801,35 +830,24 @@ function LoginScreen({
     try {
       setCarregando(true);
 
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          password: senha,
-        }),
+      const data = await authService.login({
+        email: email.trim().toLowerCase(),
+        password: senha,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setErro(data?.message || "E-mail ou senha inválidos.");
-        return;
-      }
-
-      if (!data?.token || !data?.user) {
+      const tokenValue = data.accessToken || data.token;
+      if (!tokenValue || !data.user) {
         setErro("A API não retornou os dados de autenticação.");
         return;
       }
 
-      onLogin(data.user, data.token);
-    } catch (error) {
-      console.error("Erro ao realizar login:", error);
-      setErro(
-        "Não foi possível conectar ao servidor. Verifique se o backend está funcionando na porta 3000."
-      );
+      onLogin(data.user as unknown as UsuarioLogado, tokenValue);
+    } catch (error: unknown) {
+      // RN-007: Sanitização estrita - credenciais e tokens nunca são registrados em logs
+      const errResponse = error && typeof error === 'object' && 'response' in error
+        ? (error as { response?: { data?: { message?: string } } }).response
+        : null;
+      setErro(errResponse?.data?.message || "E-mail ou senha inválidos ou falha de conexão.");
     } finally {
       setCarregando(false);
     }

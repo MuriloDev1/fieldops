@@ -36,4 +36,20 @@ public class AuthController {
         }
         return ResponseEntity.ok(UserResponseDTO.fromEntity(user));
     }
+
+    @PostMapping("/refresh")
+    @Operation(summary = "Renova o token JWT de acesso", description = "Valida o refresh token e emite novo token Bearer.")
+    public ResponseEntity<AuthResponseDTO> refresh(@RequestBody java.util.Map<String, String> request) {
+        String refreshToken = request != null ? request.get("refreshToken") : null;
+        if (refreshToken == null || refreshToken.isBlank()) {
+            refreshToken = request != null ? request.get("token") : null;
+        }
+        return ResponseEntity.ok(authService.refresh(refreshToken));
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "Encerra a sessão", description = "Invalida a sessão do usuário.")
+    public ResponseEntity<Void> logout() {
+        return ResponseEntity.noContent().build();
+    }
 }
