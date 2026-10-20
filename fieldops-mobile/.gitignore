@@ -1,0 +1,43 @@
+﻿# Dependencias
+node_modules/
+**/node_modules/
+
+# Expo
+.expo/
+**/.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Arquivos de ambiente e segredos
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+!**/.env.example
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# Arquivos sensiveis de certificados
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+
+# TypeScript
+*.tsbuildinfo
+
+# Pastas nativas
+/ios
+/android
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
