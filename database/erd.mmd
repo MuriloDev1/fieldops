@@ -1,158 +1,223 @@
 erDiagram
-  organizations ||--o{ users : has
-  organizations ||--o{ sites : has
-  organizations ||--o{ equipment_types : has
-  organizations ||--o{ equipment : has
-  organizations ||--o{ inspection_templates : has
+  CLIENT ||--o{ INSPECTION_SITE : has
+  INSPECTION_SITE ||--o{ EQUIPMENT : contains
 
-  sites ||--o{ equipment : contains
-  equipment_types ||--o{ equipment : classifies
-  users ||--o{ equipment : responsible_for
+  CLIENT ||--o{ INSPECTION : relates_to
+  INSPECTION_SITE ||--o{ INSPECTION : occurs_at
+  EQUIPMENT ||--o{ INSPECTION : targets
 
-  inspection_templates ||--o{ inspection_template_questions : contains
-  inspection_template_questions ||--o{ inspection_question_options : has
+  USER ||--o{ INSPECTION : creates
+  USER ||--o{ INSPECTION : assigned_technician
+  USER ||--o{ INSPECTION : assigned_supervisor
 
-  inspection_templates ||--o{ inspection_assignments : schedules
-  equipment ||--o{ inspection_assignments : receives
-  users ||--o{ inspection_assignments : assigned_to
+  INSPECTION_TEMPLATE ||--o{ INSPECTION_TEMPLATE_VERSION : versions
+  INSPECTION_TEMPLATE_VERSION ||--o{ TEMPLATE_SECTION : contains
+  TEMPLATE_SECTION ||--o{ TEMPLATE_ITEM : contains
+  INSPECTION_TEMPLATE_VERSION ||--o{ INSPECTION : base_for
 
-  inspection_assignments ||--o{ inspection_runs : executed_as
-  users ||--o{ inspection_runs : executed_by
-  inspection_runs ||--o{ inspection_answers : has
-  inspection_template_questions ||--o{ inspection_answers : answered_by
+  INSPECTION ||--o{ INSPECTION_ITEM_SNAPSHOT : snapshots
+  INSPECTION_ITEM_SNAPSHOT ||--o| INSPECTION_RESPONSE : answers
+  INSPECTION ||--o{ INSPECTION_RESPONSE : contains
 
-  inspection_answers ||--o{ attachments : includes
-  inspection_answers ||--o{ non_conformities : may_generate
+  INSPECTION ||--o{ EVIDENCE : attached_to
+  INSPECTION_RESPONSE ||--o{ EVIDENCE : documents
+  NON_CONFORMITY ||--o{ EVIDENCE : proves
 
-  equipment ||--o{ non_conformities : has
-  inspection_runs ||--o{ non_conformities : identifies
-  users ||--o{ non_conformities : opened_by
+  INSPECTION ||--o{ NON_CONFORMITY : reports
+  INSPECTION_RESPONSE ||--o{ NON_CONFORMITY : generates
 
-  non_conformities ||--o{ corrective_actions : requires
-  users ||--o{ corrective_actions : assigned_to
+  INSPECTION ||--o{ INSPECTION_REVIEW : reviewed_by
+  USER ||--o{ INSPECTION_REVIEW : reviews
 
-  equipment ||--o{ equipment_status_history : changes
-  users ||--o{ equipment_status_history : changed_by
+  INSPECTION ||--o{ AUDIT_EVENT : records
+  USER ||--o{ AUDIT_EVENT : acts
 
-  users ||--o{ audit_logs : performs
-
-  organizations {
+  CLIENT {
     uuid id PK
-    text name
+    string name
+    string legal_name
+    string document
+    string email
+    string phone
+    string status
     timestamptz created_at
     timestamptz updated_at
+    int version
   }
 
-  users {
+  INSPECTION_SITE {
     uuid id PK
-    uuid organization_id FK
-    text name
-    text email
-    user_role role
-    boolean active
+    uuid client_id FK
+    string name
+    string description
+    string address_line
+    string city
+    string state
+    string postal_code
+    string contact_name
+    string status
     timestamptz created_at
     timestamptz updated_at
+    int version
   }
 
-  sites {
+  EQUIPMENT {
     uuid id PK
-    uuid organization_id FK
-    text name
-    text code
-    text address
-    boolean active
-  }
-
-  equipment_types {
-    uuid id PK
-    uuid organization_id FK
-    text name
-    text description
-  }
-
-  equipment {
-    uuid id PK
-    uuid organization_id FK
     uuid site_id FK
-    uuid equipment_type_id FK
-    uuid responsible_user_id FK
-    text name
-    text code
-    equipment_status status
-    text description
+    string name
+    string asset_number
+    string serial_number
+    string manufacturer
+    string model
+    string type
+    string qr_code UK
+    string status
+    date installed_at
+    timestamptz created_at
+    timestamptz updated_at
+    int version
   }
 
-  inspection_templates {
+  USER {
     uuid id PK
-    uuid organization_id FK
-    text name
-    integer version
-    boolean published
-    boolean active
+    string name
+    string email UK
+    string password_hash
+    string role
+    string status
+    string phone
+    timestamptz created_at
+    timestamptz updated_at
+    int version
   }
 
-  inspection_template_questions {
+  INSPECTION_TEMPLATE {
+    uuid id PK
+    string title
+    string category
+    string status
+    int current_version
+    uuid created_by FK
+    timestamptz created_at
+    timestamptz updated_at
+    int version
+  }
+
+  INSPECTION_TEMPLATE_VERSION {
     uuid id PK
     uuid template_id FK
-    integer position
-    text prompt
-    question_type question_type
+    int version_number
+    string title_snapshot
+    string description_snapshot
+    uuid published_by FK
+    timestamptz published_at
+    boolean active_for_new_inspections
+  }
+
+  TEMPLATE_SECTION {
+    uuid id PK
+    uuid template_version_id FK
+    string title
+    int display_order
+  }
+
+  TEMPLATE_ITEM {
+    uuid id PK
+    uuid section_id FK
+    string code
+    string title
+    string response_type
     boolean required
+    boolean observation_required_on_failure
+    boolean evidence_required_on_failure
+    jsonb options_json
+    int display_order
   }
 
-  inspection_question_options {
+  INSPECTION {
     uuid id PK
-    uuid question_id FK
-    integer position
-    text label
-    text value
-  }
-
-  inspection_assignments {
-    uuid id PK
-    uuid template_id FK
+    uuid template_version_id FK
+    uuid client_id FK
+    uuid site_id FK
     uuid equipment_id FK
-    uuid assigned_to_user_id FK
-    assignment_status status
-    timestamptz due_at
+    uuid technician_id FK
+    uuid supervisor_id FK
+    string title
+    string priority
+    string status
+    timestamptz scheduled_for
+    timestamptz started_at_device
+    timestamptz completed_at_device
+    timestamptz submitted_at_server
+    int version
   }
 
-  inspection_runs {
+  INSPECTION_ITEM_SNAPSHOT {
     uuid id PK
-    uuid assignment_id FK
-    uuid executed_by_user_id FK
-    run_status status
-    timestamptz started_at
-    timestamptz submitted_at
+    uuid inspection_id FK
+    string section_title
+    string item_title
+    string response_type
+    boolean required
+    jsonb rules_json
+    int item_order
   }
 
-  inspection_answers {
+  INSPECTION_RESPONSE {
     uuid id PK
-    uuid run_id FK
-    uuid question_id FK
-    text value_text
+    uuid inspection_id FK
+    uuid inspection_item_id FK
+    string value_text
     numeric value_number
     boolean value_boolean
+    date value_date
     jsonb value_json
+    string observation
+    string conformity
+    uuid answered_by FK
+    int version
   }
 
-  non_conformities {
+  NON_CONFORMITY {
     uuid id PK
-    uuid equipment_id FK
-    uuid inspection_run_id FK
-    uuid answer_id FK
-    uuid opened_by_user_id FK
-    text title
-    severity severity
-    non_conformity_status status
+    uuid inspection_id FK
+    uuid inspection_item_id FK
+    uuid response_id FK
+    string title
+    string description
+    string severity
+    string status
+    uuid created_by FK
+    int version
   }
 
-  corrective_actions {
+  EVIDENCE {
     uuid id PK
+    uuid inspection_id FK
+    uuid response_id FK
     uuid non_conformity_id FK
-    uuid assigned_to_user_id FK
-    text title
-    corrective_action_status status
-    timestamptz due_at
+    string type
+    string storage_key
+    string mime_type
+    bigint size_bytes
   }
 
+  INSPECTION_REVIEW {
+    uuid id PK
+    uuid inspection_id FK
+    uuid reviewer_id FK
+    string decision
+    string reason
+    string comments
+    int review_cycle
+  }
+
+  AUDIT_EVENT {
+    uuid id PK
+    uuid inspection_id FK
+    uuid actor_id FK
+    string action
+    string entity_type
+    uuid entity_id
+    timestamptz occurred_at
+  }

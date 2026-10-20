@@ -1,0 +1,77 @@
+package com.fieldops.domain.entity;
+
+import com.fieldops.domain.enums.ResponseType;
+import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
+import java.time.OffsetDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "inspection_item_snapshots")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class InspectionItemSnapshot {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "inspection_id", nullable = false)
+    private Inspection inspection;
+
+    @Column(name = "source_template_item_id")
+    private UUID sourceTemplateItemId;
+
+    @Column(name = "section_title", nullable = false)
+    private String sectionTitle;
+
+    @Column(name = "section_description", columnDefinition = "TEXT")
+    private String sectionDescription;
+
+    @Column(name = "section_order", nullable = false)
+    @Builder.Default
+    private Integer sectionOrder = 0;
+
+    @Column(name = "item_code")
+    private String itemCode;
+
+    @Column(name = "item_title", nullable = false, columnDefinition = "TEXT")
+    private String itemTitle;
+
+    @Column(name = "item_description", columnDefinition = "TEXT")
+    private String itemDescription;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "response_type", nullable = false)
+    private ResponseType responseType;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean required = false;
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "rules_json")
+    @Builder.Default
+    private String rulesJson = "{}";
+
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "options_json")
+    @Builder.Default
+    private String optionsJson = "[]";
+
+    @Column(name = "item_order", nullable = false)
+    @Builder.Default
+    private Integer itemOrder = 0;
+
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+}
