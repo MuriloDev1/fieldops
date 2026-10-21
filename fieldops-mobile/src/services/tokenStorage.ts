@@ -20,7 +20,7 @@ let isSecureStoreAvailable: boolean | null = null;
 
 async function checkSecureStore(): Promise<boolean> {
   if (isSecureStoreAvailable !== null) {
-    return isSecureStoreAvailable;
+    return Boolean(isSecureStoreAvailable);
   }
   if (Platform.OS === 'web') {
     isSecureStoreAvailable = false;
@@ -28,7 +28,7 @@ async function checkSecureStore(): Promise<boolean> {
   }
   try {
     isSecureStoreAvailable = await SecureStore.isAvailableAsync();
-    return isSecureStoreAvailable;
+    return Boolean(isSecureStoreAvailable);
   } catch {
     isSecureStoreAvailable = false;
     return false;
