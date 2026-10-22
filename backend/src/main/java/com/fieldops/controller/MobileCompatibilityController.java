@@ -38,6 +38,21 @@ public class MobileCompatibilityController {
     private final InspectionService inspectionService;
     private final ReviewService reviewService;
 
+    @GetMapping("/")
+    @Operation(summary = "Endpoint raiz da API")
+    public ResponseEntity<Map<String, String>> root() {
+        return ResponseEntity.ok(Map.of("message", "FieldOps Backend funcionando!"));
+    }
+
+    @GetMapping({"/health", "/api/v1/health"})
+    @Operation(summary = "Health check da API e banco de dados")
+    public ResponseEntity<Map<String, String>> health() {
+        return ResponseEntity.ok(Map.of(
+                "status", "online",
+                "database", "connected"
+        ));
+    }
+
     @PostMapping("/auth/login")
     @Operation(summary = "Autenticação direta para o aplicativo móvel")
     public ResponseEntity<AuthResponseDTO> login(@Valid @RequestBody LoginRequestDTO request) {
@@ -67,6 +82,12 @@ public class MobileCompatibilityController {
                 .map(this::normalizeEquipmentForMobile)
                 .toList();
         return ResponseEntity.ok(list);
+    }
+
+    @GetMapping({"/equipments/code/{code}", "/api/v1/equipments/code/{code}"})
+    @Operation(summary = "Busca equipamento pelo código / QR Code no formato esperado pelo app móvel")
+    public ResponseEntity<EquipmentResponseDTO> getEquipmentByCode(@PathVariable String code) {
+        return ResponseEntity.ok(normalizeEquipmentForMobile(equipmentService.getByQrCode(code.trim().toUpperCase())));
     }
 
     @GetMapping({"/equipments/{id}", "/api/v1/equipments/{id}"})
@@ -112,6 +133,9 @@ public class MobileCompatibilityController {
             @RequestBody CreateInspectionDTO dto,
             @AuthenticationPrincipal User user) {
         InspectionResponseDTO created = inspectionService.create(dto, user);
+        if ("ASSIGNED".equalsIgnoreCase(created.getStatus()) || "SCHEDULED".equalsIgnoreCase(created.getStatus())) {
+            created = inspectionService.start(created.getId(), null);
+        }
         return ResponseEntity.status(HttpStatus.CREATED).body(normalizeInspectionForMobile(created));
     }
 

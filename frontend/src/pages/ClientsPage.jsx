@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
-import { initialCustomers } from '../core/data/mockData';
 import { clientsApi } from '../core/services/api';
 import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
 
 export const ClientsPage = () => {
-  const [customers, setCustomers] = useState(initialCustomers);
+  const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', cnpj: '', email: '', phone: '' });
@@ -18,16 +17,14 @@ export const ClientsPage = () => {
     { header: 'Plantas Ativas', key: 'locationsCount' },
   ];
 
-  // Carrega clientes da API Spring Boot
+  // Carrega clientes diretamente do banco via API Spring Boot
   const loadClients = async () => {
     try {
       setLoading(true);
       const data = await clientsApi.getAll();
-      if (Array.isArray(data) && data.length > 0) {
-        setCustomers(data);
-      }
+      setCustomers(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Usando dados locais de fallback para clientes:', err);
+      console.error('Erro ao carregar clientes do banco:', err);
     } finally {
       setLoading(false);
     }
@@ -42,20 +39,11 @@ export const ClientsPage = () => {
     try {
       const created = await clientsApi.create(formData);
       setCustomers((prev) => [created, ...prev]);
+      setFormData({ name: '', cnpj: '', email: '', phone: '' });
+      setIsDrawerOpen(false);
     } catch (err) {
-      console.warn('Erro ao salvar cliente na API, salvando localmente:', err);
-      const fallback = {
-        id: `cust-${Date.now()}`,
-        name: formData.name,
-        cnpj: formData.cnpj,
-        email: formData.email,
-        phone: formData.phone,
-        locationsCount: 0,
-      };
-      setCustomers((prev) => [fallback, ...prev]);
+      alert('Erro ao salvar cliente no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
-    setFormData({ name: '', cnpj: '', email: '', phone: '' });
-    setIsDrawerOpen(false);
   };
 
   return (

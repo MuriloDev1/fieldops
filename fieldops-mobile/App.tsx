@@ -240,78 +240,25 @@ interface InspecaoPendenteOffline extends InspecaoSalva {
   fotoOcorrencia?: string | null;
 }
 
-/* =========================================================
-   DADOS
-========================================================= */
+interface InspecaoAgendada {
+  id: string;
+  titulo: string;
+  equipamentoId: string;
+  equipamentoNome: string;
+  equipamentoCodigo: string;
+  equipamentoLocal: string;
+  instrucoes: string;
+  prioridade: string;
+  dataAgendada: string;
+  perguntas: Pergunta[];
+}
 
-const equipamentosIniciais: Equipamento[] = [
-  {
-    id: "1",
-    nome: "Compressor Industrial 01",
-    codigo: "EQP-001",
-    local: "Refinaria Central",
-    tipo: "Compressor",
-    responsavel: "João Silva",
-    status: "Ativo",
-  },
-  {
-    id: "2",
-    nome: "Gerador Diesel 02",
-    codigo: "EQP-002",
-    local: "Unidade Sul",
-    tipo: "Gerador",
-    responsavel: "Carlos Oliveira",
-    status: "Ativo",
-  },
-  {
-    id: "3",
-    nome: "Bomba Submersa 04",
-    codigo: "EQP-003",
-    local: "Unidade Alpha",
-    tipo: "Bomba",
-    responsavel: "Maria Souza",
-    status: "Manutenção",
-  },
-  {
-    id: "4",
-    nome: "Válvula de Pressão B",
-    codigo: "EQP-004",
-    local: "Refinaria Central",
-    tipo: "Válvula",
-    responsavel: "Ana Costa",
-    status: "Ativo",
-  },
-  {
-    id: "5",
-    nome: "Painel Elétrico Leste",
-    codigo: "EQP-005",
-    local: "Unidade Beta",
-    tipo: "Painel",
-    responsavel: "Pedro Santos",
-    status: "Inativo",
-  },
-];
-
-const perguntasIniciais: Pergunta[] = [
-  {
-    id: "local-1",
-    texto: "O equipamento está em boas condições?",
-    tipo: "Sim / Não",
-    obrigatoria: true,
-  },
-  {
-    id: "local-2",
-    texto: "Qual o nível de pressão?",
-    tipo: "Múltipla escolha",
-    obrigatoria: true,
-  },
-  {
-    id: "local-3",
-    texto: "Existe algum vazamento?",
-    tipo: "Sim / Não",
-    obrigatoria: false,
-  },
-];
+interface ModeloChecklistBanco {
+  id: string;
+  titulo: string;
+  descricao: string;
+  perguntas: Pergunta[];
+}
 
 /* =========================================================
    APP
@@ -330,6 +277,7 @@ export default function App() {
   const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
   const [token, setToken] = useState("");
   const [inspecoesSalvas, setInspecoesSalvas] = useState<InspecaoSalva[]>([]);
+  const [inspecoesAgendadas, setInspecoesAgendadas] = useState<InspecaoAgendada[]>([]);
   const [online, setOnline] = useState(false);
   const [inspecoesPendentesOffline, setInspecoesPendentesOffline] =
     useState<InspecaoPendenteOffline[]>([]);
@@ -463,127 +411,153 @@ export default function App() {
     salvarFilaOffline();
   }, [inspecoesPendentesOffline]);
 
+  async function carregarInspecoesDoBanco() {
+    try {
+      const response = await fetch(`${API_URL}/inspections`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || "Não foi possível carregar o histórico de inspeções."
+        );
+      }
+
+      if (!Array.isArray(data)) {
+        throw new Error("Resposta inválida ao carregar as inspeções.");
+      }
+
+      const mapearPerguntas = (questions: any[]): Pergunta[] => {
+        if (!Array.isArray(questions)) return [];
+        return questions.map((question: any, index: number) => ({
+          id: String(question.id || `question-${index + 1}`),
+          texto: String(question.title || question.itemTitle || question.text || `Pergunta ${index + 1}`),
+          tipo:
+            question.type === "MULTIPLE_CHOICE" || question.type === "SINGLE_CHOICE"
+              ? "Múltipla escolha"
+              : question.type === "PHOTO"
+              ? "Foto"
+              : question.type === "PARAGRAPH" || question.type === "SHORT_TEXT" || question.type === "TEXT_SHORT"
+              ? "Texto"
+              : "Sim / Não",
+          obrigatoria: Boolean(question.required),
+        }));
+      };
+
+      const agendadas: InspecaoAgendada[] = data
+        .filter((item: any) => item?.status === "IN_PROGRESS" || item?.status === "ASSIGNED" || item?.status === "SCHEDULED")
+        .map((item: any) => ({
+          id: String(item.id),
+          titulo: String(item.title || item.templateTitle || "Inspeção Atribuída"),
+          equipamentoId: String(item.equipmentId || item.equipment?.id || ""),
+          equipamentoNome: String(item.equipment?.name || item.equipmentName || "Inspeção Geral da Planta"),
+          equipamentoCodigo: String(item.equipment?.code || item.equipmentQrCode || "GERAL"),
+          equipamentoLocal: String(item.siteName || "Planta Operacional"),
+          instrucoes: String(item.instructions || item.notes || item.description || "Execute o checklist em campo conforme o padrão operacional."),
+          prioridade: String(item.priority || "MEDIUM"),
+          dataAgendada: String(item.scheduledDate || item.scheduledFor || item.createdAt || ""),
+          perguntas: mapearPerguntas(item.questions || item.items || []),
+        }));
+
+      setInspecoesAgendadas(agendadas);
+
+      const inspecoesConcluidas: InspecaoSalva[] = data
+        .filter((item: any) => item?.status === "COMPLETED")
+        .map((item: any) => ({
+          id: String(item.id),
+          titulo: String(item.title || "Inspeção"),
+          equipamentoId: String(item.equipmentId || item.equipment?.id || ""),
+          equipamentoNome: String(
+            item.equipment?.name || item.equipmentName || "Equipamento não identificado"
+          ),
+          equipamentoCodigo: String(
+            item.equipment?.code || item.equipmentQrCode || "Sem código"
+          ),
+          tecnico: String(
+            item.responsible?.name || item.technicianName || "Técnico não identificado"
+          ),
+          status: "CONCLUIDA",
+          reviewStatus:
+            item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
+              ? "APROVADA"
+              : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
+              ? "REPROVADA"
+              : "PENDENTE",
+          revisadoPor: String(item.reviewer?.name || item.reviewedBy?.name || item.supervisorName || ""),
+          observacaoRevisao: String(item.reviewObservation || item.reviewNote || ""),
+          dataRevisao: String(item.reviewedAt || item.reviewDate || item.reviewed_at || "") || undefined,
+          situacaoFinal:
+            item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
+              ? "APROVADA"
+              : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
+              ? "REPROVADA"
+              : "PENDENTE",
+          dataEncerramento: String(
+            item.reviewedAt || item.reviewDate || item.reviewed_at || item.updatedAt || item.createdAt || ""
+          ),
+          equipamentoStatusFinal:
+            item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
+              ? "Ativo"
+              : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
+              ? "Manutenção"
+              : undefined,
+          respostas: Array.isArray(item.answers)
+            ? item.answers.reduce((acc: Record<string, string>, answer: any, index: number) => {
+                const key = String(
+                  answer.questionId ||
+                    answer.question?.id ||
+                    answer.question?.title ||
+                    `resposta-${index + 1}`
+                );
+                acc[key] = String(answer.value ?? answer.answer ?? "");
+                return acc;
+              }, {})
+            : {},
+          perguntas: mapearPerguntas(item.questions || item.items || []),
+          observacao: String(item.description || item.notes || ""),
+          dataConclusao: String(item.submittedAtServer || item.updatedAt || item.createdAt),
+          fotos: Array.isArray(item.answers)
+            ? item.answers.reduce((acc: Record<string, string>, answer: any) => {
+                const key = String(answer.questionId || answer.question?.id || "");
+                const url = String(answer.photoUrl || answer.photo || answer.evidenceUrl || "");
+                if (key && url) acc[key] = url;
+                return acc;
+              }, {})
+            : {},
+          assinatura: Array.isArray(item.answers)
+            ? String(
+                item.answers.find((answer: any) =>
+                  answer.signatureUrl || answer.signature
+                )?.signatureUrl ||
+                  item.answers.find((answer: any) =>
+                    answer.signatureUrl || answer.signature
+                  )?.signature ||
+                  ""
+              ) || undefined
+            : undefined,
+          naoConformidades: Array.isArray(item.answers)
+            ? item.answers
+                .filter((answer: any) =>
+                  String(answer.value ?? answer.answer ?? "").trim().toLowerCase() === "não" ||
+                  String(answer.value ?? answer.answer ?? "").trim().toLowerCase() === "nao"
+                )
+                .map((answer: any) =>
+                  String(answer.question?.title || answer.question?.text || "Não conformidade identificada")
+                )
+            : [],
+        }));
+
+      setInspecoesSalvas(inspecoesConcluidas);
+    } catch (error) {
+      console.error("Erro ao carregar histórico de inspeções:", error);
+    }
+  }
+
   useEffect(() => {
     if (!autenticado) {
       return;
     }
-
-    async function carregarInspecoesDoBanco() {
-      try {
-        const response = await fetch(`${API_URL}/inspections`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data?.message || "Não foi possível carregar o histórico de inspeções."
-          );
-        }
-
-        if (!Array.isArray(data)) {
-          throw new Error("Resposta inválida ao carregar as inspeções.");
-        }
-
-        const inspecoesConcluidas: InspecaoSalva[] = data
-          .filter((item: any) => item?.status === "COMPLETED")
-          .map((item: any) => ({
-            id: String(item.id),
-            titulo: String(item.title || "Inspeção"),
-            equipamentoId: String(item.equipmentId || item.equipment?.id || ""),
-            equipamentoNome: String(
-              item.equipment?.name || "Equipamento não identificado"
-            ),
-            equipamentoCodigo: String(
-              item.equipment?.code || "Sem código"
-            ),
-            tecnico: String(
-              item.responsible?.name || "Técnico não identificado"
-            ),
-            status: "CONCLUIDA",
-            reviewStatus:
-              item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
-                ? "APROVADA"
-                : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
-                ? "REPROVADA"
-                : "PENDENTE",
-            revisadoPor: String(item.reviewer?.name || item.reviewedBy?.name || ""),
-            observacaoRevisao: String(item.reviewObservation || item.reviewNote || ""),
-            dataRevisao: String(item.reviewedAt || item.reviewDate || item.reviewed_at || "") || undefined,
-            situacaoFinal:
-              item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
-                ? "APROVADA"
-                : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
-                ? "REPROVADA"
-                : "PENDENTE",
-            dataEncerramento: String(
-              item.reviewedAt || item.reviewDate || item.reviewed_at || item.updatedAt || item.createdAt || ""
-            ),
-            equipamentoStatusFinal:
-              item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
-                ? "Ativo"
-                : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
-                ? "Manutenção"
-                : undefined,
-            respostas: Array.isArray(item.answers)
-              ? item.answers.reduce((acc: Record<string, string>, answer: any, index: number) => {
-                  const key = String(
-                    answer.questionId ||
-                      answer.question?.id ||
-                      answer.question?.title ||
-                      `resposta-${index + 1}`
-                  );
-                  acc[key] = String(answer.value ?? answer.answer ?? "");
-                  return acc;
-                }, {})
-              : {},
-            perguntas: Array.isArray(item.questions)
-              ? item.questions.map((question: any, index: number) => ({
-                  id: String(question.id || `question-${index + 1}`),
-                  texto: String(question.title || question.text || `Pergunta ${index + 1}`),
-                  tipo: String(question.type || "Resposta"),
-                  obrigatoria: Boolean(question.required),
-                }))
-              : [],
-            observacao: String(item.description || ""),
-            dataConclusao: String(item.updatedAt || item.createdAt),
-            fotos: Array.isArray(item.answers)
-              ? item.answers.reduce((acc: Record<string, string>, answer: any) => {
-                  const key = String(answer.questionId || answer.question?.id || "");
-                  const url = String(answer.photoUrl || answer.photo || answer.evidenceUrl || "");
-                  if (key && url) acc[key] = url;
-                  return acc;
-                }, {})
-              : {},
-            assinatura: Array.isArray(item.answers)
-              ? String(
-                  item.answers.find((answer: any) =>
-                    answer.signatureUrl || answer.signature
-                  )?.signatureUrl ||
-                    item.answers.find((answer: any) =>
-                      answer.signatureUrl || answer.signature
-                    )?.signature ||
-                    ""
-                ) || undefined
-              : undefined,
-            naoConformidades: Array.isArray(item.answers)
-              ? item.answers
-                  .filter((answer: any) =>
-                    String(answer.value ?? answer.answer ?? "").trim().toLowerCase() === "não" ||
-                    String(answer.value ?? answer.answer ?? "").trim().toLowerCase() === "nao"
-                  )
-                  .map((answer: any) =>
-                    String(answer.question?.title || answer.question?.text || "Não conformidade identificada")
-                  )
-              : [],
-          }));
-
-        setInspecoesSalvas(inspecoesConcluidas);
-      } catch (error) {
-        console.error("Erro ao carregar histórico de inspeções:", error);
-      }
-    }
-
     carregarInspecoesDoBanco();
-  }, [autenticado]);
+  }, [autenticado, tela]);
 
   useEffect(() => {
     if (!autenticado || !online || inspecoesPendentesOffline.length === 0) {
@@ -777,6 +751,8 @@ export default function App() {
           online={online}
           inspecoesSalvas={inspecoesSalvas}
           setInspecoesSalvas={setInspecoesSalvas}
+          inspecoesAgendadas={inspecoesAgendadas}
+          recarregarInspecoes={carregarInspecoesDoBanco}
           setInspecoesPendentesOffline={setInspecoesPendentesOffline}
         />
       )}
@@ -1036,6 +1012,26 @@ function DashboardScreen({
     inspecoesCanceladas: 0,
   });
 
+  const [progressoSemanal, setProgressoSemanal] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [acoesCampo, setAcoesCampo] = useState<
+    Array<{
+      id: string;
+      icon: keyof typeof MaterialIcons.glyphMap;
+      title: string;
+      description: string;
+      type: "danger" | "warning" | "info";
+      destino: Tela;
+    }>
+  >([]);
+  const [naoConformidadesLista, setNaoConformidadesLista] = useState<
+    Array<{
+      id: string;
+      local: string;
+      equipamento: string;
+      status: "Crítico" | "Alta" | "Baixa";
+    }>
+  >([]);
+
   const [carregandoDashboard, setCarregandoDashboard] = useState(true);
   const [erroDashboard, setErroDashboard] = useState("");
 
@@ -1045,11 +1041,17 @@ function DashboardScreen({
         setCarregandoDashboard(true);
         setErroDashboard("");
 
-        const [equipamentosResponse, inspecoesResponse] =
-          await Promise.all([
-            fetch(`${API_URL}/equipments`),
-            fetch(`${API_URL}/inspections`),
-          ]);
+        const [
+          equipamentosResponse,
+          inspecoesResponse,
+          summaryResponse,
+          ncResponse,
+        ] = await Promise.all([
+          fetch(`${API_URL}/equipments`),
+          fetch(`${API_URL}/inspections`),
+          fetch(`${API_URL}/api/v1/dashboard/summary`).catch(() => null),
+          fetch(`${API_URL}/api/v1/non-conformities`).catch(() => null),
+        ]);
 
         if (!equipamentosResponse.ok) {
           throw new Error("Não foi possível carregar os equipamentos.");
@@ -1061,6 +1063,14 @@ function DashboardScreen({
 
         const equipamentosData = await equipamentosResponse.json();
         const inspecoesData = await inspecoesResponse.json();
+        const summaryData =
+          summaryResponse && summaryResponse.ok
+            ? await summaryResponse.json().catch(() => null)
+            : null;
+        const ncData =
+          ncResponse && ncResponse.ok
+            ? await ncResponse.json().catch(() => [])
+            : [];
 
         const equipamentos = Array.isArray(equipamentosData)
           ? equipamentosData
@@ -1092,6 +1102,95 @@ function DashboardScreen({
             (item: { status?: string }) => item.status === "CANCELLED"
           ).length,
         });
+
+        if (summaryData && Array.isArray(summaryData.weeklyProgress) && summaryData.weeklyProgress.length === 7) {
+          setProgressoSemanal(summaryData.weeklyProgress.map((n: any) => Number(n) || 0));
+        } else {
+          const contagens = [0, 0, 0, 0, 0, 0, 0];
+          inspecoes.forEach((insp: any) => {
+            const dtStr = insp.submittedAtServer || insp.updatedAt || insp.createdAt;
+            if (dtStr) {
+              const dt = new Date(dtStr);
+              if (!isNaN(dt.getTime())) {
+                const idx = (dt.getDay() + 6) % 7;
+                contagens[idx] += 1;
+              }
+            }
+          });
+          setProgressoSemanal(contagens);
+        }
+
+        const novasAcoes: Array<{
+          id: string;
+          icon: keyof typeof MaterialIcons.glyphMap;
+          title: string;
+          description: string;
+          type: "danger" | "warning" | "info";
+          destino: Tela;
+        }> = [];
+
+        inspecoes
+          .filter((item: any) => item.status === "IN_PROGRESS")
+          .slice(0, 2)
+          .forEach((item: any) => {
+            novasAcoes.push({
+              id: `insp-${item.id}`,
+              icon: "assignment",
+              title: String(item.title || item.templateTitle || "Inspeção Atribuída"),
+              description: `${item.equipment?.name || item.equipmentName || "Planta"} • Aguardando execução em campo`,
+              type: "info",
+              destino: "inspecoes",
+            });
+          });
+
+        inspecoes
+          .filter((item: any) => item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA")
+          .slice(0, 2)
+          .forEach((item: any) => {
+            novasAcoes.push({
+              id: `rej-${item.id}`,
+              icon: "error",
+              title: String(item.equipment?.name || item.title || "Inspeção Reprovada"),
+              description: `Reprovada pelo supervisor: ${item.reviewObservation || "Verificar parecer"}`,
+              type: "danger",
+              destino: "inspecoes",
+            });
+          });
+
+        equipamentos
+          .filter((eq: any) => eq.status === "MAINTENANCE")
+          .slice(0, 2)
+          .forEach((eq: any) => {
+            novasAcoes.push({
+              id: `eq-${eq.id}`,
+              icon: "build",
+              title: String(eq.name || "Equipamento"),
+              description: `Em manutenção • ${eq.location || "Local não informado"}`,
+              type: "warning",
+              destino: "equipamentos",
+            });
+          });
+
+        setAcoesCampo(novasAcoes.slice(0, 4));
+
+        const listaNc = Array.isArray(ncData)
+          ? ncData.slice(0, 5).map((nc: any, index: number) => {
+              const sev = String(nc.severity || "").toUpperCase();
+              const st: "Crítico" | "Alta" | "Baixa" =
+                sev === "CRITICAL"
+                  ? "Crítico"
+                  : sev === "HIGH" || sev === "MEDIUM"
+                  ? "Alta"
+                  : "Baixa";
+              return {
+                id: String(nc.id || `nc-${index}`),
+                local: String(nc.siteName || nc.clientName || "Unidade Operacional"),
+                equipamento: String(nc.equipmentName || nc.title || "Item não conforme"),
+                status: st,
+              };
+            })
+          : [];
+        setNaoConformidadesLista(listaNc);
       } catch (error) {
         console.error("Erro ao carregar dashboard:", error);
         setErroDashboard(
@@ -1109,7 +1208,7 @@ function DashboardScreen({
     <View style={styles.flex}>
       <Header
         titulo="Dashboard"
-        subtitulo="Visão geral operacional"
+        subtitulo="Operação em Campo • Técnico"
       />
 
       <ScrollView
@@ -1127,12 +1226,11 @@ function DashboardScreen({
 
         <View style={styles.pageTitle}>
           <Text style={styles.pageTitleText}>
-            Dashboard
+            Painel do Técnico
           </Text>
 
           <Text style={styles.pageDescription}>
-            Visão geral operacional e acompanhamento
-            das atividades de campo.
+            Acompanhe suas atividades em campo, equipamentos e status das avaliações do supervisor.
           </Text>
         </View>
 
@@ -1147,7 +1245,7 @@ function DashboardScreen({
           <StatCard
             titulo="Inspeções Concluídas"
             valor={carregandoDashboard ? "..." : String(dashboard.inspecoesConcluidas)}
-            descricao={`${dashboard.inspecoesTotal} inspeções cadastradas`}
+            descricao={`${dashboard.inspecoesTotal} inspeções registradas no banco`}
             icone="check-circle"
             tipo="success"
           />
@@ -1169,9 +1267,9 @@ function DashboardScreen({
           />
 
           <StatCard
-            titulo="Inspeções em Andamento"
+            titulo="Pendentes em Campo"
             valor={carregandoDashboard ? "..." : String(dashboard.inspecoesAndamento)}
-            descricao={`${dashboard.inspecoesCanceladas} canceladas`}
+            descricao="Atribuídas para execução"
             icone="schedule"
             tipo="danger"
           />
@@ -1194,128 +1292,102 @@ function DashboardScreen({
               </Text>
 
               <Text style={styles.cardSubtitle}>
-                Últimos 7 dias
+                Inspeções registradas no banco (Seg a Dom)
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.periodButton}>
+            <View style={styles.periodButton}>
               <Text style={styles.periodText}>
                 7 dias
               </Text>
-
-              <MaterialIcons
-                name="keyboard-arrow-down"
-                size={18}
-                color="#56667D"
-              />
-            </TouchableOpacity>
+            </View>
           </View>
 
-          <WeeklyChart />
+          <WeeklyChart valores={progressoSemanal} />
         </View>
 
-        {/* AÇÕES RÁPIDAS */}
+        {/* AÇÕES RÁPIDAS DO TÉCNICO */}
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.cardTitle}>
-                Ações Rápidas
+                Minhas Atividades em Campo
               </Text>
 
               <Text style={styles.cardSubtitle}>
-                Atividades que precisam de atenção
+                Inspeções atribuídas pelo supervisor e alertas de equipamentos
               </Text>
             </View>
           </View>
 
-          <QuickAction
-            icon="error"
-            title="Bomba Submersa 04"
-            description="Falha crítica reportada - Unidade Alpha"
-            type="danger"
-          />
-
-          <QuickAction
-            icon="schedule"
-            title="Válvula de Pressão B"
-            description="Manutenção atrasada há 2 dias"
-            type="warning"
-          />
-
-          <QuickAction
-            icon="description"
-            title="Relatório Diário"
-            description="Pendente de aprovação do supervisor"
-            type="info"
-          />
+          {acoesCampo.length === 0 ? (
+            <View style={{ paddingHorizontal: 14, paddingVertical: 12 }}>
+              <Text style={{ color: "#68778D", fontSize: 12 }}>
+                Nenhuma pendência crítica no momento. Você pode iniciar uma nova inspeção em campo abaixo.
+              </Text>
+            </View>
+          ) : (
+            acoesCampo.map((acao) => (
+              <QuickAction
+                key={acao.id}
+                icon={acao.icon}
+                title={acao.title}
+                description={acao.description}
+                type={acao.type}
+                onPress={() => navegar(acao.destino)}
+              />
+            ))
+          )}
 
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => navegar("inspecoes")}
           >
             <MaterialIcons
-              name="assignment"
+              name="play-arrow"
               size={18}
               color="#FFFFFF"
             />
 
             <Text style={styles.primaryButtonText}>
-              Atribuir Tarefas
+              Executar Inspeção em Campo
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* NÃO CONFORMIDADES */}
+        {/* NÃO CONFORMIDADES DO BANCO */}
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.cardTitle}>
-                Não Conformidades
+                Não Conformidades Registradas
               </Text>
 
               <Text style={styles.cardSubtitle}>
-                Acompanhamento das inspeções
+                Ocorrências reais abertas nas inspeções
               </Text>
             </View>
-
-            <TouchableOpacity style={styles.filterButton}>
-              <MaterialIcons
-                name="filter-list"
-                size={17}
-                color="#50617A"
-              />
-
-              <Text style={styles.filterText}>
-                Filtrar
-              </Text>
-            </TouchableOpacity>
           </View>
 
-          <NonCompliance
-            local="Unidade de Extração Alpha"
-            equipamento="Bomba Submersa 04"
-            status="Crítico"
-          />
-
-          <NonCompliance
-            local="Refinaria Central"
-            equipamento="Válvula de Pressão B"
-            status="Alta"
-          />
-
-          <NonCompliance
-            local="Terminal Marítimo Sul"
-            equipamento="Correia Transportadora 2"
-            status="Baixa"
-          />
-
-          <NonCompliance
-            local="Planta de Processamento"
-            equipamento="Compressor Principal"
-            status="Alta"
-          />
+          {naoConformidadesLista.length === 0 ? (
+            <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
+              <Text style={{ color: "#68778D", fontSize: 12 }}>
+                Nenhuma não conformidade registrada no banco de dados.
+              </Text>
+            </View>
+          ) : (
+            naoConformidadesLista.map((nc) => (
+              <NonCompliance
+                key={nc.id}
+                local={nc.local}
+                equipamento={nc.equipamento}
+                status={nc.status}
+                onPress={() => navegar("inspecoes")}
+              />
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -1406,17 +1478,7 @@ function StatCard({
    GRÁFICO
 ========================================================= */
 
-function WeeklyChart() {
-  const valores = [
-    65,
-    95,
-    72,
-    125,
-    105,
-    155,
-    142,
-  ];
-
+function WeeklyChart({ valores }: { valores: number[] }) {
   const dias = [
     "Seg",
     "Ter",
@@ -1427,13 +1489,15 @@ function WeeklyChart() {
     "Dom",
   ];
 
+  const maxValor = Math.max(...valores, 4);
+
   return (
     <View style={styles.chartContainer}>
       <View style={styles.chartLabels}>
-        <Text style={styles.chartLabel}>200</Text>
-        <Text style={styles.chartLabel}>150</Text>
-        <Text style={styles.chartLabel}>100</Text>
-        <Text style={styles.chartLabel}>50</Text>
+        <Text style={styles.chartLabel}>{maxValor}</Text>
+        <Text style={styles.chartLabel}>{Math.round(maxValor * 0.75)}</Text>
+        <Text style={styles.chartLabel}>{Math.round(maxValor * 0.5)}</Text>
+        <Text style={styles.chartLabel}>{Math.round(maxValor * 0.25)}</Text>
         <Text style={styles.chartLabel}>0</Text>
       </View>
 
@@ -1464,7 +1528,7 @@ function WeeklyChart() {
                     styles.bar,
                     {
                       height:
-                        `${(valor / 200) * 100}%`,
+                        `${Math.max((valor / maxValor) * 100, valor > 0 ? 8 : 2)}%`,
                     },
                   ]}
                 />
@@ -1490,11 +1554,13 @@ function QuickAction({
   title,
   description,
   type,
+  onPress,
 }: {
   icon: keyof typeof MaterialIcons.glyphMap;
   title: string;
   description: string;
   type: "danger" | "warning" | "info";
+  onPress?: () => void;
 }) {
   return (
     <View style={styles.quickAction}>
@@ -1529,9 +1595,9 @@ function QuickAction({
         </Text>
       </View>
 
-      <TouchableOpacity>
+      <TouchableOpacity onPress={onPress}>
         <Text style={styles.viewText}>
-          Ver
+          Abrir
         </Text>
       </TouchableOpacity>
     </View>
@@ -1546,10 +1612,12 @@ function NonCompliance({
   local,
   equipamento,
   status,
+  onPress,
 }: {
   local: string;
   equipamento: string;
   status: "Crítico" | "Alta" | "Baixa";
+  onPress?: () => void;
 }) {
   return (
     <View style={styles.nonCompliance}>
@@ -1569,9 +1637,10 @@ function NonCompliance({
 
       <TouchableOpacity
         style={styles.detailsButton}
+        onPress={onPress}
       >
         <Text style={styles.detailsText}>
-          Ver detalhes
+          Ver nas inspeções
         </Text>
 
         <MaterialIcons
@@ -1690,23 +1759,23 @@ function InspecoesScreen({
   online,
   inspecoesSalvas,
   setInspecoesSalvas,
+  inspecoesAgendadas,
+  recarregarInspecoes,
   setInspecoesPendentesOffline,
 }: {
   usuario: UsuarioLogado | null;
   online: boolean;
   inspecoesSalvas: InspecaoSalva[];
   setInspecoesSalvas: React.Dispatch<React.SetStateAction<InspecaoSalva[]>>;
+  inspecoesAgendadas: InspecaoAgendada[];
+  recarregarInspecoes: () => Promise<void>;
   setInspecoesPendentesOffline: React.Dispatch<React.SetStateAction<InspecaoPendenteOffline[]>>;
 }) {
-  const [nomeModelo, setNomeModelo] = useState(
-    "Inspeção de Compressores Industriais"
-  );
+  const [modelosBanco, setModelosBanco] = useState<ModeloChecklistBanco[]>([]);
+  const [modeloSelecionadoId, setModeloSelecionadoId] = useState<string | null>(null);
+  const [nomeModelo, setNomeModelo] = useState("Checklist Operacional");
 
-  const [perguntas, setPerguntas] = useState<Pergunta[]>(
-    perguntasIniciais
-  );
-
-  const [mostrarTipos, setMostrarTipos] = useState(false);
+  const [perguntas, setPerguntas] = useState<Pergunta[]>([]);
 
   const [modoExecucao, setModoExecucao] = useState(false);
 
@@ -1719,9 +1788,7 @@ function InspecoesScreen({
 
   const [criandoInspecao, setCriandoInspecao] = useState(false);
 
-  const [equipamentos, setEquipamentos] = useState<Equipamento[]>(
-    equipamentosIniciais
-  );
+  const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
 
   const [carregandoEquipamentos, setCarregandoEquipamentos] = useState(false);
 
@@ -1737,74 +1804,126 @@ function InspecoesScreen({
   const [assinaturaModal, setAssinaturaModal] = useState(false);
   const scrollRef = useRef<ScrollView | null>(null);
 
-  // ETAPA 8 — estados da revisão e aprovação da inspeção.
+  // Modal de visualização de detalhes e parecer do supervisor (somente leitura para o técnico)
   const [inspecaoEmRevisao, setInspecaoEmRevisao] =
     useState<InspecaoSalva | null>(null);
   const [modalRevisao, setModalRevisao] = useState(false);
-  const [observacaoRevisao, setObservacaoRevisao] = useState("");
-  const [processandoRevisao, setProcessandoRevisao] = useState(false);
 
   useEffect(() => {
-    async function carregarEquipamentos() {
+    async function carregarEquipamentosEModelos() {
       try {
         setCarregandoEquipamentos(true);
         setErroEquipamentos("");
 
-        const response = await fetch(`${API_URL}/equipments`);
+        const [eqResponse, tmplResponse] = await Promise.all([
+          fetch(`${API_URL}/equipments`),
+          fetch(`${API_URL}/api/v1/inspection-templates`).catch(() => null),
+        ]);
 
-        if (!response.ok) {
+        if (!eqResponse.ok) {
           throw new Error("Não foi possível carregar os equipamentos.");
         }
 
-        const data = await response.json();
+        const data = await eqResponse.json();
 
-        const equipamentosFormatados: Equipamento[] = data.map(
-          (equipamento: {
-            id: string;
-            name: string;
-            code: string;
-            location: string;
-            status: "ACTIVE" | "MAINTENANCE" | "INACTIVE";
-          }) => ({
-            id: equipamento.id,
-            nome: equipamento.name,
-            codigo: equipamento.code,
-            local: equipamento.location,
-            tipo: "Equipamento industrial",
-            responsavel: "",
-            status:
-              equipamento.status === "ACTIVE"
-                ? "Ativo"
-                : equipamento.status === "MAINTENANCE"
-                ? "Manutenção"
-                : "Inativo",
-          })
-        );
+        const equipamentosFormatados: Equipamento[] = Array.isArray(data)
+          ? data.map(
+              (equipamento: {
+                id: string;
+                name: string;
+                code: string;
+                location: string;
+                status: "ACTIVE" | "MAINTENANCE" | "INACTIVE";
+              }) => ({
+                id: equipamento.id,
+                nome: equipamento.name,
+                codigo: equipamento.code,
+                local: equipamento.location,
+                tipo: "Equipamento industrial",
+                responsavel: "",
+                status:
+                  equipamento.status === "ACTIVE"
+                    ? "Ativo"
+                    : equipamento.status === "MAINTENANCE"
+                    ? "Manutenção"
+                    : "Inativo",
+              })
+            )
+          : [];
 
         setEquipamentos(equipamentosFormatados);
+
+        if (tmplResponse && tmplResponse.ok) {
+          const tmplData = await tmplResponse.json().catch(() => []);
+          if (Array.isArray(tmplData) && tmplData.length > 0) {
+            const listaModelos: ModeloChecklistBanco[] = [];
+            for (const tmpl of tmplData) {
+              let perguntasModelo: Pergunta[] = [];
+              try {
+                const verRes = await fetch(
+                  `${API_URL}/api/v1/inspection-templates/${tmpl.id}/active-version`
+                );
+                if (verRes.ok) {
+                  const verData = await verRes.json();
+                  const secoes = Array.isArray(verData?.sections) ? verData.sections : [];
+                  secoes.forEach((sec: any) => {
+                    const itens = Array.isArray(sec?.items) ? sec.items : [];
+                    itens.forEach((item: any, idx: number) => {
+                      const rType = String(item.responseType || "").toUpperCase();
+                      perguntasModelo.push({
+                        id: String(item.id || `item-${idx}`),
+                        texto: String(item.title || item.code || `Item ${idx + 1}`),
+                        tipo:
+                          rType === "SINGLE_CHOICE" || rType === "MULTIPLE_CHOICE"
+                            ? "Múltipla escolha"
+                            : rType === "PHOTO"
+                            ? "Foto"
+                            : rType === "TEXT_SHORT" || rType === "TEXT_LONG"
+                            ? "Texto"
+                            : "Sim / Não",
+                        obrigatoria: Boolean(item.required),
+                      });
+                    });
+                  });
+                }
+              } catch {
+                // Ignora falha individual de versão
+              }
+              listaModelos.push({
+                id: String(tmpl.id),
+                titulo: String(tmpl.title || "Checklist Operacional"),
+                descricao: String(tmpl.description || "Modelo oficial do banco de dados"),
+                perguntas: perguntasModelo,
+              });
+            }
+            setModelosBanco(listaModelos);
+            const primeiroComPerguntas =
+              listaModelos.find((m) => m.perguntas.length > 0) || listaModelos[0];
+            if (primeiroComPerguntas) {
+              setModeloSelecionadoId(primeiroComPerguntas.id);
+              setNomeModelo(primeiroComPerguntas.titulo);
+              setPerguntas(primeiroComPerguntas.perguntas);
+            }
+          }
+        }
       } catch (error) {
-        console.error("Erro ao carregar equipamentos:", error);
+        console.error("Erro ao carregar equipamentos e modelos:", error);
         setErroEquipamentos(
           "Não foi possível carregar os equipamentos do servidor."
         );
-        setEquipamentos(equipamentosIniciais);
+        setEquipamentos([]);
       } finally {
         setCarregandoEquipamentos(false);
       }
     }
 
-    carregarEquipamentos();
+    carregarEquipamentosEModelos();
   }, []);
 
-  function adicionarPergunta() {
-    const novaPergunta: Pergunta = {
-      id: `local-${Date.now()}`,
-      texto: "Nova pergunta de inspeção",
-      tipo: "Sim / Não",
-      obrigatoria: false,
-    };
-
-    setPerguntas([...perguntas, novaPergunta]);
+  function selecionarModeloBanco(modelo: ModeloChecklistBanco) {
+    setModeloSelecionadoId(modelo.id);
+    setNomeModelo(modelo.titulo);
+    setPerguntas(modelo.perguntas);
   }
 
   function selecionarEquipamento(equipamento: Equipamento) {
@@ -1814,6 +1933,64 @@ function InspecoesScreen({
     setObservacao("");
     setFotos({});
     setFotoOcorrencia(null);
+  }
+
+  async function iniciarInspecaoAgendada(agendada: InspecaoAgendada) {
+    const eqEncontrado = equipamentos.find((e) => e.id === agendada.equipamentoId);
+    const eqAlvo: Equipamento = eqEncontrado || {
+      id: agendada.equipamentoId || agendada.id,
+      nome: agendada.equipamentoNome,
+      codigo: agendada.equipamentoCodigo,
+      local: agendada.equipamentoLocal,
+      tipo: "Equipamento",
+      responsavel: usuario?.name || "",
+      status: "Ativo",
+    };
+
+    try {
+      setCriandoInspecao(true);
+      await fetch(`${API_URL}/api/v1/inspections/${agendada.id}/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startedAtDevice: new Date().toISOString() }),
+      }).catch(() => null);
+
+      const detRes = await fetch(`${API_URL}/inspections/${agendada.id}`).catch(() => null);
+      let perguntasCarregadas = agendada.perguntas;
+      if (detRes && detRes.ok) {
+        const detData = await detRes.json().catch(() => null);
+        const listaQ = detData?.questions || detData?.items || [];
+        if (Array.isArray(listaQ) && listaQ.length > 0) {
+          perguntasCarregadas = listaQ.map((q: any, idx: number) => ({
+            id: String(q.id || `q-${idx}`),
+            texto: String(q.title || q.itemTitle || q.text || `Item ${idx + 1}`),
+            tipo:
+              q.type === "MULTIPLE_CHOICE" || q.type === "SINGLE_CHOICE"
+                ? "Múltipla escolha"
+                : q.type === "PHOTO"
+                ? "Foto"
+                : q.type === "PARAGRAPH" || q.type === "SHORT_TEXT" || q.type === "TEXT_SHORT"
+                ? "Texto"
+                : "Sim / Não",
+            obrigatoria: Boolean(q.required),
+          }));
+        }
+      }
+
+      setEquipamentoSelecionado(eqAlvo);
+      setNomeModelo(agendada.titulo);
+      setPerguntas(perguntasCarregadas);
+      setInspecaoId(agendada.id);
+      setRespostas({});
+      setObservacao("");
+      setFotos({});
+      setFotoOcorrencia(null);
+      setAssinatura(null);
+      setModoExecucao(true);
+      setInspecaoIniciada(true);
+    } finally {
+      setCriandoInspecao(false);
+    }
   }
 
   async function iniciarInspecao() {
@@ -1855,10 +2032,11 @@ function InspecoesScreen({
         },
         body: JSON.stringify({
           title: nomeModelo,
-          description: "Inspeção realizada pelo aplicativo OpsControl.",
+          description: "Inspeção realizada em campo pelo técnico no aplicativo OpsControl.",
           equipmentId: equipamentoSelecionado.id,
+          templateId: modeloSelecionadoId || null,
           responsibleId: usuario?.id || null,
-          questions: perguntasParaBackend,
+          questions: perguntasParaBackend.length > 0 ? perguntasParaBackend : undefined,
         }),
       });
 
@@ -1876,13 +2054,13 @@ function InspecoesScreen({
         const perguntasDoBanco: Pergunta[] = data.questions.map(
           (pergunta: any) => ({
             id: String(pergunta.id),
-            texto: String(pergunta.title),
+            texto: String(pergunta.title || pergunta.itemTitle),
             tipo:
-              pergunta.type === "MULTIPLE_CHOICE"
+              pergunta.type === "MULTIPLE_CHOICE" || pergunta.type === "SINGLE_CHOICE"
                 ? "Múltipla escolha"
                 : pergunta.type === "PHOTO"
                 ? "Foto"
-                : pergunta.type === "PARAGRAPH"
+                : pergunta.type === "PARAGRAPH" || pergunta.type === "SHORT_TEXT"
                 ? "Texto"
                 : "Sim / Não",
             obrigatoria: Boolean(pergunta.required),
@@ -1893,8 +2071,6 @@ function InspecoesScreen({
       }
 
       setInspecaoIniciada(true);
-
-      console.log("Inspeção criada com perguntas do PostgreSQL:", data);
     } catch (error) {
       console.error("Erro ao iniciar inspeção:", error);
       alert(
@@ -2060,8 +2236,6 @@ function InspecoesScreen({
           signatureUrl: index === 0 ? assinatura : null,
         }));
 
-      // O backend recebe UMA resposta por requisição.
-      // Enviamos cada resposta individualmente para /answers.
       for (const resposta of respostasBackend) {
         const respostaResponse = await fetch(
           `${API_URL}/inspections/${inspecaoId}/answers`,
@@ -2115,29 +2289,10 @@ function InspecoesScreen({
         );
       }
 
-      const novaInspecao: InspecaoSalva = {
-        id: inspecaoId,
-        titulo: nomeModelo,
-        equipamentoId: equipamentoSelecionado.id,
-        equipamentoNome: equipamentoSelecionado.nome,
-        equipamentoCodigo: equipamentoSelecionado.codigo,
-        tecnico: usuario?.name || "Técnico não identificado",
-        status: "CONCLUIDA",
-        reviewStatus: "PENDENTE",
-        respostas: { ...respostas },
-        observacao,
-        dataConclusao: new Date().toISOString(),
-        fotos: { ...fotos },
-        assinatura,
-      };
-
-      setInspecoesSalvas((listaAtual) => [
-        novaInspecao,
-        ...listaAtual.filter((item) => item.id !== novaInspecao.id),
-      ]);
+      await recarregarInspecoes();
 
       alert(
-        `Inspeção salva com sucesso para ${equipamentoSelecionado.nome}.`
+        `Inspeção concluída e enviada para avaliação do Supervisor (${equipamentoSelecionado.nome}).`
       );
 
       setModoExecucao(false);
@@ -2161,150 +2316,9 @@ function InspecoesScreen({
     }
   }
 
-  function traduzirStatusFinal(inspecao: InspecaoSalva) {
-    if (inspecao.reviewStatus === "APROVADA") return "APROVADA";
-    if (inspecao.reviewStatus === "REPROVADA") return "REPROVADA";
-    return "PENDENTE";
-  }
-
-  async function atualizarEquipamentoAposRevisao(
-    inspecao: InspecaoSalva,
-    decisao: "APROVADA" | "REPROVADA"
-  ) {
-    // ETAPA 10 — fechamento operacional:
-    // inspeção aprovada libera o equipamento; inspeção reprovada
-    // direciona o equipamento para manutenção.
-    const novoStatus: StatusEquipamento =
-      decisao === "APROVADA" ? "Ativo" : "Manutenção";
-
-    try {
-      const response = await fetch(
-        `${API_URL}/equipments/${inspecao.equipamentoId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status:
-              novoStatus === "Ativo"
-                ? "ACTIVE"
-                : novoStatus === "Manutenção"
-                ? "MAINTENANCE"
-                : "INACTIVE",
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(
-          data?.message ||
-            "A revisão foi registrada, mas não foi possível atualizar o equipamento."
-        );
-      }
-
-      return novoStatus;
-    } catch (error) {
-      console.error("Erro ao atualizar equipamento após revisão:", error);
-      throw error;
-    }
-  }
-
-  async function abrirRevisao(inspecao: InspecaoSalva) {
+  function abrirDetalhesInspecao(inspecao: InspecaoSalva) {
     setInspecaoEmRevisao(inspecao);
-    setObservacaoRevisao(inspecao.observacaoRevisao || "");
     setModalRevisao(true);
-  }
-
-  async function concluirRevisao(decisao: "APROVADA" | "REPROVADA") {
-    if (!inspecaoEmRevisao) return;
-
-    if (decisao === "REPROVADA" && !observacaoRevisao.trim()) {
-      alert("Informe a justificativa da reprovação.");
-      return;
-    }
-
-    setProcessandoRevisao(true);
-
-    const atualizada: InspecaoSalva = {
-      ...inspecaoEmRevisao,
-      reviewStatus: decisao,
-      revisadoPor: usuario?.name || "Responsável pela revisão",
-      observacaoRevisao: observacaoRevisao.trim(),
-      dataRevisao: new Date().toISOString(),
-      situacaoFinal: decisao,
-      dataEncerramento: new Date().toISOString(),
-      equipamentoStatusFinal:
-        decisao === "APROVADA" ? "Ativo" : "Manutenção",
-    };
-
-    try {
-      // ETAPA 8 — tenta persistir a revisão no backend.
-      const response = await fetch(
-        `${API_URL}/inspections/${inspecaoEmRevisao.id}/review`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: decisao === "APROVADA" ? "APPROVED" : "REJECTED",
-            reviewerId: usuario?.id || null,
-            observation: observacaoRevisao.trim() || null,
-          }),
-        }
-      );
-
-      if (!response.ok && response.status !== 404 && response.status !== 405) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data?.message || "Não foi possível registrar a revisão.");
-      }
-
-      // ETAPA 10 — fecha o fluxo operacional atualizando o equipamento.
-      let equipamentoStatusFinal: StatusEquipamento =
-        decisao === "APROVADA" ? "Ativo" : "Manutenção";
-
-      try {
-        equipamentoStatusFinal = await atualizarEquipamentoAposRevisao(
-          atualizada,
-          decisao
-        );
-      } catch (errorEquipamento) {
-        console.warn(
-          "Revisão registrada, mas o status do equipamento não foi atualizado:",
-          errorEquipamento
-        );
-        alert(
-          "A revisão foi registrada. Não foi possível atualizar o status do equipamento automaticamente."
-        );
-      }
-
-      const atualizadaFinal: InspecaoSalva = {
-        ...atualizada,
-        equipamentoStatusFinal,
-      };
-
-      // Mantém a atualização local mesmo em uma API que ainda não possua a rota /review.
-      setInspecoesSalvas((lista) =>
-        lista.map((item) => (item.id === atualizadaFinal.id ? atualizadaFinal : item))
-      );
-
-      setModalRevisao(false);
-      setInspecaoEmRevisao(null);
-      setObservacaoRevisao("");
-
-      alert(
-        decisao === "APROVADA"
-          ? "Inspeção aprovada com sucesso."
-          : "Inspeção reprovada. A justificativa foi registrada."
-      );
-    } catch (error) {
-      console.error("Erro na revisão da inspeção:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível concluir a revisão."
-      );
-    } finally {
-      setProcessandoRevisao(false);
-    }
   }
 
   if (modoExecucao) {
@@ -2925,7 +2939,7 @@ function InspecoesScreen({
     <View style={styles.flex}>
       <Header
         titulo="Inspeções"
-        subtitulo="Construtor de modelos"
+        subtitulo="Execução em Campo • Técnico"
       />
 
       <Modal
@@ -2933,23 +2947,20 @@ function InspecoesScreen({
         transparent
         animationType="slide"
         onRequestClose={() => {
-          if (!processandoRevisao) {
-            setModalRevisao(false);
-            setInspecaoEmRevisao(null);
-          }
+          setModalRevisao(false);
+          setInspecaoEmRevisao(null);
         }}
       >
         <View style={styles.reviewModalOverlay}>
           <View style={styles.reviewModal}>
             <View style={styles.reviewModalHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.reviewModalTitle}>Revisão da inspeção</Text>
+                <Text style={styles.reviewModalTitle}>Detalhes e Avaliação do Supervisor</Text>
                 <Text style={styles.reviewModalSubtitle}>
-                  Validação final do resultado apresentado pelo técnico.
+                  Consulta das respostas enviadas e do parecer oficial do supervisor.
                 </Text>
               </View>
               <TouchableOpacity
-                disabled={processandoRevisao}
                 onPress={() => {
                   setModalRevisao(false);
                   setInspecaoEmRevisao(null);
@@ -2984,22 +2995,47 @@ function InspecoesScreen({
                 </View>
 
                 <View style={styles.reviewSection}>
-                  <Text style={styles.reviewSectionTitle}>Resultado da inspeção</Text>
-                  <View style={styles.reviewResultRow}>
-                    <View style={styles.reviewResultIcon}>
-                      <MaterialIcons name="fact-check" size={22} color="#0B4B87" />
+                  <Text style={styles.reviewSectionTitle}>Parecer do Supervisor</Text>
+                  {inspecaoEmRevisao.reviewStatus === "PENDENTE" ? (
+                    <View style={styles.reviewResultRow}>
+                      <View style={styles.reviewResultIcon}>
+                        <MaterialIcons name="hourglass-top" size={22} color="#D88900" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.reviewResultTitle}>Aguardando Avaliação do Supervisor</Text>
+                        <Text style={styles.reviewResultText}>
+                          Esta inspeção foi enviada pelo técnico e aguarda a avaliação (Aprovação ou Reprovação) exclusiva do Supervisor no Painel de Operações.
+                        </Text>
+                      </View>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.reviewResultTitle}>Inspeção concluída</Text>
-                      <Text style={styles.reviewResultText}>
-                        O técnico finalizou o checklist e enviou os dados para revisão.
+                  ) : (
+                    <View style={styles.previousReviewBox}>
+                      <Text style={styles.previousReviewTitle}>
+                        Resultado da Avaliação:{" "}
+                        {inspecaoEmRevisao.reviewStatus === "APROVADA"
+                          ? "APROVADA PELO SUPERVISOR"
+                          : "REPROVADA PELO SUPERVISOR"}
+                      </Text>
+                      {inspecaoEmRevisao.revisadoPor ? (
+                        <Text style={styles.previousReviewText}>
+                          Supervisor avaliador: {inspecaoEmRevisao.revisadoPor}
+                        </Text>
+                      ) : null}
+                      {inspecaoEmRevisao.dataRevisao ? (
+                        <Text style={styles.previousReviewText}>
+                          Data da avaliação: {new Date(inspecaoEmRevisao.dataRevisao).toLocaleString("pt-BR")}
+                        </Text>
+                      ) : null}
+                      <Text style={styles.previousReviewText}>
+                        Parecer / Observação do Supervisor:{" "}
+                        {inspecaoEmRevisao.observacaoRevisao || "Nenhuma observação adicional registrada."}
                       </Text>
                     </View>
-                  </View>
+                  )}
                 </View>
 
                 <View style={styles.reviewSection}>
-                  <Text style={styles.reviewSectionTitle}>Observação do técnico</Text>
+                  <Text style={styles.reviewSectionTitle}>Observação registrada em campo</Text>
                   <View style={styles.reviewObservationBox}>
                     <Text style={styles.reviewObservationText}>
                       {inspecaoEmRevisao.observacao || "Nenhuma observação informada."}
@@ -3133,76 +3169,20 @@ function InspecoesScreen({
                     </View>
                   )}
                 </View>
-
-                <View style={styles.reviewSection}>
-                  <Text style={styles.reviewSectionTitle}>Decisão da revisão</Text>
-                  <TextInput
-                    style={styles.reviewInput}
-                    placeholder="Observação da revisão ou justificativa da reprovação"
-                    placeholderTextColor="#8B98AA"
-                    value={observacaoRevisao}
-                    onChangeText={setObservacaoRevisao}
-                    multiline
-                    textAlignVertical="top"
-                    editable={!processandoRevisao}
-                  />
-                </View>
-
-                {inspecaoEmRevisao.reviewStatus !== "PENDENTE" && (
-                  <View style={styles.previousReviewBox}>
-                    <Text style={styles.previousReviewTitle}>Histórico da revisão</Text>
-                    <Text style={styles.previousReviewText}>
-                      Status: {inspecaoEmRevisao.reviewStatus === "APROVADA" ? "Aprovada" : "Reprovada"}
-                    </Text>
-                    {inspecaoEmRevisao.revisadoPor ? (
-                      <Text style={styles.previousReviewText}>
-                        Responsável: {inspecaoEmRevisao.revisadoPor}
-                      </Text>
-                    ) : null}
-                    {inspecaoEmRevisao.dataRevisao ? (
-                      <Text style={styles.previousReviewText}>
-                        Data da revisão: {new Date(inspecaoEmRevisao.dataRevisao).toLocaleString("pt-BR")}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.previousReviewText}>
-                      Observação: {inspecaoEmRevisao.observacaoRevisao || "Nenhuma observação registrada."}
-                    </Text>
-                  </View>
-                )}
               </ScrollView>
             )}
 
             <View style={styles.reviewModalButtons}>
               <TouchableOpacity
-                style={styles.rejectReviewButton}
-                disabled={processandoRevisao}
-                onPress={() => concluirRevisao("REPROVADA")}
+                style={[styles.approveReviewButton, { flex: 1, backgroundColor: "#0B4B87" }]}
+                onPress={() => {
+                  setModalRevisao(false);
+                  setInspecaoEmRevisao(null);
+                }}
                 activeOpacity={0.8}
               >
-                {processandoRevisao ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <MaterialIcons name="cancel" size={19} color="#FFFFFF" />
-                    <Text style={styles.reviewActionText}>Reprovar</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.approveReviewButton}
-                disabled={processandoRevisao}
-                onPress={() => concluirRevisao("APROVADA")}
-                activeOpacity={0.8}
-              >
-                {processandoRevisao ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <MaterialIcons name="check-circle" size={19} color="#FFFFFF" />
-                    <Text style={styles.reviewActionText}>Aprovar</Text>
-                  </>
-                )}
+                <MaterialIcons name="check" size={19} color="#FFFFFF" />
+                <Text style={styles.reviewActionText}>Fechar Detalhes</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -3222,6 +3202,171 @@ function InspecoesScreen({
         bounces={true}
         directionalLockEnabled={true}
       >
+        <Text style={styles.pageTitleText}>
+          Operações de Campo (Técnico)
+        </Text>
+
+        <Text style={styles.pageDescription}>
+          Execute as inspeções atribuídas pelo supervisor ou inicie uma nova vistoria em campo e acompanhe o parecer de avaliação.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.executeInspectionButton}
+          onPress={() => setModoExecucao(true)}
+        >
+          <View style={styles.executeInspectionIcon}>
+            <MaterialIcons
+              name="play-arrow"
+              size={23}
+              color="#0B4B87"
+            />
+          </View>
+
+          <View style={styles.executeInspectionContent}>
+            <Text style={styles.executeInspectionTitle}>
+              Iniciar Nova Inspeção em Campo
+            </Text>
+
+            <Text style={styles.executeInspectionDescription}>
+              Selecione um equipamento do banco e execute o checklist oficial.
+            </Text>
+          </View>
+
+          <MaterialIcons
+            name="chevron-right"
+            size={24}
+            color="#7A889A"
+          />
+        </TouchableOpacity>
+
+        {/* INSPEÇÕES ATRIBUÍDAS / AGENDADAS PELO SUPERVISOR NO BANCO */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View>
+              <Text style={styles.cardTitle}>
+                Inspeções Atribuídas pelo Supervisor
+              </Text>
+              <Text style={styles.cardSubtitle}>
+                Ordens de inspeção agendadas no painel aguardando execução do técnico
+              </Text>
+            </View>
+
+            <View style={styles.counter}>
+              <Text style={styles.counterText}>
+                {inspecoesAgendadas.length}
+              </Text>
+            </View>
+          </View>
+
+          {inspecoesAgendadas.length === 0 ? (
+            <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
+              <Text style={{ color: "#68778D", fontSize: 12 }}>
+                Nenhuma inspeção pendente atribuída pelo supervisor no momento.
+              </Text>
+            </View>
+          ) : (
+            inspecoesAgendadas.map((agendada) => (
+              <View key={agendada.id} style={styles.savedInspectionCard}>
+                <View style={[styles.savedInspectionIcon, { backgroundColor: "#EBF3FC" }]}>
+                  <MaterialIcons
+                    name="assignment-late"
+                    size={22}
+                    color="#0B4B87"
+                  />
+                </View>
+
+                <View style={styles.savedInspectionContent}>
+                  <Text style={styles.savedInspectionTitle}>
+                    {agendada.titulo}
+                  </Text>
+
+                  <Text style={styles.savedInspectionEquipment}>
+                    {agendada.equipamentoNome} • {agendada.equipamentoCodigo}
+                  </Text>
+
+                  <Text style={styles.savedInspectionMeta}>
+                    Local: {agendada.equipamentoLocal}
+                  </Text>
+
+                  <Text style={styles.savedInspectionMeta}>
+                    Instruções: {agendada.instrucoes}
+                  </Text>
+
+                  <Text style={styles.savedInspectionMeta}>
+                    Checklist: {agendada.perguntas.length} itens de verificação
+                  </Text>
+                </View>
+
+                <View style={styles.savedInspectionActions}>
+                  <View style={[styles.reviewBadge, styles.reviewBadgePending]}>
+                    <Text style={styles.reviewBadgeText}>Aguardando Execução</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.reviewButton}
+                    onPress={() => iniciarInspecaoAgendada(agendada)}
+                    disabled={criandoInspecao}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
+                    <Text style={styles.reviewButtonText}>Executar Agora</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* MODELOS DE CHECKLIST DISPONÍVEIS NO BANCO (CRIADOS PELO SUPERVISOR) */}
+        {modelosBanco.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.cardTitle}>
+                  Modelo de Checklist Ativo
+                </Text>
+                <Text style={styles.cardSubtitle}>
+                  Modelos publicados pelo supervisor no banco de dados ({perguntas.length} itens no modelo selecionado)
+                </Text>
+              </View>
+            </View>
+
+            {modelosBanco.map((modelo) => {
+              const selecionado = modelo.id === modeloSelecionadoId;
+              return (
+                <TouchableOpacity
+                  key={modelo.id}
+                  onPress={() => selecionarModeloBanco(modelo)}
+                  style={[
+                    styles.executionEquipment,
+                    selecionado && {
+                      borderColor: "#0B4B87",
+                      backgroundColor: "#F0F6FC",
+                    },
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.executionEquipmentIcon}>
+                    <MaterialIcons
+                      name={selecionado ? "radio-button-checked" : "radio-button-unchecked"}
+                      size={22}
+                      color="#0B4B87"
+                    />
+                  </View>
+                  <View style={styles.executionEquipmentContent}>
+                    <Text style={styles.executionEquipmentName}>
+                      {modelo.titulo}
+                    </Text>
+                    <Text style={styles.executionEquipmentCode}>
+                      {modelo.perguntas.length} perguntas • {modelo.descricao}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
         {inspecoesSalvas.length > 0 && (
           <View style={styles.finalFlowCard}>
             <View style={styles.finalFlowHeader}>
@@ -3229,9 +3374,9 @@ function InspecoesScreen({
                 <MaterialIcons name="task-alt" size={22} color="#0B4B87" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.finalFlowTitle}>Fechamento do fluxo</Text>
+                <Text style={styles.finalFlowTitle}>Avaliações do Supervisor</Text>
                 <Text style={styles.finalFlowSubtitle}>
-                  Resumo das inspeções concluídas e revisadas.
+                  Acompanhamento das suas inspeções enviadas para avaliação do supervisor.
                 </Text>
               </View>
             </View>
@@ -3239,11 +3384,11 @@ function InspecoesScreen({
             <View style={styles.finalFlowStats}>
               <View style={styles.finalFlowStat}>
                 <Text style={styles.finalFlowStatValue}>{totalInspecoesFinais}</Text>
-                <Text style={styles.finalFlowStatLabel}>Total</Text>
+                <Text style={styles.finalFlowStatLabel}>Enviadas</Text>
               </View>
               <View style={styles.finalFlowStat}>
                 <Text style={styles.finalFlowStatValue}>{totalPendentes}</Text>
-                <Text style={styles.finalFlowStatLabel}>Pendentes</Text>
+                <Text style={styles.finalFlowStatLabel}>Em Avaliação</Text>
               </View>
               <View style={styles.finalFlowStat}>
                 <Text style={styles.finalFlowStatValue}>{totalAprovadas}</Text>
@@ -3263,8 +3408,8 @@ function InspecoesScreen({
               />
               <Text style={styles.finalFlowMessageText}>
                 {totalPendentes === 0
-                  ? "Todas as inspeções deste histórico possuem decisão de revisão."
-                  : `${totalPendentes} inspeção${totalPendentes > 1 ? "ões" : ""} aguardando revisão.`}
+                  ? "Todas as suas inspeções concluídas já foram avaliadas pelo supervisor."
+                  : `${totalPendentes} inspeção${totalPendentes > 1 ? "ões" : ""} aguardando avaliação do supervisor no painel.`}
               </Text>
             </View>
           </View>
@@ -3275,10 +3420,10 @@ function InspecoesScreen({
             <View style={styles.cardHeader}>
               <View>
                 <Text style={styles.cardTitle}>
-                  Histórico de Inspeções
+                  Minhas Inspeções Concluídas
                 </Text>
                 <Text style={styles.cardSubtitle}>
-                  Inspeções finalizadas e salvas no banco de dados
+                  Inspeções enviadas pelo técnico e parecer do supervisor
                 </Text>
               </View>
 
@@ -3309,7 +3454,7 @@ function InspecoesScreen({
                   </Text>
 
                   <Text style={styles.savedInspectionMeta}>
-                    Técnico: {inspecao.tecnico}
+                    Técnico executor: {inspecao.tecnico}
                   </Text>
 
                   <Text style={styles.savedInspectionMeta}>
@@ -3319,22 +3464,22 @@ function InspecoesScreen({
 
                   {inspecao.reviewStatus !== "PENDENTE" && (
                     <Text style={styles.savedInspectionMeta}>
-                      Revisada em{" "}
+                      Avaliada pelo supervisor em{" "}
                       {inspecao.dataRevisao
                         ? new Date(inspecao.dataRevisao).toLocaleString("pt-BR")
                         : "data não informada"}
                     </Text>
                   )}
 
-                  {inspecao.situacaoFinal !== "PENDENTE" && (
+                  {inspecao.observacaoRevisao ? (
                     <Text style={styles.savedInspectionMeta}>
-                      Situação final: {inspecao.situacaoFinal === "APROVADA" ? "Aprovada" : "Reprovada"}
+                      Parecer do supervisor: {inspecao.observacaoRevisao}
                     </Text>
-                  )}
+                  ) : null}
 
                   {inspecao.equipamentoStatusFinal && (
                     <Text style={styles.savedInspectionMeta}>
-                      Equipamento após revisão: {inspecao.equipamentoStatusFinal}
+                      Status do equipamento: {inspecao.equipamentoStatusFinal}
                     </Text>
                   )}
                 </View>
@@ -3352,31 +3497,25 @@ function InspecoesScreen({
                   >
                     <Text style={styles.reviewBadgeText}>
                       {inspecao.reviewStatus === "APROVADA"
-                        ? "Aprovada"
+                        ? "Aprovada pelo Supervisor"
                         : inspecao.reviewStatus === "REPROVADA"
-                        ? "Reprovada"
-                        : "Pendente de revisão"}
+                        ? "Reprovada pelo Supervisor"
+                        : "Aguardando Supervisor"}
                     </Text>
                   </View>
 
                   <TouchableOpacity
                     style={styles.reviewButton}
-                    onPress={() => abrirRevisao(inspecao)}
+                    onPress={() => abrirDetalhesInspecao(inspecao)}
                     activeOpacity={0.8}
                   >
                     <MaterialIcons
-                      name={
-                        inspecao.reviewStatus === "PENDENTE"
-                          ? "rate-review"
-                          : "visibility"
-                      }
+                      name="visibility"
                       size={18}
                       color="#FFFFFF"
                     />
                     <Text style={styles.reviewButtonText}>
-                      {inspecao.reviewStatus === "PENDENTE"
-                        ? "Revisar"
-                        : "Ver revisão"}
+                      Ver parecer
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -3384,175 +3523,6 @@ function InspecoesScreen({
             ))}
           </View>
         )}
-
-        <Text style={styles.pageTitleText}>
-          Construtor de Inspeção
-        </Text>
-
-        <Text style={styles.pageDescription}>
-          Crie e configure modelos de inspeção para sua equipe.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.executeInspectionButton}
-          onPress={() => setModoExecucao(true)}
-        >
-          <View style={styles.executeInspectionIcon}>
-            <MaterialIcons
-              name="play-arrow"
-              size={23}
-              color="#0B4B87"
-            />
-          </View>
-
-          <View style={styles.executeInspectionContent}>
-            <Text style={styles.executeInspectionTitle}>
-              Executar Inspeção
-            </Text>
-
-            <Text style={styles.executeInspectionDescription}>
-              Selecione um equipamento e execute o checklist em campo.
-            </Text>
-          </View>
-
-          <MaterialIcons
-            name="chevron-right"
-            size={24}
-            color="#7A889A"
-          />
-        </TouchableOpacity>
-
-        <View style={styles.card}>
-          <Text style={styles.inputLabel}>
-            Nome do modelo
-          </Text>
-
-          <TextInput
-            value={nomeModelo}
-            onChangeText={setNomeModelo}
-            style={styles.input}
-            placeholder="Digite o nome"
-            placeholderTextColor="#9AA5B5"
-          />
-        </View>
-
-        <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.cardHeader}
-            onPress={() => setMostrarTipos(!mostrarTipos)}
-          >
-            <View>
-              <Text style={styles.cardTitle}>
-                Tipos de Pergunta
-              </Text>
-
-              <Text style={styles.cardSubtitle}>
-                Escolha o tipo de resposta
-              </Text>
-            </View>
-
-            <MaterialIcons
-              name={
-                mostrarTipos
-                  ? "keyboard-arrow-up"
-                  : "keyboard-arrow-down"
-              }
-              size={23}
-              color="#173C68"
-            />
-          </TouchableOpacity>
-
-          {mostrarTipos && (
-            <>
-              <QuestionType
-                icon="toggle-on"
-                title="Sim / Não"
-                description="Resposta binária"
-              />
-
-              <QuestionType
-                icon="radio-button-checked"
-                title="Múltipla escolha"
-                description="Selecione uma opção"
-              />
-
-              <QuestionType
-                icon="text-fields"
-                title="Texto"
-                description="Resposta livre"
-              />
-
-              <QuestionType
-                icon="photo-camera"
-                title="Foto"
-                description="Registro fotográfico"
-              />
-            </>
-          )}
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View>
-              <Text style={styles.cardTitle}>
-                Perguntas
-              </Text>
-
-              <Text style={styles.cardSubtitle}>
-                {perguntas.length} perguntas cadastradas
-              </Text>
-            </View>
-
-            <View style={styles.counter}>
-              <Text style={styles.counterText}>
-                {perguntas.length}
-              </Text>
-            </View>
-          </View>
-
-          {perguntas.map((pergunta, index) => (
-            <QuestionCard
-              key={pergunta.id}
-              numero={index + 1}
-              pergunta={pergunta}
-            />
-          ))}
-
-          <TouchableOpacity
-            style={styles.addQuestion}
-            onPress={adicionarPergunta}
-          >
-            <MaterialIcons
-              name="add"
-              size={20}
-              color="#0B4A86"
-            />
-
-            <Text style={styles.addQuestionText}>
-              Adicionar Pergunta
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryText}>
-              Cancelar
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.primaryButton}>
-            <MaterialIcons
-              name="save"
-              size={18}
-              color="#FFFFFF"
-            />
-
-            <Text style={styles.primaryButtonText}>
-              Salvar Modelo
-            </Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
       <FloatingScrollButtons scrollRef={scrollRef} />
@@ -5011,7 +4981,7 @@ function PerfilScreen({
     <View style={styles.flex}>
       <Header
         titulo="Perfil"
-        subtitulo="Configurações do supervisor"
+        subtitulo="Área do Técnico • Configurações"
       />
 
       <ScrollView

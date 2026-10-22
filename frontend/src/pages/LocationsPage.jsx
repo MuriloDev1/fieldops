@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
-import { initialCustomers, initialLocations } from '../core/data/mockData';
 import { sitesApi, clientsApi } from '../core/services/api';
 import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
 
 export const LocationsPage = () => {
-  const [locations, setLocations] = useState(initialLocations);
-  const [customers, setCustomers] = useState(initialCustomers);
+  const [locations, setLocations] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    customerId: initialCustomers[0]?.id || '',
+    customerId: '',
     city: '',
     state: '',
     address: '',
@@ -21,21 +20,19 @@ export const LocationsPage = () => {
   const loadData = async () => {
     try {
       const [sitesData, clientsData] = await Promise.all([
-        sitesApi.getAll().catch(() => null),
-        clientsApi.getAll().catch(() => null)
+        sitesApi.getAll(),
+        clientsApi.getAll()
       ]);
 
-      if (Array.isArray(sitesData) && sitesData.length > 0) {
-        setLocations(sitesData);
-      }
-      if (Array.isArray(clientsData) && clientsData.length > 0) {
+      setLocations(Array.isArray(sitesData) ? sitesData : []);
+      if (Array.isArray(clientsData)) {
         setCustomers(clientsData);
-        if (!formData.customerId && clientsData[0]) {
-          setFormData((prev) => ({ ...prev, customerId: clientsData[0].id }));
+        if (clientsData[0]) {
+          setFormData((prev) => ({ ...prev, customerId: prev.customerId || clientsData[0].id }));
         }
       }
     } catch (err) {
-      console.warn('Usando dados de fallback para locais:', err);
+      console.error('Erro ao carregar locais do banco:', err);
     }
   };
 
@@ -57,8 +54,6 @@ export const LocationsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const customer = customers.find((c) => c.id === formData.customerId);
-    
     try {
       const created = await sitesApi.create({
         clientId: formData.customerId,
@@ -69,24 +64,11 @@ export const LocationsPage = () => {
         supervisor: formData.supervisor
       });
       setLocations((prev) => [created, ...prev]);
+      setFormData({ name: '', customerId: customers[0]?.id || '', city: '', state: '', address: '', supervisor: '' });
+      setIsDrawerOpen(false);
     } catch (err) {
-      console.warn('Erro ao salvar local na API, salvando localmente:', err);
-      const newLocation = {
-        id: `loc-${Date.now()}`,
-        customerId: formData.customerId,
-        customerName: customer ? customer.name : 'Cliente Indefinido',
-        name: formData.name,
-        city: formData.city,
-        state: formData.state,
-        address: formData.address,
-        supervisor: formData.supervisor || 'Não atribuído',
-        equipmentsCount: 0
-      };
-      setLocations((prev) => [newLocation, ...prev]);
+      alert('Erro ao salvar local no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
-
-    setFormData({ name: '', customerId: customers[0]?.id || '', city: '', state: '', address: '', supervisor: '' });
-    setIsDrawerOpen(false);
   };
 
   return (

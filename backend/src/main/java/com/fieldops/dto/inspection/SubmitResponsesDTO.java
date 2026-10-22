@@ -26,13 +26,20 @@ public class SubmitResponsesDTO {
     @AllArgsConstructor
     public static class ItemAnswerDTO {
         private UUID inspectionItemId;
+        private UUID snapshotItemId;
         private String valueText;
         private BigDecimal valueNumber;
         private Boolean valueBoolean;
+        private Boolean compliant;
         private LocalDate valueDate;
         private String valueJson;
+        private String answerJson;
         private String observation;
         private String conformity; // NOT_APPLICABLE, CONFORMING, NON_CONFORMING
         private OffsetDateTime answeredAtDevice;
+
+        public UUID getEffectiveItemId() {
+            return inspectionItemId != null ? inspectionItemId : snapshotItemId;
+        }
     }
 }

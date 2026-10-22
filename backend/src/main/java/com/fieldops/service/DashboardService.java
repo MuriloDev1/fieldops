@@ -1,5 +1,6 @@
 package com.fieldops.service;
 
+import com.fieldops.domain.entity.Inspection;
 import com.fieldops.domain.enums.EquipmentStatus;
 import com.fieldops.domain.enums.InspectionStatus;
 import com.fieldops.domain.enums.NonConformitySeverity;
@@ -11,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +35,8 @@ public class DashboardService {
         long totalClients = clientRepository.count();
         long totalSites = siteRepository.count();
         long totalEquipment = equipmentRepository.count();
-        long totalInspections = inspectionRepository.count();
+        List<Inspection> allInspections = inspectionRepository.findAll();
+        long totalInspections = allInspections.size();
 
         long approved = inspectionRepository.countByStatus(InspectionStatus.APPROVED);
         long submitted = inspectionRepository.countByStatus(InspectionStatus.SUBMITTED);
@@ -52,9 +57,9 @@ public class DashboardService {
 
         long activeTechs = userRepository.findByRole(UserRole.TECHNICIAN).size();
 
-        double confRate = 94.2;
+        double confRate = 100.0;
         if (totalInspections > 0) {
-            confRate = Math.max(75.0, Math.min(99.5, Math.round(((totalInspections - Math.min(openNc, totalInspections)) * 1000.0) / totalInspections) / 10.0));
+            confRate = Math.round(((totalInspections - Math.min(openNc, totalInspections)) * 1000.0) / totalInspections) / 10.0;
         }
         double nonConfRate = Math.round((100.0 - confRate) * 10.0) / 10.0;
 
@@ -74,15 +79,30 @@ public class DashboardService {
             }
         }
 
-        List<DashboardSummaryDTO.WeeklyProgressItem> weeklyProgress = List.of(
-                new DashboardSummaryDTO.WeeklyProgressItem("Seg", 42, 48),
-                new DashboardSummaryDTO.WeeklyProgressItem("Ter", 38, 45),
-                new DashboardSummaryDTO.WeeklyProgressItem("Qua", 55, 60),
-                new DashboardSummaryDTO.WeeklyProgressItem("Qui", 47, 50),
-                new DashboardSummaryDTO.WeeklyProgressItem("Sex", 62, 65),
-                new DashboardSummaryDTO.WeeklyProgressItem("Sáb", 28, 30),
-                new DashboardSummaryDTO.WeeklyProgressItem("Dom", 14, 15)
-        );
+        String[] dayLabels = {"Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"};
+        int[] completedByDay = new int[7];
+        int[] totalByDay = new int[7];
+
+        for (Inspection insp : allInspections) {
+            OffsetDateTime refDate = insp.getScheduledFor() != null ? insp.getScheduledFor() : insp.getCreatedAt();
+            if (refDate != null) {
+                DayOfWeek dow = refDate.getDayOfWeek();
+                int idx = dow.getValue() - 1; // 0 = Seg .. 6 = Dom
+                totalByDay[idx]++;
+                if (insp.getStatus() == InspectionStatus.APPROVED || insp.getStatus() == InspectionStatus.SUBMITTED) {
+                    completedByDay[idx]++;
+                }
+            }
+        }
+
+        List<DashboardSummaryDTO.WeeklyProgressItem> weeklyProgress = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            weeklyProgress.add(new DashboardSummaryDTO.WeeklyProgressItem(
+                    dayLabels[i],
+                    completedByDay[i],
+                    totalByDay[i]
+            ));
+        }
 
         return DashboardSummaryDTO.builder()
                 .totalClients(totalClients)
@@ -99,9 +119,10 @@ public class DashboardService {
                 .overdueInspections(rejected > 0 ? rejected : openNc)
                 .openNonConformities(openNc)
                 .criticalEquipments(criticalEq)
-                .activeTechnicians(activeTechs > 0 ? activeTechs : 8)
+                .activeTechnicians(activeTechs)
                 .conformanceRate(confRate)
                 .nonConformanceRate(nonConfRate)
+                .nonConformityRate(nonConfRate)
                 .weeklyProgress(weeklyProgress)
                 .inspectionsByStatus(byStatus)
                 .nonConformitiesBySeverity(bySeverity)

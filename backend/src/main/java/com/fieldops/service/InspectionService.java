@@ -455,8 +455,9 @@ public class InspectionService {
         // Grava as respostas
         if (dto.getAnswers() != null) {
             for (SubmitResponsesDTO.ItemAnswerDTO ans : dto.getAnswers()) {
-                InspectionItemSnapshot item = snapshotRepository.findById(ans.getInspectionItemId())
-                        .orElseThrow(() -> new ResourceNotFoundException("ITEM_NOT_FOUND", "Item da inspeção não encontrado: " + ans.getInspectionItemId()));
+                UUID itemId = ans.getEffectiveItemId();
+                InspectionItemSnapshot item = snapshotRepository.findById(itemId)
+                        .orElseThrow(() -> new ResourceNotFoundException("ITEM_NOT_FOUND", "Item da inspeção não encontrado: " + itemId));
 
                 InspectionResponse resp = responseRepository.findByInspectionItemId(item.getId())
                         .orElseGet(() -> InspectionResponse.builder()
@@ -464,19 +465,31 @@ public class InspectionService {
                                 .inspectionItem(item)
                                 .build());
 
-                resp.setValueText(ans.getValueText());
+                Boolean boolVal = ans.getValueBoolean() != null ? ans.getValueBoolean() : ans.getCompliant();
+                String textVal = ans.getValueText();
+                if (textVal == null && boolVal != null) {
+                    textVal = boolVal ? "Sim" : "Não";
+                }
+                resp.setValueText(textVal);
                 resp.setValueNumber(ans.getValueNumber());
-                resp.setValueBoolean(ans.getValueBoolean());
+                resp.setValueBoolean(boolVal);
                 resp.setValueDate(ans.getValueDate());
-                resp.setValueJson(ans.getValueJson() != null ? ans.getValueJson() : "{}");
+                String jsonVal = ans.getValueJson() != null ? ans.getValueJson() : (ans.getAnswerJson() != null ? "{\"answer\":\"" + ans.getAnswerJson() + "\"}" : "{}");
+                resp.setValueJson(jsonVal);
                 resp.setObservation(ans.getObservation());
 
                 ConformityStatus cStatus = ConformityStatus.NOT_APPLICABLE;
                 if (ans.getConformity() != null) {
-                    try {
-                        cStatus = ConformityStatus.valueOf(ans.getConformity().toUpperCase());
-                    } catch (Exception ignored) {
+                    String rawConf = ans.getConformity().toUpperCase();
+                    if ("CONFORM".equals(rawConf) || "CONFORMING".equals(rawConf)) {
+                        cStatus = ConformityStatus.CONFORMING;
+                    } else if ("NON_CONFORM".equals(rawConf) || "NON_CONFORMING".equals(rawConf)) {
+                        cStatus = ConformityStatus.NON_CONFORMING;
                     }
+                } else if (boolVal != null) {
+                    cStatus = boolVal ? ConformityStatus.CONFORMING : ConformityStatus.NON_CONFORMING;
+                } else if (ans.getAnswerJson() != null) {
+                    cStatus = "NON_CONFORM".equalsIgnoreCase(ans.getAnswerJson()) ? ConformityStatus.NON_CONFORMING : ConformityStatus.CONFORMING;
                 }
                 resp.setConformity(cStatus);
                 resp.setAnsweredBy(effectiveTech);
@@ -487,19 +500,23 @@ public class InspectionService {
 
                 // Se houver não conformidade declarada, gera registro automático
                 if (cStatus == ConformityStatus.NON_CONFORMING) {
-                    NonConformity nc = NonConformity.builder()
-                            .inspection(inspection)
-                            .inspectionItem(item)
-                            .response(savedResp)
-                            .title("Não conformidade: " + item.getItemTitle())
-                            .description(ans.getObservation() != null ? ans.getObservation() : "Item identificado como não conforme em campo.")
-                            .severity(NonConformitySeverity.HIGH)
-                            .status(NonConformityStatus.OPEN)
-                            .createdBy(effectiveTech)
-                            .createdAtDevice(ans.getAnsweredAtDevice())
-                            .build();
+                    boolean ncExists = nonConformityRepository.findByInspectionIdOrderByCreatedAtDesc(inspectionId).stream()
+                            .anyMatch(nc -> nc.getInspectionItem() != null && nc.getInspectionItem().getId().equals(item.getId()));
+                    if (!ncExists) {
+                        NonConformity nc = NonConformity.builder()
+                                .inspection(inspection)
+                                .inspectionItem(item)
+                                .response(savedResp)
+                                .title("Não conformidade: " + item.getItemTitle())
+                                .description(ans.getObservation() != null && !ans.getObservation().isBlank() ? ans.getObservation() : "Item identificado como não conforme em campo.")
+                                .severity(NonConformitySeverity.HIGH)
+                                .status(NonConformityStatus.OPEN)
+                                .createdBy(effectiveTech)
+                                .createdAtDevice(ans.getAnsweredAtDevice() != null ? ans.getAnsweredAtDevice() : OffsetDateTime.now())
+                                .build();
 
-                    nonConformityRepository.save(nc);
+                        nonConformityRepository.save(nc);
+                    }
                 }
             }
         }

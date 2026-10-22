@@ -5,36 +5,6 @@ import { StatusBadge } from '../shared/components/StatusBadge';
 import { nonConformitiesApi } from '../core/services/api';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
-const fallbackNCs = [
-  {
-    id: 'NC-5001',
-    description: 'Vazamento de óleo lubrificante detectado no selo mecânico da bomba',
-    equipment: 'Bomba Centrífuga KSB 01',
-    technician: 'Carlos Lima',
-    date: '28/09/2026',
-    severity: 'HIGH',
-    status: 'OPEN',
-  },
-  {
-    id: 'NC-5002',
-    description: 'Temperatura excessiva no enrolamento do motor elétrico trifásico (88°C)',
-    equipment: 'Compressor de Ar Schulz 02',
-    technician: 'Carlos Lima',
-    date: '25/09/2026',
-    severity: 'CRITICAL',
-    status: 'IN_PROGRESS',
-  },
-  {
-    id: 'NC-5003',
-    description: 'Lacre de segurança violado e ausência de etiqueta de calibração',
-    equipment: 'Extintor CO2 10kg',
-    technician: 'Carlos Lima',
-    date: '20/09/2026',
-    severity: 'MEDIUM',
-    status: 'RESOLVED',
-  }
-];
-
 const severityConfig = {
   LOW: { label: 'Baixa', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
   MEDIUM: { label: 'Média', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
@@ -50,7 +20,7 @@ const statusConfig = {
 };
 
 export const NonConformitiesPage = () => {
-  const [items, setItems] = useState(fallbackNCs);
+  const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -58,11 +28,9 @@ export const NonConformitiesPage = () => {
     setLoading(true);
     try {
       const data = await nonConformitiesApi.getAll();
-      if (Array.isArray(data) && data.length > 0) {
-        setItems(data);
-      }
+      setItems(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Usando dados de fallback para não conformidades:', err);
+      console.error('Erro ao carregar não conformidades do banco:', err);
     } finally {
       setLoading(false);
     }

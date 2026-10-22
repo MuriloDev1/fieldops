@@ -5,12 +5,6 @@ import { StatusBadge } from '../shared/components/StatusBadge';
 import { usersApi } from '../core/services/api';
 import { UserPlus } from 'lucide-react';
 
-const fallbackTeam = [
-  { id: '1', name: 'Carlos Lima', email: 'tecnico@fieldops.com', role: 'TECHNICIAN', region: 'Refinaria Central', completed: 142, status: 'ACTIVE', phone: '(11) 99999-0003' },
-  { id: '2', name: 'Roberto Silva', email: 'supervisor@fieldops.com', role: 'SUPERVISOR', region: 'Terminal Sul', completed: 210, status: 'ACTIVE', phone: '(11) 99999-0002' },
-  { id: '3', name: 'Administrador do Sistema', email: 'admin@fieldops.com', role: 'ADMIN', region: 'Matriz Operacional', completed: 98, status: 'ACTIVE', phone: '(11) 99999-0001' },
-];
-
 const roleLabels = {
   ADMIN: 'Administrador',
   SUPERVISOR: 'Supervisor Regional',
@@ -24,7 +18,7 @@ const statusLabels = {
 };
 
 export const TeamManagementPage = () => {
-  const [users, setUsers] = useState(fallbackTeam);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -41,11 +35,9 @@ export const TeamManagementPage = () => {
     setLoading(true);
     try {
       const data = await usersApi.getAll();
-      if (Array.isArray(data) && data.length > 0) {
-        setUsers(data);
-      }
+      setUsers(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Usando dados de fallback para equipe:', err);
+      console.error('Erro ao carregar equipe do banco:', err);
     } finally {
       setLoading(false);
     }

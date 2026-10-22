@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { initialCustomers, initialLocations, initialEquipments } from '../core/data/mockData';
 import { equipmentApi, clientsApi, sitesApi } from '../core/services/api';
 import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
@@ -7,9 +6,9 @@ import { StatusBadge } from '../shared/components/StatusBadge';
 import { QrCode } from 'lucide-react';
 
 export const EquipmentPage = () => {
-  const [equipments, setEquipments] = useState(initialEquipments);
-  const [customers, setCustomers] = useState(initialCustomers);
-  const [locations, setLocations] = useState(initialLocations);
+  const [equipments, setEquipments] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [locations, setLocations] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedLocationId, setSelectedLocationId] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -18,8 +17,8 @@ export const EquipmentPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     type: 'Bomba Hidráulica',
-    customerId: initialCustomers[0]?.id || '',
-    locationId: initialLocations[0]?.id || '',
+    customerId: '',
+    locationId: '',
     serialNumber: '',
     qrCodeId: 'QR-EQP-1099',
     status: 'OK'
@@ -28,18 +27,14 @@ export const EquipmentPage = () => {
   const loadData = async () => {
     try {
       const [eqpData, cliData, locData] = await Promise.all([
-        equipmentApi.getAll().catch(() => null),
-        clientsApi.getAll().catch(() => null),
-        sitesApi.getAll().catch(() => null)
+        equipmentApi.getAll(),
+        clientsApi.getAll(),
+        sitesApi.getAll()
       ]);
 
-      if (Array.isArray(eqpData) && eqpData.length > 0) {
-        setEquipments(eqpData);
-      }
-      if (Array.isArray(cliData) && cliData.length > 0) {
-        setCustomers(cliData);
-      }
-      if (Array.isArray(locData) && locData.length > 0) {
+      setEquipments(Array.isArray(eqpData) ? eqpData : []);
+      setCustomers(Array.isArray(cliData) ? cliData : []);
+      if (Array.isArray(locData)) {
         setLocations(locData);
         if (cliData?.[0]) {
           const firstClientLocs = locData.filter(
@@ -47,13 +42,13 @@ export const EquipmentPage = () => {
           );
           setFormData((prev) => ({
             ...prev,
-            customerId: cliData[0].id,
-            locationId: firstClientLocs[0]?.id || locData[0]?.id || ''
+            customerId: prev.customerId || cliData[0].id,
+            locationId: prev.locationId || firstClientLocs[0]?.id || locData[0]?.id || ''
           }));
         }
       }
     } catch (err) {
-      console.warn('Usando dados de fallback para equipamentos:', err);
+      console.error('Erro ao carregar equipamentos do banco:', err);
     }
   };
 
@@ -116,18 +111,12 @@ export const EquipmentPage = () => {
       setEquipments((prev) => prev.map((item) => (item.id === eqp.id ? updated : item)));
       setSelectedEquipment(updated);
     } catch (err) {
-      setEquipments((prev) =>
-        prev.map((item) => (item.id === eqp.id ? { ...item, status: nextStatus } : item))
-      );
-      setSelectedEquipment((prev) => (prev ? { ...prev, status: nextStatus } : null));
+      alert('Erro ao atualizar status no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const cust = customers.find((c) => c.id === formData.customerId);
-    const loc = locations.find((l) => l.id === formData.locationId);
-
     try {
       const created = await equipmentApi.create({
         siteId: formData.locationId,
@@ -138,34 +127,22 @@ export const EquipmentPage = () => {
         status: formData.status
       });
       setEquipments((prev) => [created, ...prev]);
+      setIsDrawerOpen(false);
+      const firstClientLocs = locations.filter(
+        (l) => l.customerId === customers[0]?.id || l.clientId === customers[0]?.id
+      );
+      setFormData({
+        name: '',
+        type: 'Bomba Hidráulica',
+        customerId: customers[0]?.id || '',
+        locationId: firstClientLocs[0]?.id || locations[0]?.id || '',
+        serialNumber: '',
+        qrCodeId: `QR-EQP-${Math.floor(1000 + Math.random() * 9000)}`,
+        status: 'OK'
+      });
     } catch (err) {
-      console.warn('Erro ao salvar equipamento na API, salvando localmente:', err);
-      const newEquipment = {
-        id: `eqp-${Date.now()}`,
-        qrCodeId: formData.qrCodeId,
-        name: formData.name,
-        type: formData.type,
-        customerId: formData.customerId,
-        customerName: cust ? cust.name : 'N/A',
-        locationId: formData.locationId,
-        locationName: loc ? loc.name : 'N/A',
-        serialNumber: formData.serialNumber || `SN-${Math.floor(100000 + Math.random() * 900000)}`,
-        status: formData.status,
-        lastInspected: 'Hoje'
-      };
-      setEquipments((prev) => [newEquipment, ...prev]);
+      alert('Erro ao salvar equipamento no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
-
-    setIsDrawerOpen(false);
-    setFormData({
-      name: '',
-      type: 'Bomba Hidráulica',
-      customerId: customers[0]?.id || '',
-      locationId: locations[0]?.id || '',
-      serialNumber: '',
-      qrCodeId: `QR-EQP-${Math.floor(1000 + Math.random() * 9000)}`,
-      status: 'OK'
-    });
   };
 
   return (

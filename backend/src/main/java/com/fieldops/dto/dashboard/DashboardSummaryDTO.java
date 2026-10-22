@@ -33,6 +33,7 @@ public class DashboardSummaryDTO {
     private long activeTechnicians;
     private double conformanceRate;
     private double nonConformanceRate;
+    private double nonConformityRate;
 
     @Builder.Default
     private List<WeeklyProgressItem> weeklyProgress = new ArrayList<>();

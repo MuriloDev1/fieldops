@@ -6,92 +6,9 @@ import { InspectionTimeline } from '../shared/components/InspectionTimeline';
 import { inspectionsApi } from '../core/services/api';
 import { History, ShieldCheck, Search } from 'lucide-react';
 
-const fallbackInspections = [
-  {
-    id: 'INS-8001',
-    templateTitle: 'Checklist Preventivo de Bomba Hidráulica',
-    clientName: 'Petrobras S.A.',
-    siteName: 'Refinaria RPBC',
-    equipmentName: 'Bomba Centrífuga KSB 01',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-10-02',
-    priority: 'Alta',
-    status: 'IN_PROGRESS',
-    statusLabel: 'Em Andamento',
-    itemsCount: 10,
-    answeredCount: 4,
-    nonConformityCount: 0,
-    tone: 'info'
-  },
-  {
-    id: 'INS-8002',
-    templateTitle: 'Inspeção Elétrica de Subestação',
-    clientName: 'Vale S.A.',
-    siteName: 'Terminal Portuário de Tubarão',
-    equipmentName: 'Painel Elétrico CCM-02',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-10-05',
-    priority: 'Crítica',
-    status: 'SCHEDULED',
-    statusLabel: 'Agendada',
-    itemsCount: 15,
-    answeredCount: 0,
-    nonConformityCount: 0,
-    tone: 'warning'
-  },
-  {
-    id: 'INS-8003',
-    templateTitle: 'Checklist de Segurança e Válvulas',
-    clientName: 'Klabin',
-    siteName: 'Fábrica Monte Alegre',
-    equipmentName: 'Caldeira de Alta Pressão 03',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-09-28',
-    priority: 'Alta',
-    status: 'SUBMITTED',
-    statusLabel: 'Em Revisão',
-    itemsCount: 12,
-    answeredCount: 12,
-    nonConformityCount: 1,
-    tone: 'info'
-  },
-  {
-    id: 'INS-8004',
-    templateTitle: 'Inspeção de Compressores Industriais',
-    clientName: 'Petrobras S.A.',
-    siteName: 'Refinaria Central',
-    equipmentName: 'Válvula de Pressão B',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-09-26',
-    priority: 'Média',
-    status: 'APPROVED',
-    statusLabel: 'Aprovada',
-    itemsCount: 8,
-    answeredCount: 8,
-    nonConformityCount: 0,
-    tone: 'success'
-  },
-  {
-    id: 'INS-8005',
-    templateTitle: 'Inspeção Periódica de Parafuso',
-    clientName: 'Vale S.A.',
-    siteName: 'Planta de Processamento Carajás',
-    equipmentName: 'Compressor Principal',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-09-24',
-    priority: 'Alta',
-    status: 'REJECTED',
-    statusLabel: 'Reprovada',
-    itemsCount: 10,
-    answeredCount: 10,
-    nonConformityCount: 2,
-    tone: 'danger'
-  }
-];
-
 export function HistoryPage() {
-  const [inspectionsList, setInspectionsList] = useState(fallbackInspections);
-  const [selectedInspection, setSelectedInspection] = useState(fallbackInspections[0]);
+  const [inspectionsList, setInspectionsList] = useState([]);
+  const [selectedInspection, setSelectedInspection] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(false);
@@ -101,28 +18,28 @@ export function HistoryPage() {
       try {
         setLoading(true);
         const data = await inspectionsApi.getAll();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map((item) => ({
             id: item.id,
-            templateTitle: item.templateTitle || item.templateVersionTitle || item.title || 'Inspeção de Campo',
-            clientName: item.clientName || 'Cliente Industrial',
-            siteName: item.siteName || 'Planta Operacional',
-            equipmentName: item.equipmentName || 'Equipamento',
-            technicianName: item.technicianName || 'Carlos Lima',
-            scheduledDate: item.scheduledDate || (item.scheduledFor ? item.scheduledFor.substring(0, 10) : '2026-10-01'),
-            priority: item.priority || 'Média',
+            templateTitle: item.templateTitle || item.templateVersionTitle || item.title || '-',
+            clientName: item.clientName || '-',
+            siteName: item.siteName || '-',
+            equipmentName: item.equipmentName || '-',
+            technicianName: item.technicianName || '-',
+            scheduledDate: item.scheduledDate || (item.scheduledFor ? item.scheduledFor.substring(0, 10) : '-'),
+            priority: item.priority || '-',
             status: item.status,
             statusLabel: mapStatusLabel(item.status),
-            itemsCount: item.itemsCount ?? item.items?.length ?? 10,
+            itemsCount: item.itemsCount ?? item.items?.length ?? 0,
             answeredCount: item.answeredCount ?? 0,
             nonConformityCount: item.nonConformityCount ?? item.nonConformitiesCount ?? 0,
             tone: mapStatusTone(item.status)
           }));
           setInspectionsList(mapped);
-          setSelectedInspection(mapped[0]);
+          setSelectedInspection(mapped[0] || null);
         }
       } catch (err) {
-        console.warn('[HistoryPage] Usando lista padrão de demonstração:', err);
+        console.error('[HistoryPage] Erro ao carregar inspeções do banco:', err);
       } finally {
         setLoading(false);
       }

@@ -9,6 +9,13 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Se houver algum token mockado antigo no localStorage, limpa para usar apenas o banco real
+    if (authService.getStoredAccessToken() === 'dev_bearer_token') {
+      authService.clearSession();
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+
     // Sincroniza estado caso os interceptores detectem expiração ou revogação
     const handleSessionExpired = () => {
       setUser(null);
@@ -34,27 +41,12 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         return true;
       }
+      return false;
     } catch (err) {
       // RN-007: Não logar senhas nem tokens
       const message = err?.response?.data?.message || err?.message || 'Falha na autenticação';
       setError(message);
-
-      // Fallback gracioso para modo de demonstração caso a API esteja offline
-      const fallbackUser = {
-        id: '90000000-0000-0000-0000-000000000002',
-        name: 'Supervisor Profile',
-        role: 'SUPERVISOR',
-        email: email || 'supervisor@fieldops.com',
-      };
-      authService.setSession({
-        accessToken: 'dev_bearer_token',
-        refreshToken: 'dev_refresh_token',
-        expiresIn: 86400,
-        user: fallbackUser,
-      });
-      setUser(fallbackUser);
-      setIsAuthenticated(true);
-      return true;
+      return false;
     }
   };
 

@@ -5,15 +5,15 @@ import { Activity, Building2 } from 'lucide-react';
 
 export const AnalyticsPage = () => {
   const [summary, setSummary] = useState({
-    totalClients: 3,
-    activeSites: 4,
-    totalEquipments: 6,
-    criticalEquipments: 1,
-    scheduledInspections: 1,
-    inProgressInspections: 1,
-    completedInspections: 1,
-    openNonConformities: 1,
-    conformanceRate: 94.2,
+    totalClients: 0,
+    activeSites: 0,
+    totalEquipments: 0,
+    criticalEquipments: 0,
+    scheduledInspections: 0,
+    inProgressInspections: 0,
+    completedInspections: 0,
+    openNonConformities: 0,
+    conformanceRate: 0,
   });
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export const AnalyticsPage = () => {
         if (data) setSummary((prev) => ({ ...prev, ...data }));
       })
       .catch((err) => {
-        console.warn('Usando métricas de fallback:', err);
+        console.error('Erro ao carregar métricas do banco:', err);
       });
   }, []);
 
@@ -31,33 +31,33 @@ export const AnalyticsPage = () => {
     <>
       <div className="page-title-wrap">
         <h1>Analytics & Indicadores</h1>
-        <p>Métricas consolidadas de eficiência e tempo médio de atendimento.</p>
+        <p>Métricas consolidadas de eficiência e acompanhamento do banco de dados.</p>
       </div>
 
       <div className="stats-grid" style={{ marginBottom: '2rem' }}>
         <StatCard
-          title="Tempo Médio de Inspeção"
-          value="38 min"
-          footerText="-4 min vs média"
+          title="Total de Inspeções"
+          value={String(summary.totalInspections ?? (summary.scheduledInspections + summary.inProgressInspections + summary.completedInspections))}
+          footerText={`${summary.scheduledInspections || 0} agendadas`}
           type="positive"
-          icon="⏱"
+          icon="📋"
         />
         <StatCard
           title="Conformidade Geral"
-          value={`${summary.conformanceRate != null ? Number(summary.conformanceRate).toFixed(1) : '94.2'}%`}
-          footerText="+1.8% no trimestre"
+          value={`${summary.conformanceRate != null ? Number(summary.conformanceRate).toFixed(1) : '0.0'}%`}
+          footerText="Índice em tempo real"
           type={summary.conformanceRate >= 90 ? 'positive' : 'warning'}
           icon="📈"
         />
         <StatCard
           title="Alertas de Manutenção"
-          value={String((summary.openNonConformities || 0) + (summary.criticalEquipments || 0) || 8)}
-          footerText={`${summary.openNonConformities || 2} necessitam auditoria`}
+          value={String((summary.openNonConformities || 0) + (summary.criticalEquipments || 0))}
+          footerText={`${summary.openNonConformities || 0} não conformidades abertas`}
           type="warning"
           icon="⚠️"
         />
         <StatCard
-          title="Inspeções Realizadas"
+          title="Inspeções Concluídas"
           value={String(summary.completedInspections || 0)}
           footerText={`${summary.inProgressInspections || 0} em andamento`}
           type="positive"

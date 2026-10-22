@@ -5,38 +5,8 @@ import { StatusBadge } from '../shared/components/StatusBadge';
 import { templatesApi } from '../core/services/api';
 import { Plus, ArrowUpRight, Trash2 } from 'lucide-react';
 
-const fallbackTemplates = [
-  {
-    id: 'tmpl-1001',
-    title: 'Checklist Preventivo de Bomba Hidráulica',
-    description: 'Verificação periódica de selagem mecânica, rolamentos, vibração e pressão de sucção.',
-    status: 'ACTIVE',
-    versionNumber: 1,
-    sectionsCount: 3,
-    itemsCount: 10,
-  },
-  {
-    id: 'tmpl-1002',
-    title: 'Inspeção Elétrica de Subestação',
-    description: 'Termografia, integridade de painéis CCM, aterramento e disjuntores de média tensão.',
-    status: 'ACTIVE',
-    versionNumber: 2,
-    sectionsCount: 4,
-    itemsCount: 15,
-  },
-  {
-    id: 'tmpl-1003',
-    title: 'Checklist de Segurança e Caldeiras',
-    description: 'Inspeção NR-13 para vasos de pressão, válvulas de segurança e manômetros.',
-    status: 'ACTIVE',
-    versionNumber: 1,
-    sectionsCount: 3,
-    itemsCount: 12,
-  },
-];
-
 export const TemplatesPage = () => {
-  const [templates, setTemplates] = useState(fallbackTemplates);
+  const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [activeVersionDetails, setActiveVersionDetails] = useState(null);
   const [isNewDrawerOpen, setIsNewDrawerOpen] = useState(false);
@@ -62,11 +32,9 @@ export const TemplatesPage = () => {
     setLoading(true);
     try {
       const data = await templatesApi.getAll();
-      if (Array.isArray(data) && data.length > 0) {
-        setTemplates(data);
-      }
+      setTemplates(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.warn('Usando dados de fallback para modelos de checklist:', err);
+      console.error('Erro ao carregar modelos de checklist do banco:', err);
     } finally {
       setLoading(false);
     }
@@ -285,7 +253,7 @@ export const TemplatesPage = () => {
                       <ul style={{ margin: 0, paddingLeft: '1.2rem', color: '#cbd5e1', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         {section.items?.map((item, iIdx) => (
                           <li key={item.id || iIdx}>
-                            {item.text || item.prompt} {item.required && <span style={{ color: '#ef4444' }}>*</span>}
+                            {item.text || item.title || item.prompt} {item.required && <span style={{ color: '#ef4444' }}>*</span>}
                           </li>
                         ))}
                       </ul>
@@ -294,10 +262,7 @@ export const TemplatesPage = () => {
                 </div>
               ) : (
                 <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px', color: '#94a3b8', fontSize: '0.85rem' }}>
-                  <p style={{ margin: '0 0 0.5rem 0' }}>1. Inspeção de integridade física e fixação</p>
-                  <p style={{ margin: '0 0 0.5rem 0' }}>2. Checagem de temperatura, vibração e ruído</p>
-                  <p style={{ margin: '0 0 0.5rem 0' }}>3. Verificação de vazamentos e vedações</p>
-                  <p style={{ margin: 0 }}>4. Teste de parada de emergência e intertravamento</p>
+                  <p style={{ margin: 0 }}>Carregando itens da versão ativa no banco de dados...</p>
                 </div>
               )}
             </div>
