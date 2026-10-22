@@ -28,8 +28,8 @@ import type {
 
 // Configuração da URL base da API
 export const API_BASE_URL: string = (
-  process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
-).replace(/\/$/, '');
+  process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1').replace(/\/$/, '');
+
 
 // Tipos e callbacks para reset de navegação quando a sessão for revogada/expirada
 export type UnauthorizedCallback = () => void;
@@ -105,7 +105,7 @@ apiClient.interceptors.request.use(
 // ==========================================
 // 2. Response Interceptor (Renovação JWT e Reset de Navegação)
 // ==========================================
-interface RetriableRequestConfig extends InternalAxiosRequestConfig {
+export interface RetriableRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
@@ -225,19 +225,19 @@ apiClient.interceptors.response.use(
 // ==========================================
 export const api = {
   get: <T = unknown>(endpoint: string, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.get<T>(endpoint, config).then((res) => res.data),
+    apiClient.get<T>(endpoint, config).then((res: AxiosResponse<T>) => res.data),
 
   post: <T = unknown, B = unknown>(endpoint: string, body?: B, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.post<T>(endpoint, body, config).then((res) => res.data),
+    apiClient.post<T>(endpoint, body, config).then((res: AxiosResponse<T>) => res.data),
 
   put: <T = unknown, B = unknown>(endpoint: string, body?: B, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.put<T>(endpoint, body, config).then((res) => res.data),
+    apiClient.put<T>(endpoint, body, config).then((res: AxiosResponse<T>) => res.data),
 
   patch: <T = unknown, B = unknown>(endpoint: string, body?: B, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.patch<T>(endpoint, body, config).then((res) => res.data),
+    apiClient.patch<T>(endpoint, body, config).then((res: AxiosResponse<T>) => res.data),
 
   delete: <T = unknown>(endpoint: string, config?: AxiosRequestConfig): Promise<T> =>
-    apiClient.delete<T>(endpoint, config).then((res) => res.data),
+    apiClient.delete<T>(endpoint, config).then((res: AxiosResponse<T>) => res.data),
 };
 
 // ==========================================
@@ -273,7 +273,7 @@ export const mobileAuthApi = {
     try {
       const token = await tokenStorage.getAccessToken();
       if (token) {
-        await api.post('/auth/logout', {}).catch(() => {});
+        await api.post('/auth/logout', {}).catch(() => { });
       }
     } finally {
       await tokenStorage.clearSession();
