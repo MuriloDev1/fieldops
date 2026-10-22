@@ -16,6 +16,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   PanResponder,
+  Alert,
 } from "react-native";
 
 import { MaterialIcons } from "@expo/vector-icons";
@@ -26,11 +27,25 @@ import Svg, { Path } from "react-native-svg";
 
 import { authService } from "./src/services/authService";
 import { tokenStorage } from "./src/services/tokenStorage";
-import { onUnauthorized } from "./src/services/api";
+import { CameraView } from "expo-camera";
+import { onUnauthorized, updateApiBaseUrl } from "./src/services/api";
 
-const API_URL = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api\/v1\/?$/, "");
+let API_URL = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api\/v1\/?$/, "");
+
+function setRuntimeApiUrl(url: string) {
+  if (!url) return;
+  const clean = url.trim().replace(/\/$/, "");
+  API_URL = clean.endsWith("/api/v1") ? clean.replace(/\/api\/v1$/, "") : clean;
+  updateApiBaseUrl(API_URL);
+}
 
 const OFFLINE_INSPECTIONS_STORAGE_KEY = "@fieldops/inspecoes-pendentes-offline";
+const INSPECOES_AGENDADAS_STORAGE_KEY = "@fieldops/inspecoes-agendadas-cache";
+const INSPECOES_CONCLUIDAS_STORAGE_KEY = "@fieldops/inspecoes-concluidas-cache";
+const EQUIPAMENTOS_STORAGE_KEY = "@fieldops/equipamentos-cache";
+const MODELOS_STORAGE_KEY = "@fieldops/modelos-cache";
+const RASCUNHO_INSPECAO_STORAGE_KEY = "@fieldops/rascunho-em-andamento";
+const CUSTOM_API_URL_STORAGE_KEY = "@fieldops/custom-api-url";
 
 
 /* =========================================================
@@ -281,6 +296,21 @@ export default function App() {
   const [online, setOnline] = useState(false);
   const [inspecoesPendentesOffline, setInspecoesPendentesOffline] =
     useState<InspecaoPendenteOffline[]>([]);
+  const [servidorUrl, setServidorUrl] = useState(API_URL);
+  const [sincronizando, setSincronizando] = useState(false);
+
+  const salvarCustomApiUrl = async (novaUrl: string) => {
+    try {
+      const limpa = novaUrl.trim();
+      if (!limpa) return;
+      setRuntimeApiUrl(limpa);
+      setServidorUrl(API_URL);
+      await AsyncStorage.setItem(CUSTOM_API_URL_STORAGE_KEY, limpa);
+      alert(`Servidor configurado para: ${API_URL}`);
+    } catch (e) {
+      console.error("Erro ao salvar servidor:", e);
+    }
+  };
 
   useEffect(() => {
     // Escuta eventos de revogação/expiração de sessão da camada HTTP para resetar para a tela de Login
@@ -365,30 +395,59 @@ export default function App() {
     };
   }, []);
 
-  // ETAPA 7.2 — Recupera a fila offline salva no aparelho ao abrir o app.
+  // Recupera configurações do servidor e cache offline (agendadas, fila, concluídas) ao abrir o app
   useEffect(() => {
     let ativo = true;
 
-    const carregarInspecoesPendentesOffline = async () => {
+    const carregarCacheInicial = async () => {
       try {
-        const dados = await AsyncStorage.getItem(OFFLINE_INSPECTIONS_STORAGE_KEY);
-        if (!dados || !ativo) return;
+        const [urlSalva, dadosFila, dadosAgendadas, dadosConcluidas] = await Promise.all([
+          AsyncStorage.getItem(CUSTOM_API_URL_STORAGE_KEY),
+          AsyncStorage.getItem(OFFLINE_INSPECTIONS_STORAGE_KEY),
+          AsyncStorage.getItem(INSPECOES_AGENDADAS_STORAGE_KEY),
+          AsyncStorage.getItem(INSPECOES_CONCLUIDAS_STORAGE_KEY),
+        ]);
 
-        const fila: InspecaoPendenteOffline[] = JSON.parse(dados);
-        if (Array.isArray(fila)) {
-          setInspecoesPendentesOffline(fila);
-          setInspecoesSalvas((atual) => {
-            const mapa = new Map(atual.map((item) => [item.id, item]));
-            fila.forEach((item) => { if (!mapa.has(item.id)) mapa.set(item.id, item); });
-            return Array.from(mapa.values());
-          });
+        if (!ativo) return;
+
+        if (urlSalva) {
+          setRuntimeApiUrl(urlSalva);
+          setServidorUrl(urlSalva);
+        }
+
+        if (dadosAgendadas) {
+          try {
+            const ag: InspecaoAgendada[] = JSON.parse(dadosAgendadas);
+            if (Array.isArray(ag) && ag.length > 0) setInspecoesAgendadas(ag);
+          } catch {}
+        }
+
+        if (dadosConcluidas) {
+          try {
+            const conc: InspecaoSalva[] = JSON.parse(dadosConcluidas);
+            if (Array.isArray(conc) && conc.length > 0) setInspecoesSalvas(conc);
+          } catch {}
+        }
+
+        if (dadosFila) {
+          try {
+            const fila: InspecaoPendenteOffline[] = JSON.parse(dadosFila);
+            if (Array.isArray(fila)) {
+              setInspecoesPendentesOffline(fila);
+              setInspecoesSalvas((atual) => {
+                const mapa = new Map(atual.map((item) => [item.id, item]));
+                fila.forEach((item) => { if (!mapa.has(item.id)) mapa.set(item.id, item); });
+                return Array.from(mapa.values());
+              });
+            }
+          } catch {}
         }
       } catch (error) {
-        console.error("Erro ao recuperar inspeções pendentes offline:", error);
+        console.error("Erro ao recuperar cache offline inicial:", error);
       }
     };
 
-    carregarInspecoesPendentesOffline();
+    carregarCacheInicial();
     return () => { ativo = false; };
   }, []);
 
@@ -459,6 +518,7 @@ export default function App() {
         }));
 
       setInspecoesAgendadas(agendadas);
+      AsyncStorage.setItem(INSPECOES_AGENDADAS_STORAGE_KEY, JSON.stringify(agendadas)).catch(() => {});
 
       const inspecoesConcluidas: InspecaoSalva[] = data
         .filter((item: any) => item?.status === "COMPLETED")
@@ -547,8 +607,23 @@ export default function App() {
         }));
 
       setInspecoesSalvas(inspecoesConcluidas);
+      AsyncStorage.setItem(INSPECOES_CONCLUIDAS_STORAGE_KEY, JSON.stringify(inspecoesConcluidas)).catch(() => {});
     } catch (error) {
-      console.error("Erro ao carregar histórico de inspeções:", error);
+      console.error("Erro ao carregar histórico de inspeções (fallback offline):", error);
+      try {
+        const [dadosAg, dadosConc] = await Promise.all([
+          AsyncStorage.getItem(INSPECOES_AGENDADAS_STORAGE_KEY),
+          AsyncStorage.getItem(INSPECOES_CONCLUIDAS_STORAGE_KEY),
+        ]);
+        if (dadosAg) {
+          const parsedAg = JSON.parse(dadosAg);
+          if (Array.isArray(parsedAg) && parsedAg.length > 0) setInspecoesAgendadas(parsedAg);
+        }
+        if (dadosConc) {
+          const parsedConc = JSON.parse(dadosConc);
+          if (Array.isArray(parsedConc) && parsedConc.length > 0) setInspecoesSalvas(parsedConc);
+        }
+      } catch {}
     }
   }
 
@@ -559,18 +634,18 @@ export default function App() {
     carregarInspecoesDoBanco();
   }, [autenticado, tela]);
 
-  useEffect(() => {
-    if (!autenticado || !online || inspecoesPendentesOffline.length === 0) {
-      return;
-    }
+  async function sincronizarInspecoesPendentesInterno(filaAtual: InspecaoPendenteOffline[]) {
+    if (filaAtual.length === 0) return 0;
+    setSincronizando(true);
+    let enviadosComSucesso = 0;
 
-    let cancelado = false;
+    for (const pendente of filaAtual) {
+      try {
+        let targetId = pendente.id;
+        let perguntasBanco: any[] = [];
 
-    async function sincronizarInspecoesPendentes() {
-      const pendentes = [...inspecoesPendentesOffline];
-
-      for (const pendente of pendentes) {
-        try {
+        if (pendente.id.startsWith("offline-")) {
+          // Inspeção criada avulsa offline: precisa criar no backend
           const perguntasParaBackend = pendente.perguntas.map((pergunta, index) => ({
             type:
               pergunta.tipo === "Sim / Não"
@@ -601,89 +676,117 @@ export default function App() {
           if (!criarResponse.ok) {
             throw new Error(criarData?.message || "Não foi possível sincronizar a inspeção.");
           }
+          targetId = String(criarData.id);
+          perguntasBanco = Array.isArray(criarData.questions) ? criarData.questions : [];
+        } else {
+          // Inspeção pré-atribuída pelo supervisor (Web): NÃO duplicar criação!
+          targetId = pendente.id;
+          const buscaRes = await fetch(`${API_URL}/inspections/${targetId}`).catch(() => null);
+          if (buscaRes && buscaRes.ok) {
+            const buscaData = await buscaRes.json().catch(() => null);
+            perguntasBanco = Array.isArray(buscaData?.questions) ? buscaData.questions : (Array.isArray(buscaData?.items) ? buscaData.items : []);
+          }
+        }
 
-          const perguntasBanco = Array.isArray(criarData.questions)
-            ? criarData.questions
-            : [];
+        for (let index = 0; index < pendente.perguntas.length; index += 1) {
+          const pergunta = pendente.perguntas[index];
+          const resposta = pendente.respostas[pergunta.id];
 
-          for (let index = 0; index < pendente.perguntas.length; index += 1) {
-            const pergunta = pendente.perguntas[index];
-            const resposta = pendente.respostas[pergunta.id];
-
-            if (!resposta) {
-              continue;
-            }
-
-            const perguntaBanco = perguntasBanco[index];
-            const questionId = String(perguntaBanco?.id || pergunta.id);
-
-            const respostaResponse = await fetch(
-              `${API_URL}/inspections/${String(criarData.id)}/answers`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  questionId,
-                  userId: usuario?.id || null,
-                  value: String(resposta),
-                  observation: pendente.observacao || null,
-                  photoUrl: pendente.fotos?.[pergunta.id] || pendente.fotoOcorrencia || null,
-                  signatureUrl: index === 0 ? pendente.assinatura || null : null,
-                }),
-              }
-            );
-
-            const respostaData = await respostaResponse.json();
-            if (!respostaResponse.ok) {
-              throw new Error(
-                respostaData?.message || `Falha ao sincronizar a resposta ${questionId}.`
-              );
-            }
+          if (!resposta) {
+            continue;
           }
 
-          const finalizarResponse = await fetch(
-            `${API_URL}/inspections/${String(criarData.id)}/complete`,
+          const perguntaBanco = perguntasBanco[index] || perguntasBanco.find((q: any) => String(q.id) === pergunta.id || String(q.title || q.itemTitle) === pergunta.texto);
+          const questionId = String(perguntaBanco?.id || pergunta.id);
+
+          const respostaResponse = await fetch(
+            `${API_URL}/inspections/${targetId}/answers`,
             {
-              method: "PATCH",
+              method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                questionId,
                 userId: usuario?.id || null,
+                value: String(resposta),
                 observation: pendente.observacao || null,
+                photoUrl: pendente.fotos?.[pergunta.id] || pendente.fotoOcorrencia || null,
+                signatureUrl: index === 0 ? pendente.assinatura || null : null,
               }),
             }
           );
 
-          if (!finalizarResponse.ok) {
-            const finalizarData = await finalizarResponse.json();
+          const respostaData = await respostaResponse.json();
+          if (!respostaResponse.ok) {
             throw new Error(
-              finalizarData?.message || "Falha ao concluir a sincronização."
+              respostaData?.message || `Falha ao sincronizar a resposta ${questionId}.`
             );
           }
-
-          if (!cancelado) {
-            setInspecoesSalvas((listaAtual) => [
-              { ...pendente, id: String(criarData.id) },
-              ...listaAtual.filter((item) => item.id !== pendente.id),
-            ]);
-            setInspecoesPendentesOffline((listaAtual) =>
-              listaAtual.filter((item) => item.id !== pendente.id)
-            );
-          }
-
-          console.log("Inspeção offline sincronizada:", pendente.id);
-        } catch (error) {
-          console.error("Falha na sincronização da inspeção offline:", error);
-          break;
         }
+
+        const finalizarResponse = await fetch(
+          `${API_URL}/inspections/${targetId}/complete`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: usuario?.id || null,
+              observation: pendente.observacao || null,
+            }),
+          }
+        );
+
+        if (!finalizarResponse.ok) {
+          const finalizarData = await finalizarResponse.json();
+          throw new Error(
+            finalizarData?.message || "Falha ao concluir a sincronização."
+          );
+        }
+
+        setInspecoesSalvas((listaAtual) => [
+          { ...pendente, id: targetId, reviewStatus: "PENDENTE" },
+          ...listaAtual.filter((item) => item.id !== pendente.id && item.id !== targetId),
+        ]);
+        setInspecoesPendentesOffline((listaAtual) =>
+          listaAtual.filter((item) => item.id !== pendente.id)
+        );
+
+        enviadosComSucesso += 1;
+        console.log("Inspeção sincronizada sem duplicação:", targetId);
+      } catch (error) {
+        console.error("Falha na sincronização da inspeção offline:", error);
+        break;
       }
     }
 
-    sincronizarInspecoesPendentes();
+    setSincronizando(false);
+    await carregarInspecoesDoBanco();
+    return enviadosComSucesso;
+  }
 
-    return () => {
-      cancelado = true;
-    };
-  }, [autenticado, online, inspecoesPendentesOffline, usuario]);
+  async function executarSincronizacaoManual() {
+    if (!online) {
+      alert("Aparelho offline. Os dados estão preservados no armazenamento interno e serão sincronizados com a AWS quando houver conexão.");
+      return;
+    }
+    try {
+      if (inspecoesPendentesOffline.length > 0) {
+        const enviados = await sincronizarInspecoesPendentesInterno(inspecoesPendentesOffline);
+        alert(`Sincronização concluída! ${enviados} inspeção(ões) enviada(s) para a AWS com sucesso.`);
+      } else {
+        await carregarInspecoesDoBanco();
+        alert("Tudo atualizado! Todas as inspeções e modelos já estão sincronizados com a AWS.");
+      }
+    } catch (e: any) {
+      alert(e?.message || "Erro durante sincronização.");
+    }
+  }
+
+  useEffect(() => {
+    if (!autenticado || !online || inspecoesPendentesOffline.length === 0 || sincronizando) {
+      return;
+    }
+    sincronizarInspecoesPendentesInterno(inspecoesPendentesOffline);
+  }, [autenticado, online, inspecoesPendentesOffline.length]);
 
   function realizarLogin(usuarioRecebido: UsuarioLogado, tokenRecebido: string) {
     setUsuario(usuarioRecebido);
@@ -707,7 +810,7 @@ export default function App() {
           barStyle="light-content"
           backgroundColor="#062B57"
         />
-        <LoginScreen onLogin={realizarLogin} />
+        <LoginScreen onLogin={realizarLogin} servidorUrlAtual={servidorUrl} onSalvarServidorUrl={salvarCustomApiUrl} />
       </SafeAreaView>
     );
   }
@@ -754,6 +857,8 @@ export default function App() {
           inspecoesAgendadas={inspecoesAgendadas}
           recarregarInspecoes={carregarInspecoesDoBanco}
           setInspecoesPendentesOffline={setInspecoesPendentesOffline}
+          inspecoesPendentesOffline={inspecoesPendentesOffline}
+          sincronizarManual={executarSincronizacaoManual}
         />
       )}
 
@@ -786,14 +891,20 @@ export default function App() {
 
 function LoginScreen({
   onLogin,
+  servidorUrlAtual,
+  onSalvarServidorUrl,
 }: {
   onLogin: (usuario: UsuarioLogado, token: string) => void;
+  servidorUrlAtual?: string;
+  onSalvarServidorUrl?: (url: string) => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [modalServidorAberto, setModalServidorAberto] = useState(false);
+  const [inputServidorUrl, setInputServidorUrl] = useState(servidorUrlAtual || API_URL);
 
   async function entrar() {
     setErro("");
@@ -937,7 +1048,106 @@ function LoginScreen({
           >
             <Text style={styles.forgotText}>Esqueci minha senha</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{ marginTop: 18, alignItems: "center", flexDirection: "row", justifyContent: "center", paddingVertical: 8 }}
+            onPress={() => {
+              setInputServidorUrl(servidorUrlAtual || API_URL);
+              setModalServidorAberto(true);
+            }}
+            disabled={carregando}
+          >
+            <MaterialIcons name="settings" size={16} color="#0B4B87" />
+            <Text style={{ fontSize: 13, color: "#0B4B87", marginLeft: 6, fontWeight: "600" }}>
+              Configurar Servidor AWS / API
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Modal de Configuração de Servidor */}
+        <Modal
+          visible={modalServidorAberto}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setModalServidorAberto(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+            <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 22, maxWidth: 440, width: "90%" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialIcons name="dns" size={24} color="#0B4B87" />
+                  <Text style={{ fontSize: 17, fontWeight: "700", color: "#111827", marginLeft: 8 }}>
+                    Servidor da API (AWS)
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setModalServidorAberto(false)}>
+                  <MaterialIcons name="close" size={22} color="#7A889A" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ fontSize: 13, color: "#68778D", marginBottom: 14 }}>
+                Insira o endereço IP público ou URL da sua instância EC2 na AWS (porta 8080).
+              </Text>
+
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#334155", marginBottom: 4 }}>
+                URL do Servidor:
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  borderWidth: 1,
+                  borderColor: "#CBD5E1",
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  fontSize: 14,
+                  color: "#1E293B",
+                  marginBottom: 12,
+                }}
+                value={inputServidorUrl}
+                onChangeText={setInputServidorUrl}
+                placeholder="http://3.123.45.67:8080"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <View style={{ flexDirection: "row", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
+                <TouchableOpacity
+                  style={{ backgroundColor: "#EBF3FC", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}
+                  onPress={() => setInputServidorUrl("http://localhost:8080")}
+                >
+                  <Text style={{ fontSize: 11, color: "#0B4B87", fontWeight: "600" }}>Localhost</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ backgroundColor: "#EBF3FC", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}
+                  onPress={() => setInputServidorUrl("http://10.0.2.2:8080")}
+                >
+                  <Text style={{ fontSize: 11, color: "#0B4B87", fontWeight: "600" }}>Emulador Android</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: "#F1F5F9", paddingVertical: 12, borderRadius: 8, alignItems: "center" }}
+                  onPress={() => setModalServidorAberto(false)}
+                >
+                  <Text style={{ fontSize: 14, color: "#475569", fontWeight: "600" }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: "#0B4B87", paddingVertical: 12, borderRadius: 8, alignItems: "center" }}
+                  onPress={async () => {
+                    if (onSalvarServidorUrl && inputServidorUrl.trim()) {
+                      await onSalvarServidorUrl(inputServidorUrl.trim());
+                    }
+                    setModalServidorAberto(false);
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: "#FFFFFF", fontWeight: "700" }}>Salvar Servidor</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <Text style={styles.loginFooter}>
           OpsControl • Gestão operacional
@@ -954,13 +1164,19 @@ function LoginScreen({
 function Header({
   titulo,
   subtitulo,
+  online,
+  pendentesCount,
+  onSincronizar,
 }: {
   titulo: string;
   subtitulo?: string;
+  online?: boolean;
+  pendentesCount?: number;
+  onSincronizar?: () => void;
 }) {
   return (
     <View style={styles.header}>
-      <View>
+      <View style={{ flex: 1 }}>
         <Text style={styles.headerLogo}>
           OpsControl
         </Text>
@@ -976,13 +1192,51 @@ function Header({
         )}
       </View>
 
-      <TouchableOpacity style={styles.avatarHeader}>
-        <MaterialIcons
-          name="person"
-          size={22}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {online !== undefined && (
+          <View style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: online ? "#E6F4EA" : "#FCE8E6",
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
+          }}>
+            <MaterialIcons name={online ? "wifi" : "wifi-off"} size={13} color={online ? "#137333" : "#C5221F"} />
+            <Text style={{ fontSize: 10, fontWeight: "700", color: online ? "#137333" : "#C5221F", marginLeft: 3 }}>
+              {online ? "ONLINE" : "OFFLINE"}
+            </Text>
+          </View>
+        )}
+
+        {onSincronizar && (
+          <TouchableOpacity
+            onPress={onSincronizar}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: (pendentesCount && pendentesCount > 0) ? "#E37400" : "#0B4B87",
+              paddingHorizontal: 9,
+              paddingVertical: 5,
+              borderRadius: 8,
+            }}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="sync" size={15} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "700", marginLeft: 3 }}>
+              {pendentesCount && pendentesCount > 0 ? `${pendentesCount} sync` : "Sync"}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity style={styles.avatarHeader}>
+          <MaterialIcons
+            name="person"
+            size={22}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -1762,6 +2016,8 @@ function InspecoesScreen({
   inspecoesAgendadas,
   recarregarInspecoes,
   setInspecoesPendentesOffline,
+  inspecoesPendentesOffline,
+  sincronizarManual,
 }: {
   usuario: UsuarioLogado | null;
   online: boolean;
@@ -1770,8 +2026,15 @@ function InspecoesScreen({
   inspecoesAgendadas: InspecaoAgendada[];
   recarregarInspecoes: () => Promise<void>;
   setInspecoesPendentesOffline: React.Dispatch<React.SetStateAction<InspecaoPendenteOffline[]>>;
+  inspecoesPendentesOffline?: InspecaoPendenteOffline[];
+  sincronizarManual?: () => Promise<void>;
 }) {
   const [modelosBanco, setModelosBanco] = useState<ModeloChecklistBanco[]>([]);
+  const [modalQrCodeAberto, setModalQrCodeAberto] = useState(false);
+  const [inspecaoAlvoQr, setInspecaoAlvoQr] = useState<InspecaoAgendada | null>(null);
+  const [codigoManualQr, setCodigoManualQr] = useState("");
+  const [qrCodeValidado, setQrCodeValidado] = useState(false);
+  const [rascunhoRestaurado, setRascunhoRestaurado] = useState(false);
   const [modeloSelecionadoId, setModeloSelecionadoId] = useState<string | null>(null);
   const [nomeModelo, setNomeModelo] = useState("Checklist Operacional");
 
@@ -1808,6 +2071,126 @@ function InspecoesScreen({
   const [inspecaoEmRevisao, setInspecaoEmRevisao] =
     useState<InspecaoSalva | null>(null);
   const [modalRevisao, setModalRevisao] = useState(false);
+
+  // Teste 09: Salva automaticamente rascunho em andamento no armazenamento local
+  useEffect(() => {
+    if (!modoExecucao || !inspecaoId) return;
+
+    const rascunho = {
+      modoExecucao: true,
+      inspecaoId,
+      nomeModelo,
+      modeloSelecionadoId,
+      equipamentoSelecionado,
+      perguntas,
+      respostas,
+      observacao,
+      fotos,
+      fotoOcorrencia,
+      assinatura,
+      qrCodeValidado,
+      timestamp: Date.now(),
+    };
+
+    AsyncStorage.setItem(RASCUNHO_INSPECAO_STORAGE_KEY, JSON.stringify(rascunho)).catch((err) =>
+      console.error("Erro ao salvar rascunho:", err)
+    );
+  }, [
+    modoExecucao,
+    inspecaoId,
+    nomeModelo,
+    modeloSelecionadoId,
+    equipamentoSelecionado,
+    perguntas,
+    respostas,
+    observacao,
+    fotos,
+    fotoOcorrencia,
+    assinatura,
+    qrCodeValidado,
+  ]);
+
+  // Teste 09: Ao abrir a tela, recupera rascunho preservado se o app foi fechado/reaberto offline
+  useEffect(() => {
+    let montado = true;
+    AsyncStorage.getItem(RASCUNHO_INSPECAO_STORAGE_KEY).then((dados) => {
+      if (!dados || !montado) return;
+      try {
+        const r = JSON.parse(dados);
+        if (r && r.modoExecucao && r.inspecaoId) {
+          setInspecaoId(r.inspecaoId);
+          setNomeModelo(r.nomeModelo || "Checklist Operacional");
+          setModeloSelecionadoId(r.modeloSelecionadoId || null);
+          setEquipamentoSelecionado(r.equipamentoSelecionado || null);
+          setPerguntas(r.perguntas || []);
+          setRespostas(r.respostas || {});
+          setObservacao(r.observacao || "");
+          setFotos(r.fotos || {});
+          setFotoOcorrencia(r.fotoOcorrencia || null);
+          setAssinatura(r.assinatura || null);
+          setQrCodeValidado(Boolean(r.qrCodeValidado));
+          setInspecaoIniciada(true);
+          setModoExecucao(true);
+          setRascunhoRestaurado(true);
+          console.log("Rascunho de inspeção em andamento recuperado com sucesso!");
+        }
+      } catch (e) {
+        console.error("Erro ao ler rascunho:", e);
+      }
+    }).catch(() => {});
+    return () => { montado = false; };
+  }, []);
+
+  function abrirLeitorQrCode(agendada?: InspecaoAgendada) {
+    setInspecaoAlvoQr(agendada || null);
+    setCodigoManualQr(agendada ? agendada.equipamentoCodigo : "");
+    setModalQrCodeAberto(true);
+  }
+
+  function processarCodigoQr(rawCode: string) {
+    if (!rawCode || !rawCode.trim()) return;
+    const codigoLimpo = rawCode.trim().toUpperCase();
+
+    if (inspecaoAlvoQr) {
+      const esperado = (inspecaoAlvoQr.equipamentoCodigo || "").trim().toUpperCase();
+      const idEsperado = (inspecaoAlvoQr.equipamentoId || "").trim().toUpperCase();
+      if (codigoLimpo === esperado || codigoLimpo === idEsperado || codigoLimpo.includes(esperado)) {
+        setModalQrCodeAberto(false);
+        setQrCodeValidado(true);
+        alert(`Equipamento identificado com sucesso!\n${inspecaoAlvoQr.equipamentoNome} (${inspecaoAlvoQr.equipamentoCodigo})`);
+        iniciarInspecaoAgendada(inspecaoAlvoQr);
+      } else {
+        alert(`Código lido: "${codigoLimpo}".\nNão corresponde ao equipamento esperado desta inspeção: "${inspecaoAlvoQr.equipamentoCodigo}".`);
+      }
+    } else {
+      const agEncontrada = inspecoesAgendadas.find(
+        (a) => (a.equipamentoCodigo || "").trim().toUpperCase() === codigoLimpo ||
+               (a.equipamentoId || "").trim().toUpperCase() === codigoLimpo
+      );
+      if (agEncontrada) {
+        setModalQrCodeAberto(false);
+        setQrCodeValidado(true);
+        alert(`Inspeção localizada para o equipamento ${agEncontrada.equipamentoNome}!`);
+        iniciarInspecaoAgendada(agEncontrada);
+        return;
+      }
+
+      const eqEncontrado = equipamentos.find(
+        (e) => (e.codigo || "").trim().toUpperCase() === codigoLimpo ||
+               (e.id || "").trim().toUpperCase() === codigoLimpo
+      );
+      if (eqEncontrado) {
+        setModalQrCodeAberto(false);
+        setQrCodeValidado(true);
+        setEquipamentoSelecionado(eqEncontrado);
+        setModoExecucao(true);
+        alert(`Equipamento identificado: ${eqEncontrado.nome} (${eqEncontrado.codigo}). Checklist iniciado.`);
+        return;
+      }
+
+      alert(`Nenhum equipamento encontrado com o código "${codigoLimpo}".`);
+    }
+  }
 
   useEffect(() => {
     async function carregarEquipamentosEModelos() {
@@ -1852,6 +2235,7 @@ function InspecoesScreen({
           : [];
 
         setEquipamentos(equipamentosFormatados);
+        AsyncStorage.setItem(EQUIPAMENTOS_STORAGE_KEY, JSON.stringify(equipamentosFormatados)).catch(() => {});
 
         if (tmplResponse && tmplResponse.ok) {
           const tmplData = await tmplResponse.json().catch(() => []);
@@ -1911,7 +2295,12 @@ function InspecoesScreen({
         setErroEquipamentos(
           "Não foi possível carregar os equipamentos do servidor."
         );
-        setEquipamentos([]);
+        AsyncStorage.getItem(EQUIPAMENTOS_STORAGE_KEY).then((cached) => {
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) setEquipamentos(parsed);
+          }
+        }).catch(() => {});
       } finally {
         setCarregandoEquipamentos(false);
       }
@@ -2092,36 +2481,62 @@ function InspecoesScreen({
     try {
       setSelecionandoFoto(true);
 
-      const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const capturarImagem = async (usarCamera: boolean) => {
+        try {
+          if (usarCamera) {
+            const perm = await ImagePicker.requestCameraPermissionsAsync();
+            if (!perm.granted) {
+              alert("Permissão para usar a câmera não concedida.");
+              return;
+            }
+            const res = await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              quality: 0.5,
+              base64: true,
+            });
+            if (!res.canceled && res.assets?.[0]) {
+              const asset = res.assets[0];
+              const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+              if (questionId) setFotos((prev) => ({ ...prev, [questionId]: uri }));
+              else setFotoOcorrencia(uri);
+            }
+          } else {
+            const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!perm.granted) {
+              alert("Permissão para acessar a galeria não concedida.");
+              return;
+            }
+            const res = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              allowsEditing: true,
+              quality: 0.5,
+              base64: true,
+            });
+            if (!res.canceled && res.assets?.[0]) {
+              const asset = res.assets[0];
+              const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+              if (questionId) setFotos((prev) => ({ ...prev, [questionId]: uri }));
+              else setFotoOcorrencia(uri);
+            }
+          }
+        } catch (e) {
+          console.error("Erro na captura de imagem:", e);
+        }
+      };
 
-      if (!permissao.granted) {
-        alert("Permissão para acessar as fotos não foi concedida.");
-        return;
-      }
-
-      const resultado = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (resultado.canceled || !resultado.assets?.[0]?.uri) {
-        return;
-      }
-
-      const uri = resultado.assets[0].uri;
-
-      if (questionId) {
-        setFotos((estadoAtual) => ({
-          ...estadoAtual,
-          [questionId]: uri,
-        }));
+      if (Platform.OS === "web") {
+        await capturarImagem(false);
       } else {
-        setFotoOcorrencia(uri);
+        Alert.alert(
+          "Evidência Fotográfica",
+          "Como deseja registrar a imagem?",
+          [
+            { text: "Tirar Foto (Câmera)", onPress: () => capturarImagem(true) },
+            { text: "Escolher da Galeria", onPress: () => capturarImagem(false) },
+            { text: "Cancelar", style: "cancel" },
+          ]
+        );
       }
-    } catch (error) {
-      console.error("Erro ao selecionar foto:", error);
-      alert("Não foi possível adicionar a foto.");
     } finally {
       setSelecionandoFoto(false);
     }
@@ -2222,6 +2637,9 @@ function InspecoesScreen({
       setFotoOcorrencia(null);
       setAssinatura(null);
       setAssinaturaModal(false);
+      setQrCodeValidado(false);
+      setRascunhoRestaurado(false);
+      await AsyncStorage.removeItem(RASCUNHO_INSPECAO_STORAGE_KEY).catch(() => {});
       return;
     }
 
@@ -2305,6 +2723,9 @@ function InspecoesScreen({
       setFotoOcorrencia(null);
       setAssinatura(null);
       setAssinaturaModal(false);
+      setQrCodeValidado(false);
+      setRascunhoRestaurado(false);
+      await AsyncStorage.removeItem(RASCUNHO_INSPECAO_STORAGE_KEY).catch(() => {});
     } catch (error) {
       console.error("Erro ao finalizar inspeção:", error);
 
@@ -2327,6 +2748,9 @@ function InspecoesScreen({
         <Header
           titulo="Inspeções"
           subtitulo="Execução de inspeções"
+          online={online}
+          pendentesCount={inspecoesPendentesOffline ? inspecoesPendentesOffline.length : 0}
+          onSincronizar={sincronizarManual}
         />
 
         <ScrollView
@@ -2345,13 +2769,49 @@ function InspecoesScreen({
           bounces={true}
           directionalLockEnabled={true}
         >
+          {rascunhoRestaurado && (
+            <View style={{ backgroundColor: "#E6F4EA", borderWidth: 1, borderColor: "#CEEAD6", padding: 10, borderRadius: 8, flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+              <MaterialIcons name="restore" size={20} color="#137333" />
+              <Text style={{ fontSize: 12, color: "#137333", fontWeight: "600", marginLeft: 6, flex: 1 }}>
+                Rascunho offline recuperado automaticamente com respostas e fotos preservadas!
+              </Text>
+            </View>
+          )}
+
           <View style={styles.executionHeader}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => {
-                setModoExecucao(false);
-                setInspecaoIniciada(false);
-                setEquipamentoSelecionado(null);
+                Alert.alert(
+                  "Pausar inspeção",
+                  "Seus dados e fotos estão preservados no rascunho offline.",
+                  [
+                    { text: "Continuar Preenchendo", style: "cancel" },
+                    {
+                      text: "Pausar e Voltar",
+                      onPress: () => {
+                        setModoExecucao(false);
+                      },
+                    },
+                    {
+                      text: "Descartar Rascunho",
+                      style: "destructive",
+                      onPress: async () => {
+                        await AsyncStorage.removeItem(RASCUNHO_INSPECAO_STORAGE_KEY).catch(() => {});
+                        setModoExecucao(false);
+                        setInspecaoIniciada(false);
+                        setEquipamentoSelecionado(null);
+                        setRespostas({});
+                        setFotos({});
+                        setFotoOcorrencia(null);
+                        setObservacao("");
+                        setAssinatura(null);
+                        setQrCodeValidado(false);
+                        setRascunhoRestaurado(false);
+                      },
+                    },
+                  ]
+                );
               }}
             >
               <MaterialIcons
@@ -2942,6 +3402,97 @@ function InspecoesScreen({
         subtitulo="Execução em Campo • Técnico"
       />
 
+      {/* MODAL DE LEITURA E VALIDAÇÃO DE QR CODE (TESTE 07) */}
+      <Modal
+        visible={modalQrCodeAberto}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalQrCodeAberto(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+          <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 20, maxWidth: 440, width: "90%", maxHeight: "90%" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialIcons name="qr-code-scanner" size={24} color="#0B4B87" />
+                <Text style={{ fontSize: 17, fontWeight: "700", color: "#111827", marginLeft: 8 }}>
+                  Leitor de QR Code
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setModalQrCodeAberto(false)}>
+                <MaterialIcons name="close" size={22} color="#7A889A" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 13, color: "#68778D", marginBottom: 12 }}>
+              {inspecaoAlvoQr
+                ? `Aponte a câmera para o QR Code do equipamento "${inspecaoAlvoQr.equipamentoNome}" (${inspecaoAlvoQr.equipamentoCodigo}).`
+                : "Aponte a câmera para o QR Code de qualquer equipamento cadastrado."}
+            </Text>
+
+            {Platform.OS !== "web" ? (
+              <View style={{ width: "100%", height: 210, borderRadius: 10, overflow: "hidden", backgroundColor: "#000000", marginBottom: 12 }}>
+                <CameraView
+                  style={{ flex: 1 }}
+                  facing="back"
+                  barcodeScannerSettings={{
+                    barcodeTypes: ["qr"],
+                  }}
+                  onBarcodeScanned={(result) => {
+                    if (result && result.data) {
+                      processarCodigoQr(result.data);
+                    }
+                  }}
+                />
+              </View>
+            ) : (
+              <View style={{ width: "100%", height: 110, borderRadius: 10, backgroundColor: "#F0F4F8", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                <MaterialIcons name="qr-code" size={44} color="#0B4B87" />
+                <Text style={{ fontSize: 12, color: "#68778D", marginTop: 4 }}>
+                  Ambiente Web: utilize a validação manual abaixo.
+                </Text>
+              </View>
+            )}
+
+            <View style={{ backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#334155", marginBottom: 6 }}>
+                Ou digite o código do QR Code (ex: {inspecaoAlvoQr ? inspecaoAlvoQr.equipamentoCodigo : "EQ-101"}):
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TextInput
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderWidth: 1,
+                    borderColor: "#CBD5E1",
+                    borderRadius: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    fontSize: 14,
+                    color: "#1E293B",
+                  }}
+                  placeholder={inspecaoAlvoQr ? inspecaoAlvoQr.equipamentoCodigo : "EQ-101"}
+                  value={codigoManualQr}
+                  onChangeText={setCodigoManualQr}
+                  autoCapitalize="characters"
+                />
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#0B4B87",
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 6,
+                    justifyContent: "center",
+                  }}
+                  onPress={() => processarCodigoQr(codigoManualQr || (inspecaoAlvoQr ? inspecaoAlvoQr.equipamentoCodigo : "EQ-101"))}
+                >
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 13 }}>Validar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal
         visible={modalRevisao}
         transparent
@@ -3239,6 +3790,35 @@ function InspecoesScreen({
           />
         </TouchableOpacity>
 
+        <TouchableOpacity
+          style={[styles.executeInspectionButton, { backgroundColor: "#062B57", borderColor: "#062B57", marginBottom: 14 }]}
+          onPress={() => abrirLeitorQrCode()}
+        >
+          <View style={[styles.executeInspectionIcon, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
+            <MaterialIcons
+              name="qr-code-scanner"
+              size={23}
+              color="#FFFFFF"
+            />
+          </View>
+
+          <View style={styles.executeInspectionContent}>
+            <Text style={[styles.executeInspectionTitle, { color: "#FFFFFF" }]}>
+              Escanear QR Code do Equipamento (Teste 07)
+            </Text>
+
+            <Text style={[styles.executeInspectionDescription, { color: "#CFE2FE" }]}>
+              Identifique o equipamento via câmera e abra o checklist imediatamente.
+            </Text>
+          </View>
+
+          <MaterialIcons
+            name="chevron-right"
+            size={24}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+
         {/* INSPEÇÕES ATRIBUÍDAS / AGENDADAS PELO SUPERVISOR NO BANCO */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
@@ -3310,6 +3890,16 @@ function InspecoesScreen({
                   >
                     <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
                     <Text style={styles.reviewButtonText}>Executar Agora</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.reviewButton, { backgroundColor: "#137333", marginTop: 6 }]}
+                    onPress={() => abrirLeitorQrCode(agendada)}
+                    disabled={criandoInspecao}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons name="qr-code-scanner" size={17} color="#FFFFFF" />
+                    <Text style={styles.reviewButtonText}>Ler QR Code</Text>
                   </TouchableOpacity>
                 </View>
               </View>

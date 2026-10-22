@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "fieldops-mobile",
+    "name": "FieldOps",
     "slug": "fieldops-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -10,6 +10,13 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.fieldops.mobile",
+      "versionCode": 1,
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -18,6 +25,20 @@
       },
       "predictiveBackGestureEnabled": false
     },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir que o FieldOps acesse a câmera para leitura de QR Code e fotos de inspeção."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir que o FieldOps acesse as fotos para anexar evidências de inspeção."
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }

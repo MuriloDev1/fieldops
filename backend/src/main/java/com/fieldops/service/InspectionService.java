@@ -386,9 +386,16 @@ public class InspectionService {
             resp.setConformity(ConformityStatus.CONFORMING);
         }
 
-        String safePhoto = photoUrl != null ? photoUrl.replace("\"", "\\\"") : "";
-        String safeSig = signatureUrl != null ? signatureUrl.replace("\"", "\\\"") : "";
-        resp.setValueJson(String.format("{\"photoUrl\":\"%s\",\"signatureUrl\":\"%s\"}", safePhoto, safeSig));
+        java.util.Map<String, String> metaMap = new java.util.HashMap<>();
+        metaMap.put("photoUrl", photoUrl != null ? photoUrl : "");
+        metaMap.put("signatureUrl", signatureUrl != null ? signatureUrl : "");
+        try {
+            resp.setValueJson(new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(metaMap));
+        } catch (Exception e) {
+            resp.setValueJson("{}");
+        }
+
+
         resp.setAnsweredBy(actor);
         resp.setAnsweredAtDevice(OffsetDateTime.now());
         resp.setServerReceivedAt(OffsetDateTime.now());
