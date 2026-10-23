@@ -107,12 +107,12 @@ ${paths}
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (_, gestureState) => {
+      onPanResponderGrant: (_: any, gestureState: any) => {
         const initialPoint = { x: gestureState.x0, y: gestureState.y0 };
         currentStrokeRef.current = [initialPoint];
         setCurrentStroke([initialPoint]);
       },
-      onPanResponderMove: (_, gestureState) => {
+      onPanResponderMove: (_: any, gestureState: any) => {
         const nextPoint = { x: gestureState.moveX, y: gestureState.moveY };
         currentStrokeRef.current = [...currentStrokeRef.current, nextPoint];
         setCurrentStroke([...currentStrokeRef.current]);
@@ -150,7 +150,7 @@ ${paths}
     <View style={styles.signaturePadRoot}>
       <View
         style={styles.signatureDrawingArea}
-        onLayout={(event) => {
+        onLayout={(event: any) => {
           const { width, height } = event.nativeEvent.layout;
           if (width > 0) setPadWidth(width);
           if (height > 0) setPadHeight(height);
@@ -1253,7 +1253,7 @@ function DashboardScreen({
   const { width } = useWindowDimensions();
 
   const desktop = width >= 900;
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<any>(null);
 
   const [dashboard, setDashboard] = useState({
     equipamentosTotal: 0,
@@ -1964,7 +1964,7 @@ function StatusBadge({
 function FloatingScrollButtons({
   scrollRef,
 }: {
-  scrollRef: React.MutableRefObject<ScrollView | null>;
+  scrollRef: React.MutableRefObject<any>;
 }) {
   return (
     <View style={styles.scrollButtonsContainer} pointerEvents="box-none">
@@ -2065,7 +2065,7 @@ function InspecoesScreen({
   const [selecionandoFoto, setSelecionandoFoto] = useState(false);
   const [assinatura, setAssinatura] = useState<string | null>(null);
   const [assinaturaModal, setAssinaturaModal] = useState(false);
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<any>(null);
 
   // Modal de visualização de detalhes e parecer do supervisor (somente leitura para o técnico)
   const [inspecaoEmRevisao, setInspecaoEmRevisao] =
@@ -3135,7 +3135,7 @@ function InspecoesScreen({
                         placeholder="Digite a resposta..."
                         placeholderTextColor="#9AA5B5"
                         value={resposta || ""}
-                        onChangeText={(valor) =>
+                        onChangeText={(valor: string) =>
                           responderPergunta(pergunta.id, valor)
                         }
                         multiline
@@ -3437,7 +3437,7 @@ function InspecoesScreen({
                   barcodeScannerSettings={{
                     barcodeTypes: ["qr"],
                   }}
-                  onBarcodeScanned={(result) => {
+                  onBarcodeScanned={(result: any) => {
                     if (result && result.data) {
                       processarCodigoQr(result.data);
                     }
