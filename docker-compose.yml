@@ -93,6 +93,46 @@ services:
     networks:
       - fieldops_network
 
+  # ---------------------------------------------------------------------------
+  # Backend Spring Boot (API REST Java 21)
+  # ---------------------------------------------------------------------------
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fieldops_backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-fieldops_db}
+      POSTGRES_USER: ${POSTGRES_USER:-fieldops_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fieldops_secret_dev}
+      PORT: 8080
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - fieldops_network
+
+  # ---------------------------------------------------------------------------
+  # Frontend React Web (Nginx SPA)
+  # ---------------------------------------------------------------------------
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fieldops_frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - fieldops_network
+
 # -----------------------------------------------------------------------------
 # Persistência e Rede Isolada
 # -----------------------------------------------------------------------------
