@@ -90,20 +90,12 @@ O banco de dados possui seeds automáticos gerados pelo Flyway (`V2__seed_data.s
 
 Restam apenas **duas tarefas práticas** para concluir os 100 pontos:
 
-### Tarefa 1: Gerar o arquivo APK instalável (Teste 02)
-Execute dentro do diretório `fieldops-mobile`:
+### Tarefa 1: Arquivo APK Instalável (Teste 02) — [CONCLUÍDO] ✅
+O build nativo foi compilado com sucesso via EAS Cloud Build:
 
-```bash
-cd fieldops-mobile
-# Opção A: Via Expo Application Services (Cloud - Recomendada)
-npx eas-cli login
-npx eas-cli build -p android --profile preview
-
-# O EAS gerará um link direto para download do arquivo .apk instalável.
-```
-
-> **Dica:** Caso deseje gerar localmente e possua o Android SDK configurado:
-> `npx eas-cli build -p android --profile preview --local`
+- **Link Direto de Download (.apk):** [Download FieldOps Android APK](https://expo.dev/artifacts/eas/efb9APaWF4VxX4Lh3uA_dsG4q9Do9x-zOjTXxUnZ79A.apk)
+- **Página de Instalação no Expo:** [Ver Build no Expo](https://expo.dev/accounts/trincademes/projects/fieldops-mobile/builds/7c436a14-d968-4b6b-adb7-e593b7b8ca1f)
+- **Instruções:** Abra o link direto no navegador do celular Android, faça o download do arquivo `.apk`, autorize a instalação de fontes desconhecidas e instale o app.
 
 ---
 
