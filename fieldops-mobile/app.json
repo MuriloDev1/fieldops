@@ -13,9 +13,10 @@
       "package": "com.fieldops.mobile",
       "versionCode": 1,
       "permissions": [
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -37,10 +38,18 @@
         {
           "photosPermission": "Permitir que o FieldOps acesse as fotos para anexar evidências de inspeção."
         }
-      ]
+      ],
+      "expo-secure-store",
+      "expo-font"
     ],
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "90298dbf-af51-44cb-92c9-65ac949ff254"
+      }
+    },
+    "owner": "trincademes"
   }
 }
