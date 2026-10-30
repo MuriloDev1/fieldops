@@ -14,20 +14,21 @@
 ├───────────────────────────────────┬───────────────────────────────────┬──────────────────────────────────────────┤
 │ 🎯 GESTÃO DE ESCOPO (MoSCoW)      │ 👥 MATRIZ RACI DA EQUIPE          │ 📈 GESTÃO DE STAKEHOLDERS (F. CARVALHO)  │
 ├───────────────────────────────────┼───────────────────────────────────┼──────────────────────────────────────────┤
-│ • Must-Have (100% Entregue):      │ • Murilo & Matheus:               │ • Gerenciar com Atenção (Alto/Alto):     │
-│   - Offline-first com persistência;  API REST, PostgreSQL 16 e JWT    │   Banca Avaliadora, Supervisor (Marina)  │
+│ • Must-Have (100% Entregue):      │ • Pedro:                          │ • Gerenciar com Atenção (Alto/Alto):     │
+│   - Offline-first com persistência;  Backend, API Spring Boot e Regras │   Banca Avaliadora, Supervisor (Marina)  │
 │   - Leitor nativo de QR Code;        [Accountable / Responsible]       │   e Time de Desenvolvimento.             │
 │   - CRUD e versionamento de modelos;                                  │                                          │
-│   - Revisão e auditoria Web.      │ • Pedro:                          │ • Manter Satisfeito (Alto/Baixo):        │
-│                                   │   Frontend Web, Dashboard de KPIs   Admin de TI (Ana), Gestores Clientes     │
-│ • Should-Have (Concluído):        │   e Painel de Revisão [A/R]         (Roberto) e Infraestrutura AWS.          │
-│   - Docker Compose em produção;   │                                   │                                          │
-│   - Build APK nativo compilado.   │ • Gizela & Julio:                 │ • Manter Informado (Baixo/Alto):         │
-│                                   │   Mobile Expo, QR Code, Câmera e    Técnicos de Campo (Carlos) e             │
-│ • Won't-Have (Controlado):        │   Sincronização Offline-first [A/R] Equipe de Suporte Operacional.           │
-│   - Telemetria GPS em tempo real; │                                   │                                          │
-│   - Integração legada SAP/ERP.    │ • Juan:                           │ • Monitorar (Baixo/Baixo):               │
-│                                   │   QA, Validação e Gestão [R/C]      Auditores Técnicos e Usuários Visitantes │
+│   - Revisão e auditoria Web.      │ • Murilo:                         │ • Manter Satisfeito (Alto/Baixo):        │
+│                                   │   Gestão do Repositório & DevOps    Admin de TI (Ana), Gestores Clientes     │
+│ • Should-Have (Concluído):        │                                   │   (Roberto) e Infraestrutura AWS.          │
+│   - Docker Compose em produção;   │ • Matheus:                        │                                          │
+│   - Build APK nativo compilado.   │   Frontend Web & Dashboard [A/R]   │ • Manter Informado (Baixo/Alto):         │
+│                                   │                                   │   Técnicos de Campo (Carlos) e             │
+│ • Won't-Have (Controlado):        │ • Juan:                           │   Equipe de Suporte Operacional.           │
+│   - Telemetria GPS em tempo real; │   Banco de Dados PostgreSQL [A/R] │                                          │
+│   - Integração legada SAP/ERP.    │                                   │ • Monitorar (Baixo/Baixo):               │
+│                                   │ • Julio & Gizela:                 │   Auditores Técnicos e Usuários Visitantes │
+│                                   │   Frontend Mobile & Campo [A/R]   │                                          │
 ├───────────────────────────────────┴───────────────────────────────────┴──────────────────────────────────────────┤
 │ 🛡️ GESTÃO DE RISCOS & CONTINGÊNCIAS                                                                             │
 ├──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
