@@ -34,6 +34,9 @@
 │   Gestão/Docs, API & Postgres 16, │     tempo real e integração com   │   TypeScript strict sem erros (0 lints), │
 │   Interface Web e App Mobile.     │     ERP corporativo (fora escopo).│   Maven build success e 0 bugs abertos.  │
 ├───────────────────────────────────┴───────────────────────────────────┴──────────────────────────────────────────┤
-│ > PRÓXIMO_MARCO: docker compose up -d (Execução da stack na EC2 no AWS Learner Lab para fechar 100/100 pontos)   │
+│ > PRÓXIMOS PASSOS // ROADMAP DE EVOLUÇÃO (META: 100/100 PONTOS):                                                 │
+│   1. SUBIR TUDO NA AWS (EC2): Executar docker compose up -d no AWS Learner Lab p/ liberar Web (80) e API (8080).  │
+│   2. FOCO NA GESTÃO DE PROJETOS: Controle MoSCoW, engajamento dos stakeholders (Fábio Carvalho) e matriz de riscos. │
+│   3. APRIMORAR QR CODE & FOTOS: Auto-foco/lanterna no leitor e compressão inteligente com carimbo d'água GPS/Data.│
 └──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
