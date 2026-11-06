@@ -24,17 +24,19 @@ $null = New-Item -ItemType Directory -Path "$Destino\slide_apresentacao" -Force
 $null = New-Item -ItemType Directory -Path "$Destino\mobile_apk" -Force
 $null = New-Item -ItemType Directory -Path "$Destino\deploy_aws" -Force
 
-Write-Host "[3/5] Copiando arquivos essenciais da Sprint Review..." -ForegroundColor Green
+Write-Host "[3/5] Copiando arquivos essenciais da Sprint Review e Gestao de Projetos..." -ForegroundColor Green
 Copy-Item "$SourceDir\GUIA_PROJETO_E_STATUS_APRESENTACAO.md" "$Destino\documentos\" -Force
-Copy-Item "$SourceDir\docs\gestao\sprint_review_slide.md" "$Destino\documentos\" -Force
-Copy-Item "$SourceDir\docs\gestao\matriz_poder_interesse_stakeholders.md" "$Destino\documentos\" -Force
-Copy-Item "$SourceDir\docs\gestao\TAP.md" "$Destino\documentos\" -Force
+Copy-Item "$SourceDir\docs\gestao\*" "$Destino\documentos\" -Recurse -Force
 Copy-Item "$SourceDir\docker-compose.yml" "$Destino\deploy_aws\" -Force
 
-# Copiar Slide HTML interativo
-$slideOrigem = "$HOME\.gemini\antigravity\brain\969f5c0e-8d38-4543-95f0-1c490d975727\sprint_review_slide.html"
+# Copiar Slides HTML interativos
+$slideOrigem = "$HOME\.gemini\antigravity\brain\969f5c0e-8d38-4543-95f0-1c490d975727\sprint_review_monocromatico.html"
 if (Test-Path $slideOrigem) {
-    Copy-Item $slideOrigem "$Destino\slide_apresentacao\apresentar_slide.html" -Force
+    Copy-Item $slideOrigem "$Destino\slide_apresentacao\apresentar_slide_monocromatico.html" -Force
+}
+$slideOrigemColor = "$HOME\.gemini\antigravity\brain\969f5c0e-8d38-4543-95f0-1c490d975727\sprint_review_slide.html"
+if (Test-Path $slideOrigemColor) {
+    Copy-Item $slideOrigemColor "$Destino\slide_apresentacao\apresentar_slide_colorido.html" -Force
 }
 
 # Copiar APK
