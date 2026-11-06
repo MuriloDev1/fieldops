@@ -27,9 +27,17 @@ import type {
 } from '../types/api';
 
 // Configuração da URL base da API
-export const API_BASE_URL: string = (
+export let API_BASE_URL: string = (
   process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8080/api/v1'
 ).replace(/\/$/, '');
+
+export function updateApiBaseUrl(newUrl: string): void {
+  if (!newUrl) return;
+  const clean = newUrl.replace(/\/$/, "");
+  const target = clean.endsWith("/api/v1") ? clean : `${clean}/api/v1`;
+  API_BASE_URL = target;
+  apiClient.defaults.baseURL = target;
+}
 
 // Tipos e callbacks para reset de navegação quando a sessão for revogada/expirada
 export type UnauthorizedCallback = () => void;

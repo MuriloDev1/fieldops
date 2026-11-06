@@ -329,14 +329,40 @@ O desenvolvimento do FieldOps segue práticas ágeis de Engenharia de Software c
 
 | Integrante | Papel de Foco Principal | Responsabilidades |
 |---|---|---|
-| **Murilo** | **Backend / Arquitetura & Integração** | Estruturação da API REST, segurança JWT, regras de idempotência e auditoria |
-| **Gizela** | **Mobile (UX & Lógica de Inspeção)** | Telas de execução do checklist no Expo, formulários dinâmicos e captura de evidências |
-| **Pedro** | **Frontend Web (Dashboard & Revisão)** | Telas do supervisor no React/Vite, gráficos analíticos, gestão de ativos e histórico |
-| **Julio** | **Mobile (Recursos Nativos & Offline)** | Configuração do SQLite local, persistência da fila Outbox, leitor de QR Code e GPS |
-| **Matheus** | **Banco de Dados & Backend** | Schema PostgreSQL, DDL, seeds de dados e endpoints de suporte aos cadastros |
-| **Juan** | **QA, Testes & Documentação Acadêmica** | Critérios de aceitação BDD, relatórios de testes e documentação acadêmica do PI |
+| **Pedro** | **Backend / API REST & Regras de Negócio** | Construção da API REST Spring Boot (Java 21), serviços de autenticação JWT, lógica de negócio, idempotência, segurança RBAC e endpoints de revisão |
+| **Murilo** | **Repositório, Governança & DevOps** | Gestão do repositório GitHub, controle de branches, padronização de commits, pipeline CI/CD e suporte a integração |
+| **Matheus** | **Frontend Web (Interface do Supervisor)** | Telas administrativas no React/Vite, Dashboard operacional, construtor visual de checklists e tela de revisão de inspeções |
+| **Juan** | **Banco de Dados (PostgreSQL & Modelagem)** | Criação e manutenção do schema relacional, scripts de seed, migrações Flyway e integridade referencial dos dados |
+| **Julio** | **Frontend & Mobile de Campo** | Desenvolvimento das telas e fluxos de navegação mobile no React Native/Expo, integração com câmera e formulários |
+| **Gizela** | **Frontend & Mobile de Campo** | Interface com o usuário de campo, estilização de componentes, usabilidade e testes funcionais do aplicativo |
 
 ---
 
-*Projeto desenvolvido no âmbito do SENAI como referência prática de Engenharia de Software e Arquitetura de Sistemas Distribuídos.*
+## 📚 9. Documentação Formal de Gestão de Projetos (SENAI ADS / PMBOK)
+
+Todos os artefatos formais exigidos na disciplina de **Gestão de Projetos** ministrada pelo **Prof. Deivison Takatu** estão implementados e disponíveis no diretório [`docs/gestao/`](docs/gestao/README.md):
+
+### 🎯 Avaliação 1 — Definição e Planejamento Inicial
+- 📄 **[Termo de Abertura do Projeto (TAP)](docs/gestao/TAP.md):** Contexto, justificativa, objetivos SMART, limites e marcos.
+- 👥 **[Matriz de Partes Interessadas](docs/gestao/matriz_poder_interesse_stakeholders.md):** Rede de poder x interesse (Fábio Carvalho).
+- 📢 **[Plano de Gerenciamento das Comunicações](docs/gestao/plano_de_comunicacao.md):** Matriz de comunicação (público, canal, frequência, responsável).
+- 📐 **[Declaração de Escopo do Projeto](docs/gestao/declaracao_de_escopo.md):** Limites, exclusões e controle integrado de mudanças.
+- 🌳 **[EAP e Dicionário da Estrutura Analítica](docs/gestao/EAP_e_dicionario.md):** Decomposição em 6 pacotes de entregas e critérios formais.
+- 📅 **[Cronograma do Projeto e Matriz RACI](docs/gestao/cronograma_e_recursos.md):** Gantt Mermaid, lista com predecessores e matriz RACI.
+
+### 🏆 Avaliação 2 — Planejamento Complementar e Entrega Final
+- 💰 **[Plano de Custos, Orçamento e EVM](docs/gestao/plano_de_custos_e_orcamento.md):** 1.080h técnicas, custos AWS, contingência e Valor Agregado.
+- 🛡️ **[Plano de Gerenciamento da Qualidade](docs/gestao/plano_de_qualidade.md):** ISO/IEC 25010, DoR, DoD e gestão de não conformidades.
+- ⚠️ **[Plano de Gerenciamento e Matriz de Riscos](docs/gestao/matriz_e_plano_de_riscos.md):** Severidade (Probabilidade x Impacto) e planos preventivos.
+- 📊 **[Monitoramento, Controle e Encerramento](docs/gestao/monitoramento_controle_encerramento.md):** KPIs, processo de CCR e Termo de Encerramento (TEP).
+- 📘 **[Relatório Final Consolidado de Gestão](docs/gestao/relatorio_final_consolidado_gestao.md):** Relatório completo nas 14 seções acadêmicas da disciplina.
+
+### 🏭 Atividades Práticas e Apresentação
+- 🏭 **[Resolução do Desafio MetalTech S.A. (Portfólio PMO)](docs/gestao/desafio_gestao_portfolio_metaltech.md):** Resolução integral do desafio de R$ 2,5M.
+- 🖥️ **[Sprint Review Executiva Monocromática](docs/gestao/sprint_review_monocromatico.md):** Apresentação visual para projeção em sala.
+
+---
+
+*Projeto desenvolvido no âmbito do SENAI como referência prática de Engenharia de Software e Gestão Integrada de Projetos.*
+
 

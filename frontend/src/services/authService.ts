@@ -20,7 +20,9 @@ export const AUTH_STORAGE_KEYS = {
 
 export const API_BASE_URL: string =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) ||
-  'http://localhost:8080/api/v1';
+  (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? `${window.location.protocol}//${window.location.hostname}:8080/api/v1`
+    : 'http://localhost:8080/api/v1');
 
 export const authService = {
   /**

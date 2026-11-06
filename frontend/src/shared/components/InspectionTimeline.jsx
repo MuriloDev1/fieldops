@@ -118,17 +118,12 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
         setLoading(true);
         const data = await inspectionsApi.getHistory(inspectionId);
         if (isMounted) {
-          if (Array.isArray(data) && data.length > 0) {
-            setEvents(data);
-          } else {
-            // Se a API retornar vazio (ex: dados mockados locais), gera linha do tempo consistente com o status
-            setEvents(generateFallbackTimeline(inspectionData || { id: inspectionId }));
-          }
+          setEvents(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.warn('[InspectionTimeline] Usando histórico padrão derivado:', err);
+        console.error('[InspectionTimeline] Erro ao carregar histórico do banco:', err);
         if (isMounted) {
-          setEvents(generateFallbackTimeline(inspectionData || { id: inspectionId }));
+          setEvents([]);
         }
       } finally {
         if (isMounted) {
@@ -142,7 +137,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
     return () => {
       isMounted = false;
     };
-  }, [inspectionId, inspectionData]);
+  }, [inspectionId]);
 
   if (loading) {
     return (
@@ -381,100 +376,4 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
       </div>
     </div>
   );
-}
-
-// Gera uma linha do tempo realista para dados legados ou mockados com base no status da inspeção
-function generateFallbackTimeline(inspection) {
-  const status = (inspection.status || 'SCHEDULED').toUpperCase();
-  const techName = inspection.technicianName || 'Carlos Lima';
-  const supervisorName = 'Roberto Silva';
-
-  const baseTimeline = [
-    {
-      id: 'evt-1',
-      action: 'INSPECTION_CREATED',
-      actionLabel: 'Inspeção Criada',
-      description: `Agendamento cadastrado para o equipamento ${inspection.equipmentName || 'Ativo Industrial'}.`,
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T08:30:00Z` : '2026-09-25T08:30:00Z'
-    },
-    {
-      id: 'evt-2',
-      action: 'INSPECTION_ASSIGNED',
-      actionLabel: 'Técnico Atribuído',
-      description: `Ordem de serviço direcionada ao técnico ${techName}.`,
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T08:35:00Z` : '2026-09-25T08:35:00Z'
-    }
-  ];
-
-  if (status === 'IN_PROGRESS' || status === 'SUBMITTED' || status === 'APPROVED' || status === 'REJECTED') {
-    baseTimeline.push({
-      id: 'evt-3',
-      action: 'INSPECTION_STARTED',
-      actionLabel: 'Execução Iniciada em Campo',
-      description: `Técnico ${techName} realizou leitura de QR Code no local e iniciou o preenchimento.`,
-      actorName: techName,
-      actorRole: 'TECHNICIAN',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T09:15:00Z` : '2026-09-25T09:15:00Z'
-    });
-  }
-
-  if (status === 'SUBMITTED' || status === 'APPROVED' || status === 'REJECTED') {
-    baseTimeline.push({
-      id: 'evt-4',
-      action: 'INSPECTION_SUBMITTED',
-      actionLabel: 'Respostas Enviadas para Auditoria',
-      description: `Checklist concluído com ${inspection.itemsCount || 10} itens e enviado para validação técnica.`,
-      actorName: techName,
-      actorRole: 'TECHNICIAN',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T11:45:00Z` : '2026-09-25T11:45:00Z'
-    });
-
-    baseTimeline.push({
-      id: 'evt-5',
-      action: 'REVIEW_STARTED',
-      actionLabel: 'Revisão Iniciada pelo Supervisor',
-      description: 'Supervisor abriu a ordem de inspeção para análise das respostas e evidências fotográficas.',
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T14:00:00Z` : '2026-09-25T14:00:00Z'
-    });
-  }
-
-  if (status === 'APPROVED') {
-    baseTimeline.push({
-      id: 'evt-6',
-      action: 'INSPECTION_APPROVED',
-      actionLabel: 'Inspeção Aprovada',
-      description: 'Inspeção homologada com sucesso. Todos os itens em conformidade ou com tolerâncias aceitas.',
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T14:30:00Z` : '2026-09-25T14:30:00Z'
-    });
-  } else if (status === 'REJECTED') {
-    baseTimeline.push({
-      id: 'evt-6',
-      action: 'INSPECTION_REJECTED',
-      actionLabel: 'Inspeção Reprovada com Justificativa',
-      description: 'Inspeção reprovada. Constatada ausência de evidência fotográfica obrigatória no item de vibração.',
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T14:30:00Z` : '2026-09-25T14:30:00Z'
-    });
-  } else if (status === 'CANCELLED' || status === 'CANCELED') {
-    baseTimeline.push({
-      id: 'evt-7',
-      action: 'INSPECTION_CANCELED',
-      actionLabel: 'Inspeção Cancelada',
-      description: 'Cancelamento efetuado por alteração no planejamento de manutenção da planta.',
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T10:00:00Z` : '2026-09-25T10:00:00Z'
-    });
-  }
-
-  return baseTimeline;
 }

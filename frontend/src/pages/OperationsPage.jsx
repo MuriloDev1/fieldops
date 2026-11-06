@@ -33,56 +33,8 @@ const statusLabels = {
   CANCELLED: 'Cancelada',
 };
 
-const initialFallbackInspections = [
-  {
-    id: 'INS-8001',
-    templateTitle: 'Checklist Preventivo de Bomba Hidráulica',
-    clientName: 'Petrobras',
-    siteName: 'Refinaria RPBC',
-    equipmentName: 'Bomba Centrífuga KSB 01',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-10-02',
-    priority: 'HIGH',
-    status: 'IN_PROGRESS',
-    itemsCount: 10,
-    answeredCount: 4,
-    nonConformityCount: 0,
-    conformanceRate: 100.0,
-  },
-  {
-    id: 'INS-8002',
-    templateTitle: 'Inspeção Elétrica de Subestação',
-    clientName: 'Vale S.A.',
-    siteName: 'Terminal Portuário de Tubarão',
-    equipmentName: 'Painel Elétrico CCM-02',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-10-05',
-    priority: 'CRITICAL',
-    status: 'SCHEDULED',
-    itemsCount: 15,
-    answeredCount: 0,
-    nonConformityCount: 0,
-    conformanceRate: 0,
-  },
-  {
-    id: 'INS-8003',
-    templateTitle: 'Checklist de Segurança e Válvulas',
-    clientName: 'Klabin',
-    siteName: 'Fábrica Monte Alegre',
-    equipmentName: 'Caldeira de Alta Pressão 03',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-09-28',
-    priority: 'HIGH',
-    status: 'SUBMITTED',
-    itemsCount: 12,
-    answeredCount: 12,
-    nonConformityCount: 1,
-    conformanceRate: 91.6,
-  }
-];
-
 export const OperationsPage = () => {
-  const [inspections, setInspections] = useState(initialFallbackInspections);
+  const [inspections, setInspections] = useState([]);
   const [clients, setClients] = useState([]);
   const [sites, setSites] = useState([]);
   const [equipmentList, setEquipmentList] = useState([]);
@@ -113,20 +65,18 @@ export const OperationsPage = () => {
     setLoading(true);
     try {
       const [inspRes, cliRes, siteRes, eqRes, tmplRes, usrRes] = await Promise.all([
-        inspectionsApi.getAll().catch(() => null),
-        clientsApi.getAll().catch(() => null),
-        sitesApi.getAll().catch(() => null),
-        equipmentApi.getAll().catch(() => null),
-        templatesApi.getAll().catch(() => null),
-        usersApi.getAll().catch(() => null),
+        inspectionsApi.getAll(),
+        clientsApi.getAll(),
+        sitesApi.getAll(),
+        equipmentApi.getAll(),
+        templatesApi.getAll(),
+        usersApi.getAll(),
       ]);
 
-      if (Array.isArray(inspRes) && inspRes.length > 0) {
-        setInspections(inspRes);
-      }
-      if (Array.isArray(cliRes) && cliRes.length > 0) {
+      setInspections(Array.isArray(inspRes) ? inspRes : []);
+      if (Array.isArray(cliRes)) {
         setClients(cliRes);
-        if (!formData.clientId) {
+        if (!formData.clientId && cliRes[0]) {
           setFormData((prev) => ({ ...prev, clientId: cliRes[0].id }));
         }
       }
@@ -143,7 +93,7 @@ export const OperationsPage = () => {
         setTechnicians(techs.length > 0 ? techs : usrRes);
       }
     } catch (err) {
-      console.warn('Erro ao carregar operações:', err);
+      console.error('Erro ao carregar operações do banco:', err);
     } finally {
       setLoading(false);
     }
@@ -179,7 +129,7 @@ export const OperationsPage = () => {
         setChecklistAnswers(initialAnswers);
       }
     } catch (err) {
-      console.warn('Usando dados resumidos da inspeção:', err);
+      console.error('Erro ao carregar detalhes da inspeção do banco:', err);
     }
   };
 
@@ -237,13 +187,17 @@ export const OperationsPage = () => {
       const answersPayload = items.map((item) => {
         const ans = checklistAnswers[item.id] || { compliant: true, observation: '' };
         return {
+          inspectionItemId: item.id,
           snapshotItemId: item.id,
+          valueBoolean: ans.compliant,
+          valueText: ans.compliant ? 'Sim' : 'Não',
+          conformity: ans.compliant ? 'CONFORMING' : 'NON_CONFORMING',
           answerJson: ans.compliant ? 'CONFORM' : 'NON_CONFORM',
           compliant: ans.compliant,
           observation: ans.observation || '',
         };
       });
-      const updated = await inspectionsApi.submit(id, answersPayload);
+      const updated = await inspectionsApi.submit(id, { answers: answersPayload });
       setInspections((prev) => prev.map((item) => (item.id === id ? updated : item)));
       setSelectedInspection(updated);
       alert('Checklist enviado para revisão do supervisor!');
@@ -729,7 +683,7 @@ export const OperationsPage = () => {
                       return (
                         <div key={item.id} style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px', border: '1px solid #334155' }}>
                           <div style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 500, marginBottom: '0.5rem' }}>
-                            {item.prompt || item.text}
+                            {item.itemTitle || item.title || item.prompt || item.text}
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
                             <button
@@ -829,11 +783,139 @@ export const OperationsPage = () => {
                 </div>
               )}
 
+            {/* Respostas, Evidências e Assinatura enviadas pelo Técnico (Mobile -> Supervisor Web) */}
+            {(selectedInspection.status === 'SUBMITTED' ||
+              selectedInspection.status === 'UNDER_REVIEW' ||
+              selectedInspection.status === 'APPROVED' ||
+              selectedInspection.status === 'REJECTED') && (
+              <div style={{ marginTop: '0.5rem', borderTop: '1px solid #334155', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#38bdf8', fontSize: '0.95rem' }}>
+                    Respostas do Checklist (Enviadas pelo Técnico: {selectedInspection.technicianName || selectedInspection.responsible?.name || 'Técnico'})
+                  </h4>
+                  {selectedInspection.notes && (
+                    <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px', border: '1px solid #334155', marginBottom: '0.75rem' }}>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>
+                        Observação / Ocorrência registrada pelo Técnico:
+                      </span>
+                      <span style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>{selectedInspection.notes}</span>
+                    </div>
+                  )}
+
+                  {Array.isArray(selectedInspection.answers) && selectedInspection.answers.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '320px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                      {selectedInspection.answers.map((ans, idx) => {
+                        const valStr = String(ans.value || '').trim();
+                        const isNonConform = ['não', 'nao', 'ruim', 'non_conforming', 'non_conform'].includes(valStr.toLowerCase());
+                        return (
+                          <div
+                            key={ans.id || idx}
+                            style={{
+                              backgroundColor: '#0f172a',
+                              padding: '0.75rem',
+                              borderRadius: '6px',
+                              border: `1px solid ${isNonConform ? 'rgba(239, 68, 68, 0.45)' : '#334155'}`,
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                              <span style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 500 }}>
+                                {idx + 1}. {ans.question?.title || `Item ${idx + 1}`}
+                              </span>
+                              <span
+                                style={{
+                                  padding: '0.15rem 0.5rem',
+                                  borderRadius: '9999px',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 600,
+                                  whiteSpace: 'nowrap',
+                                  backgroundColor: isNonConform ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                                  color: isNonConform ? '#f87171' : '#34d399',
+                                }}
+                              >
+                                {valStr || 'Respondido'}
+                              </span>
+                            </div>
+                            {ans.observation && (
+                              <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                                <strong>Obs:</strong> {ans.observation}
+                              </div>
+                            )}
+                            {ans.photoUrl && (
+                              <div style={{ marginTop: '0.5rem' }}>
+                                <span style={{ display: 'block', fontSize: '0.75rem', color: '#38bdf8', marginBottom: '0.25rem' }}>
+                                  Evidência Fotográfica Anexada:
+                                </span>
+                                <img
+                                  src={ans.photoUrl}
+                                  alt="Evidência do item"
+                                  style={{ maxWidth: '100%', maxHeight: '160px', borderRadius: '6px', border: '1px solid #334155', objectFit: 'cover' }}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
+                      Nenhuma resposta detalhada registrada neste envio.
+                    </p>
+                  )}
+                </div>
+
+                {/* Assinatura Digital do Técnico */}
+                {Array.isArray(selectedInspection.answers) &&
+                  selectedInspection.answers.some((a) => a.signatureUrl) && (
+                    <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px', border: '1px solid #334155' }}>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.4rem' }}>
+                        Assinatura Digital do Técnico em Campo:
+                      </span>
+                      <div style={{ backgroundColor: '#ffffff', padding: '0.5rem', borderRadius: '6px', textAlign: 'center' }}>
+                        <img
+                          src={selectedInspection.answers.find((a) => a.signatureUrl)?.signatureUrl}
+                          alt="Assinatura do Técnico"
+                          style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                {/* Histórico do Parecer do Supervisor se já avaliada */}
+                {(selectedInspection.status === 'APPROVED' || selectedInspection.status === 'REJECTED') && (
+                  <div
+                    style={{
+                      backgroundColor: selectedInspection.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                      padding: '0.85rem',
+                      borderRadius: '6px',
+                      border: `1px solid ${selectedInspection.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
+                    }}
+                  >
+                    <strong style={{ display: 'block', fontSize: '0.85rem', color: selectedInspection.status === 'APPROVED' ? '#34d399' : '#f87171', marginBottom: '0.35rem' }}>
+                      Avaliação do Supervisor: {selectedInspection.status === 'APPROVED' ? 'APROVADA' : 'REPROVADA'}
+                    </strong>
+                    {selectedInspection.reviewer?.name && (
+                      <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+                        Responsável pela avaliação: <strong>{selectedInspection.reviewer.name}</strong>
+                      </div>
+                    )}
+                    {selectedInspection.reviewedAt && (
+                      <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                        Data da avaliação: {new Date(selectedInspection.reviewedAt).toLocaleString('pt-BR')}
+                      </div>
+                    )}
+                    <div style={{ fontSize: '0.85rem', color: '#f8fafc', marginTop: '0.35rem' }}>
+                      <strong>Parecer:</strong> {selectedInspection.reviewObservation || 'Sem observações adicionais.'}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {(selectedInspection.status === 'SUBMITTED' || selectedInspection.status === 'UNDER_REVIEW') && (
               <div style={{ marginTop: '1rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#fbbf24' }}>Revisão de Auditoria (Supervisor)</h4>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#fbbf24' }}>Avaliação de Auditoria (Exclusivo Supervisor)</h4>
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
-                  A inspeção foi finalizada pelo técnico e aguarda parecer formal. Se reprovada, a justificativa é obrigatória.
+                  A inspeção foi finalizada pelo técnico em campo e aguarda a avaliação do supervisor. Ao aprovar, o equipamento fica Ativo; ao reprovar, entra em Manutenção e exige justificativa.
                 </p>
 
                 <textarea
@@ -873,7 +955,7 @@ export const OperationsPage = () => {
                     }}
                   >
                     <XCircle size={18} />
-                    Reprovar
+                    Reprovar Inspeção
                   </button>
                   <button
                     type="button"
@@ -895,7 +977,7 @@ export const OperationsPage = () => {
                     }}
                   >
                     <CheckCircle2 size={18} />
-                    Aprovar
+                    Aprovar Inspeção
                   </button>
                 </div>
               </div>

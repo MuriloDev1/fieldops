@@ -3,9 +3,11 @@ package com.fieldops.service;
 import com.fieldops.common.exception.BusinessException;
 import com.fieldops.common.exception.ResourceNotFoundException;
 import com.fieldops.domain.entity.AuditEvent;
+import com.fieldops.domain.entity.Equipment;
 import com.fieldops.domain.entity.Inspection;
 import com.fieldops.domain.entity.InspectionReview;
 import com.fieldops.domain.entity.User;
+import com.fieldops.domain.enums.EquipmentStatus;
 import com.fieldops.domain.enums.InspectionStatus;
 import com.fieldops.domain.enums.ReviewDecision;
 import com.fieldops.domain.enums.UserRole;
@@ -13,6 +15,7 @@ import com.fieldops.dto.inspection.InspectionResponseDTO;
 import com.fieldops.dto.review.ReviewDecisionRequestDTO;
 import com.fieldops.dto.review.ReviewResponseDTO;
 import com.fieldops.repository.AuditEventRepository;
+import com.fieldops.repository.EquipmentRepository;
 import com.fieldops.repository.InspectionRepository;
 import com.fieldops.repository.InspectionReviewRepository;
 import com.fieldops.repository.UserRepository;
@@ -32,6 +35,7 @@ public class ReviewService {
     private final InspectionReviewRepository reviewRepository;
     private final AuditEventRepository auditEventRepository;
     private final UserRepository userRepository;
+    private final EquipmentRepository equipmentRepository;
 
     @Transactional(readOnly = true)
     public List<ReviewResponseDTO> getReviewsByInspection(UUID inspectionId) {
@@ -81,6 +85,12 @@ public class ReviewService {
         inspection.setApprovedAt(OffsetDateTime.now());
         inspectionRepository.save(inspection);
 
+        Equipment equipment = inspection.getEquipment();
+        if (equipment != null) {
+            equipment.setStatus(EquipmentStatus.ACTIVE);
+            equipmentRepository.save(equipment);
+        }
+
         String detailText = (reason != null && !reason.isBlank()) ? reason : "Inspeção aprovada pelo supervisor";
         recordAudit(inspection, effectiveSupervisor, "INSPECTION_APPROVED",
                 "{\"details\":\"" + detailText.replace("\"", "\\\"") + "\"}");
@@ -118,6 +128,12 @@ public class ReviewService {
         inspection.setStatus(InspectionStatus.REJECTED);
         inspectionRepository.save(inspection);
 
+        Equipment equipment = inspection.getEquipment();
+        if (equipment != null) {
+            equipment.setStatus(EquipmentStatus.MAINTENANCE);
+            equipmentRepository.save(equipment);
+        }
+
         recordAudit(inspection, effectiveSupervisor, "INSPECTION_REJECTED",
                 "{\"details\":\"" + reason.replace("\"", "\\\"") + "\"}");
         return ReviewResponseDTO.fromEntity(saved);
@@ -147,9 +163,17 @@ public class ReviewService {
     }
 
     private User resolveSupervisor(User supervisor, Inspection inspection, UUID reviewerId) {
+        if (supervisor != null && supervisor.getRole() == UserRole.TECHNICIAN) {
+            throw new BusinessException("FORBIDDEN_ROLE", "O técnico não possui permissão para avaliar, aprovar ou reprovar inspeções. A avaliação é exclusiva do Supervisor.");
+        }
         if (reviewerId != null) {
             var found = userRepository.findById(reviewerId);
-            if (found.isPresent()) return found.get();
+            if (found.isPresent()) {
+                if (found.get().getRole() == UserRole.TECHNICIAN) {
+                    throw new BusinessException("FORBIDDEN_ROLE", "O técnico não possui permissão para avaliar, aprovar ou reprovar inspeções. A avaliação é exclusiva do Supervisor.");
+                }
+                return found.get();
+            }
         }
         if (supervisor != null) return supervisor;
         if (inspection.getSupervisor() != null) return inspection.getSupervisor();

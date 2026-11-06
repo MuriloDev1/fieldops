@@ -37,6 +37,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Rotas públicas de documentação, autenticação e compatibilidade Mobile/Web
                         .requestMatchers(
+                                "/",
+                                "/health",
                                 "/auth/**",
                                 "/equipments/**",
                                 "/inspections/**",

@@ -175,12 +175,12 @@ Distribuição recomendada entre os integrantes para equilibrar a carga de traba
 
 | Integrante | Frente de Foco Principal | Responsabilidades no Semestre |
 | :--- | :--- | :--- |
-| **Murilo** | **Backend / Arquitetura & Integração** | Estruturação da API REST, endpoints de sincronização, regras de idempotência e integração geral. |
-| **Gizela** | **Mobile (UX & Lógica de Inspeção)** | Telas de execução do checklist no Expo, validações condicionais de formulário e captura de evidências/foto. |
-| **Pedro** | **Frontend Web (Dashboard & Revisão)** | Telas do supervisor no React/Vite, gráficos analíticos, visualização de fotos e aprovação de relatórios. |
-| **Julio** | **Mobile (Recursos Nativos & Offline)** | Configuração do SQLite local, persistência da fila Outbox, leitor de QR Code e captura de GPS. |
-| **Matheus** | **Banco de Dados & Backend** | Manutenção do schema PostgreSQL, criação do `seed.sql`, endpoints de CRUD de equipamentos e modelos. |
-| **Juan** | **QA, Testes & Documentação Acadêmica** | Elaboração do documento do PI, relatórios de testes, suporte à validação do fluxo e preparação dos slides da banca. |
+| **Pedro** | **Backend / API REST & Regras de Negócio** | Construção da API REST Spring Boot (Java 21), serviços de autenticação JWT, lógica de negócio, idempotência, segurança RBAC e endpoints de revisão. |
+| **Murilo** | **Repositório, Governança & DevOps** | Gestão do repositório GitHub, controle de branches, padronização de commits, pipeline CI/CD e suporte a integração. |
+| **Matheus** | **Frontend Web (Interface do Supervisor)** | Telas administrativas no React/Vite, Dashboard operacional, construtor visual de checklists e tela de revisão de inspeções. |
+| **Juan** | **Banco de Dados (PostgreSQL & Modelagem)** | Criação e manutenção do schema relacional, scripts de seed, migrações Flyway e integridade referencial dos dados. |
+| **Julio** | **Frontend & Mobile de Campo** | Desenvolvimento das telas e fluxos de navegação mobile no React Native/Expo, integração com câmera e formulários. |
+| **Gizela** | **Frontend & Mobile de Campo** | Interface com o usuário de campo, estilização de componentes, usabilidade e testes funcionais do aplicativo. |
 
 ---
 

@@ -16,6 +16,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   PanResponder,
+  Alert,
 } from "react-native";
 
 import { MaterialIcons } from "@expo/vector-icons";
@@ -26,11 +27,25 @@ import Svg, { Path } from "react-native-svg";
 
 import { authService } from "./src/services/authService";
 import { tokenStorage } from "./src/services/tokenStorage";
-import { onUnauthorized } from "./src/services/api";
+import { CameraView } from "expo-camera";
+import { onUnauthorized, updateApiBaseUrl } from "./src/services/api";
 
-const API_URL = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api\/v1\/?$/, "");
+let API_URL = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api\/v1\/?$/, "");
+
+function setRuntimeApiUrl(url: string) {
+  if (!url) return;
+  const clean = url.trim().replace(/\/$/, "");
+  API_URL = clean.endsWith("/api/v1") ? clean.replace(/\/api\/v1$/, "") : clean;
+  updateApiBaseUrl(API_URL);
+}
 
 const OFFLINE_INSPECTIONS_STORAGE_KEY = "@fieldops/inspecoes-pendentes-offline";
+const INSPECOES_AGENDADAS_STORAGE_KEY = "@fieldops/inspecoes-agendadas-cache";
+const INSPECOES_CONCLUIDAS_STORAGE_KEY = "@fieldops/inspecoes-concluidas-cache";
+const EQUIPAMENTOS_STORAGE_KEY = "@fieldops/equipamentos-cache";
+const MODELOS_STORAGE_KEY = "@fieldops/modelos-cache";
+const RASCUNHO_INSPECAO_STORAGE_KEY = "@fieldops/rascunho-em-andamento";
+const CUSTOM_API_URL_STORAGE_KEY = "@fieldops/custom-api-url";
 
 
 /* =========================================================
@@ -92,12 +107,12 @@ ${paths}
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (_, gestureState) => {
+      onPanResponderGrant: (_: any, gestureState: any) => {
         const initialPoint = { x: gestureState.x0, y: gestureState.y0 };
         currentStrokeRef.current = [initialPoint];
         setCurrentStroke([initialPoint]);
       },
-      onPanResponderMove: (_, gestureState) => {
+      onPanResponderMove: (_: any, gestureState: any) => {
         const nextPoint = { x: gestureState.moveX, y: gestureState.moveY };
         currentStrokeRef.current = [...currentStrokeRef.current, nextPoint];
         setCurrentStroke([...currentStrokeRef.current]);
@@ -135,7 +150,7 @@ ${paths}
     <View style={styles.signaturePadRoot}>
       <View
         style={styles.signatureDrawingArea}
-        onLayout={(event) => {
+        onLayout={(event: any) => {
           const { width, height } = event.nativeEvent.layout;
           if (width > 0) setPadWidth(width);
           if (height > 0) setPadHeight(height);
@@ -240,78 +255,25 @@ interface InspecaoPendenteOffline extends InspecaoSalva {
   fotoOcorrencia?: string | null;
 }
 
-/* =========================================================
-   DADOS
-========================================================= */
+interface InspecaoAgendada {
+  id: string;
+  titulo: string;
+  equipamentoId: string;
+  equipamentoNome: string;
+  equipamentoCodigo: string;
+  equipamentoLocal: string;
+  instrucoes: string;
+  prioridade: string;
+  dataAgendada: string;
+  perguntas: Pergunta[];
+}
 
-const equipamentosIniciais: Equipamento[] = [
-  {
-    id: "1",
-    nome: "Compressor Industrial 01",
-    codigo: "EQP-001",
-    local: "Refinaria Central",
-    tipo: "Compressor",
-    responsavel: "João Silva",
-    status: "Ativo",
-  },
-  {
-    id: "2",
-    nome: "Gerador Diesel 02",
-    codigo: "EQP-002",
-    local: "Unidade Sul",
-    tipo: "Gerador",
-    responsavel: "Carlos Oliveira",
-    status: "Ativo",
-  },
-  {
-    id: "3",
-    nome: "Bomba Submersa 04",
-    codigo: "EQP-003",
-    local: "Unidade Alpha",
-    tipo: "Bomba",
-    responsavel: "Maria Souza",
-    status: "Manutenção",
-  },
-  {
-    id: "4",
-    nome: "Válvula de Pressão B",
-    codigo: "EQP-004",
-    local: "Refinaria Central",
-    tipo: "Válvula",
-    responsavel: "Ana Costa",
-    status: "Ativo",
-  },
-  {
-    id: "5",
-    nome: "Painel Elétrico Leste",
-    codigo: "EQP-005",
-    local: "Unidade Beta",
-    tipo: "Painel",
-    responsavel: "Pedro Santos",
-    status: "Inativo",
-  },
-];
-
-const perguntasIniciais: Pergunta[] = [
-  {
-    id: "local-1",
-    texto: "O equipamento está em boas condições?",
-    tipo: "Sim / Não",
-    obrigatoria: true,
-  },
-  {
-    id: "local-2",
-    texto: "Qual o nível de pressão?",
-    tipo: "Múltipla escolha",
-    obrigatoria: true,
-  },
-  {
-    id: "local-3",
-    texto: "Existe algum vazamento?",
-    tipo: "Sim / Não",
-    obrigatoria: false,
-  },
-];
+interface ModeloChecklistBanco {
+  id: string;
+  titulo: string;
+  descricao: string;
+  perguntas: Pergunta[];
+}
 
 /* =========================================================
    APP
@@ -330,9 +292,25 @@ export default function App() {
   const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
   const [token, setToken] = useState("");
   const [inspecoesSalvas, setInspecoesSalvas] = useState<InspecaoSalva[]>([]);
+  const [inspecoesAgendadas, setInspecoesAgendadas] = useState<InspecaoAgendada[]>([]);
   const [online, setOnline] = useState(false);
   const [inspecoesPendentesOffline, setInspecoesPendentesOffline] =
     useState<InspecaoPendenteOffline[]>([]);
+  const [servidorUrl, setServidorUrl] = useState(API_URL);
+  const [sincronizando, setSincronizando] = useState(false);
+
+  const salvarCustomApiUrl = async (novaUrl: string) => {
+    try {
+      const limpa = novaUrl.trim();
+      if (!limpa) return;
+      setRuntimeApiUrl(limpa);
+      setServidorUrl(API_URL);
+      await AsyncStorage.setItem(CUSTOM_API_URL_STORAGE_KEY, limpa);
+      alert(`Servidor configurado para: ${API_URL}`);
+    } catch (e) {
+      console.error("Erro ao salvar servidor:", e);
+    }
+  };
 
   useEffect(() => {
     // Escuta eventos de revogação/expiração de sessão da camada HTTP para resetar para a tela de Login
@@ -417,30 +395,59 @@ export default function App() {
     };
   }, []);
 
-  // ETAPA 7.2 — Recupera a fila offline salva no aparelho ao abrir o app.
+  // Recupera configurações do servidor e cache offline (agendadas, fila, concluídas) ao abrir o app
   useEffect(() => {
     let ativo = true;
 
-    const carregarInspecoesPendentesOffline = async () => {
+    const carregarCacheInicial = async () => {
       try {
-        const dados = await AsyncStorage.getItem(OFFLINE_INSPECTIONS_STORAGE_KEY);
-        if (!dados || !ativo) return;
+        const [urlSalva, dadosFila, dadosAgendadas, dadosConcluidas] = await Promise.all([
+          AsyncStorage.getItem(CUSTOM_API_URL_STORAGE_KEY),
+          AsyncStorage.getItem(OFFLINE_INSPECTIONS_STORAGE_KEY),
+          AsyncStorage.getItem(INSPECOES_AGENDADAS_STORAGE_KEY),
+          AsyncStorage.getItem(INSPECOES_CONCLUIDAS_STORAGE_KEY),
+        ]);
 
-        const fila: InspecaoPendenteOffline[] = JSON.parse(dados);
-        if (Array.isArray(fila)) {
-          setInspecoesPendentesOffline(fila);
-          setInspecoesSalvas((atual) => {
-            const mapa = new Map(atual.map((item) => [item.id, item]));
-            fila.forEach((item) => { if (!mapa.has(item.id)) mapa.set(item.id, item); });
-            return Array.from(mapa.values());
-          });
+        if (!ativo) return;
+
+        if (urlSalva) {
+          setRuntimeApiUrl(urlSalva);
+          setServidorUrl(urlSalva);
+        }
+
+        if (dadosAgendadas) {
+          try {
+            const ag: InspecaoAgendada[] = JSON.parse(dadosAgendadas);
+            if (Array.isArray(ag) && ag.length > 0) setInspecoesAgendadas(ag);
+          } catch {}
+        }
+
+        if (dadosConcluidas) {
+          try {
+            const conc: InspecaoSalva[] = JSON.parse(dadosConcluidas);
+            if (Array.isArray(conc) && conc.length > 0) setInspecoesSalvas(conc);
+          } catch {}
+        }
+
+        if (dadosFila) {
+          try {
+            const fila: InspecaoPendenteOffline[] = JSON.parse(dadosFila);
+            if (Array.isArray(fila)) {
+              setInspecoesPendentesOffline(fila);
+              setInspecoesSalvas((atual) => {
+                const mapa = new Map(atual.map((item) => [item.id, item]));
+                fila.forEach((item) => { if (!mapa.has(item.id)) mapa.set(item.id, item); });
+                return Array.from(mapa.values());
+              });
+            }
+          } catch {}
         }
       } catch (error) {
-        console.error("Erro ao recuperar inspeções pendentes offline:", error);
+        console.error("Erro ao recuperar cache offline inicial:", error);
       }
     };
 
-    carregarInspecoesPendentesOffline();
+    carregarCacheInicial();
     return () => { ativo = false; };
   }, []);
 
@@ -463,140 +470,182 @@ export default function App() {
     salvarFilaOffline();
   }, [inspecoesPendentesOffline]);
 
+  async function carregarInspecoesDoBanco() {
+    try {
+      const response = await fetch(`${API_URL}/inspections`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message || "Não foi possível carregar o histórico de inspeções."
+        );
+      }
+
+      if (!Array.isArray(data)) {
+        throw new Error("Resposta inválida ao carregar as inspeções.");
+      }
+
+      const mapearPerguntas = (questions: any[]): Pergunta[] => {
+        if (!Array.isArray(questions)) return [];
+        return questions.map((question: any, index: number) => ({
+          id: String(question.id || `question-${index + 1}`),
+          texto: String(question.title || question.itemTitle || question.text || `Pergunta ${index + 1}`),
+          tipo:
+            question.type === "MULTIPLE_CHOICE" || question.type === "SINGLE_CHOICE"
+              ? "Múltipla escolha"
+              : question.type === "PHOTO"
+              ? "Foto"
+              : question.type === "PARAGRAPH" || question.type === "SHORT_TEXT" || question.type === "TEXT_SHORT"
+              ? "Texto"
+              : "Sim / Não",
+          obrigatoria: Boolean(question.required),
+        }));
+      };
+
+      const agendadas: InspecaoAgendada[] = data
+        .filter((item: any) => item?.status === "IN_PROGRESS" || item?.status === "ASSIGNED" || item?.status === "SCHEDULED")
+        .map((item: any) => ({
+          id: String(item.id),
+          titulo: String(item.title || item.templateTitle || "Inspeção Atribuída"),
+          equipamentoId: String(item.equipmentId || item.equipment?.id || ""),
+          equipamentoNome: String(item.equipment?.name || item.equipmentName || "Inspeção Geral da Planta"),
+          equipamentoCodigo: String(item.equipment?.code || item.equipmentQrCode || "GERAL"),
+          equipamentoLocal: String(item.siteName || "Planta Operacional"),
+          instrucoes: String(item.instructions || item.notes || item.description || "Execute o checklist em campo conforme o padrão operacional."),
+          prioridade: String(item.priority || "MEDIUM"),
+          dataAgendada: String(item.scheduledDate || item.scheduledFor || item.createdAt || ""),
+          perguntas: mapearPerguntas(item.questions || item.items || []),
+        }));
+
+      setInspecoesAgendadas(agendadas);
+      AsyncStorage.setItem(INSPECOES_AGENDADAS_STORAGE_KEY, JSON.stringify(agendadas)).catch(() => {});
+
+      const inspecoesConcluidas: InspecaoSalva[] = data
+        .filter((item: any) => item?.status === "COMPLETED")
+        .map((item: any) => ({
+          id: String(item.id),
+          titulo: String(item.title || "Inspeção"),
+          equipamentoId: String(item.equipmentId || item.equipment?.id || ""),
+          equipamentoNome: String(
+            item.equipment?.name || item.equipmentName || "Equipamento não identificado"
+          ),
+          equipamentoCodigo: String(
+            item.equipment?.code || item.equipmentQrCode || "Sem código"
+          ),
+          tecnico: String(
+            item.responsible?.name || item.technicianName || "Técnico não identificado"
+          ),
+          status: "CONCLUIDA",
+          reviewStatus:
+            item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
+              ? "APROVADA"
+              : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
+              ? "REPROVADA"
+              : "PENDENTE",
+          revisadoPor: String(item.reviewer?.name || item.reviewedBy?.name || item.supervisorName || ""),
+          observacaoRevisao: String(item.reviewObservation || item.reviewNote || ""),
+          dataRevisao: String(item.reviewedAt || item.reviewDate || item.reviewed_at || "") || undefined,
+          situacaoFinal:
+            item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
+              ? "APROVADA"
+              : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
+              ? "REPROVADA"
+              : "PENDENTE",
+          dataEncerramento: String(
+            item.reviewedAt || item.reviewDate || item.reviewed_at || item.updatedAt || item.createdAt || ""
+          ),
+          equipamentoStatusFinal:
+            item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
+              ? "Ativo"
+              : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
+              ? "Manutenção"
+              : undefined,
+          respostas: Array.isArray(item.answers)
+            ? item.answers.reduce((acc: Record<string, string>, answer: any, index: number) => {
+                const key = String(
+                  answer.questionId ||
+                    answer.question?.id ||
+                    answer.question?.title ||
+                    `resposta-${index + 1}`
+                );
+                acc[key] = String(answer.value ?? answer.answer ?? "");
+                return acc;
+              }, {})
+            : {},
+          perguntas: mapearPerguntas(item.questions || item.items || []),
+          observacao: String(item.description || item.notes || ""),
+          dataConclusao: String(item.submittedAtServer || item.updatedAt || item.createdAt),
+          fotos: Array.isArray(item.answers)
+            ? item.answers.reduce((acc: Record<string, string>, answer: any) => {
+                const key = String(answer.questionId || answer.question?.id || "");
+                const url = String(answer.photoUrl || answer.photo || answer.evidenceUrl || "");
+                if (key && url) acc[key] = url;
+                return acc;
+              }, {})
+            : {},
+          assinatura: Array.isArray(item.answers)
+            ? String(
+                item.answers.find((answer: any) =>
+                  answer.signatureUrl || answer.signature
+                )?.signatureUrl ||
+                  item.answers.find((answer: any) =>
+                    answer.signatureUrl || answer.signature
+                  )?.signature ||
+                  ""
+              ) || undefined
+            : undefined,
+          naoConformidades: Array.isArray(item.answers)
+            ? item.answers
+                .filter((answer: any) =>
+                  String(answer.value ?? answer.answer ?? "").trim().toLowerCase() === "não" ||
+                  String(answer.value ?? answer.answer ?? "").trim().toLowerCase() === "nao"
+                )
+                .map((answer: any) =>
+                  String(answer.question?.title || answer.question?.text || "Não conformidade identificada")
+                )
+            : [],
+        }));
+
+      setInspecoesSalvas(inspecoesConcluidas);
+      AsyncStorage.setItem(INSPECOES_CONCLUIDAS_STORAGE_KEY, JSON.stringify(inspecoesConcluidas)).catch(() => {});
+    } catch (error) {
+      console.error("Erro ao carregar histórico de inspeções (fallback offline):", error);
+      try {
+        const [dadosAg, dadosConc] = await Promise.all([
+          AsyncStorage.getItem(INSPECOES_AGENDADAS_STORAGE_KEY),
+          AsyncStorage.getItem(INSPECOES_CONCLUIDAS_STORAGE_KEY),
+        ]);
+        if (dadosAg) {
+          const parsedAg = JSON.parse(dadosAg);
+          if (Array.isArray(parsedAg) && parsedAg.length > 0) setInspecoesAgendadas(parsedAg);
+        }
+        if (dadosConc) {
+          const parsedConc = JSON.parse(dadosConc);
+          if (Array.isArray(parsedConc) && parsedConc.length > 0) setInspecoesSalvas(parsedConc);
+        }
+      } catch {}
+    }
+  }
+
   useEffect(() => {
     if (!autenticado) {
       return;
     }
-
-    async function carregarInspecoesDoBanco() {
-      try {
-        const response = await fetch(`${API_URL}/inspections`);
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(
-            data?.message || "Não foi possível carregar o histórico de inspeções."
-          );
-        }
-
-        if (!Array.isArray(data)) {
-          throw new Error("Resposta inválida ao carregar as inspeções.");
-        }
-
-        const inspecoesConcluidas: InspecaoSalva[] = data
-          .filter((item: any) => item?.status === "COMPLETED")
-          .map((item: any) => ({
-            id: String(item.id),
-            titulo: String(item.title || "Inspeção"),
-            equipamentoId: String(item.equipmentId || item.equipment?.id || ""),
-            equipamentoNome: String(
-              item.equipment?.name || "Equipamento não identificado"
-            ),
-            equipamentoCodigo: String(
-              item.equipment?.code || "Sem código"
-            ),
-            tecnico: String(
-              item.responsible?.name || "Técnico não identificado"
-            ),
-            status: "CONCLUIDA",
-            reviewStatus:
-              item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
-                ? "APROVADA"
-                : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
-                ? "REPROVADA"
-                : "PENDENTE",
-            revisadoPor: String(item.reviewer?.name || item.reviewedBy?.name || ""),
-            observacaoRevisao: String(item.reviewObservation || item.reviewNote || ""),
-            dataRevisao: String(item.reviewedAt || item.reviewDate || item.reviewed_at || "") || undefined,
-            situacaoFinal:
-              item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
-                ? "APROVADA"
-                : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
-                ? "REPROVADA"
-                : "PENDENTE",
-            dataEncerramento: String(
-              item.reviewedAt || item.reviewDate || item.reviewed_at || item.updatedAt || item.createdAt || ""
-            ),
-            equipamentoStatusFinal:
-              item.reviewStatus === "APPROVED" || item.reviewStatus === "APROVADA"
-                ? "Ativo"
-                : item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA"
-                ? "Manutenção"
-                : undefined,
-            respostas: Array.isArray(item.answers)
-              ? item.answers.reduce((acc: Record<string, string>, answer: any, index: number) => {
-                  const key = String(
-                    answer.questionId ||
-                      answer.question?.id ||
-                      answer.question?.title ||
-                      `resposta-${index + 1}`
-                  );
-                  acc[key] = String(answer.value ?? answer.answer ?? "");
-                  return acc;
-                }, {})
-              : {},
-            perguntas: Array.isArray(item.questions)
-              ? item.questions.map((question: any, index: number) => ({
-                  id: String(question.id || `question-${index + 1}`),
-                  texto: String(question.title || question.text || `Pergunta ${index + 1}`),
-                  tipo: String(question.type || "Resposta"),
-                  obrigatoria: Boolean(question.required),
-                }))
-              : [],
-            observacao: String(item.description || ""),
-            dataConclusao: String(item.updatedAt || item.createdAt),
-            fotos: Array.isArray(item.answers)
-              ? item.answers.reduce((acc: Record<string, string>, answer: any) => {
-                  const key = String(answer.questionId || answer.question?.id || "");
-                  const url = String(answer.photoUrl || answer.photo || answer.evidenceUrl || "");
-                  if (key && url) acc[key] = url;
-                  return acc;
-                }, {})
-              : {},
-            assinatura: Array.isArray(item.answers)
-              ? String(
-                  item.answers.find((answer: any) =>
-                    answer.signatureUrl || answer.signature
-                  )?.signatureUrl ||
-                    item.answers.find((answer: any) =>
-                      answer.signatureUrl || answer.signature
-                    )?.signature ||
-                    ""
-                ) || undefined
-              : undefined,
-            naoConformidades: Array.isArray(item.answers)
-              ? item.answers
-                  .filter((answer: any) =>
-                    String(answer.value ?? answer.answer ?? "").trim().toLowerCase() === "não" ||
-                    String(answer.value ?? answer.answer ?? "").trim().toLowerCase() === "nao"
-                  )
-                  .map((answer: any) =>
-                    String(answer.question?.title || answer.question?.text || "Não conformidade identificada")
-                  )
-              : [],
-          }));
-
-        setInspecoesSalvas(inspecoesConcluidas);
-      } catch (error) {
-        console.error("Erro ao carregar histórico de inspeções:", error);
-      }
-    }
-
     carregarInspecoesDoBanco();
-  }, [autenticado]);
+  }, [autenticado, tela]);
 
-  useEffect(() => {
-    if (!autenticado || !online || inspecoesPendentesOffline.length === 0) {
-      return;
-    }
+  async function sincronizarInspecoesPendentesInterno(filaAtual: InspecaoPendenteOffline[]) {
+    if (filaAtual.length === 0) return 0;
+    setSincronizando(true);
+    let enviadosComSucesso = 0;
 
-    let cancelado = false;
+    for (const pendente of filaAtual) {
+      try {
+        let targetId = pendente.id;
+        let perguntasBanco: any[] = [];
 
-    async function sincronizarInspecoesPendentes() {
-      const pendentes = [...inspecoesPendentesOffline];
-
-      for (const pendente of pendentes) {
-        try {
+        if (pendente.id.startsWith("offline-")) {
+          // Inspeção criada avulsa offline: precisa criar no backend
           const perguntasParaBackend = pendente.perguntas.map((pergunta, index) => ({
             type:
               pergunta.tipo === "Sim / Não"
@@ -627,89 +676,117 @@ export default function App() {
           if (!criarResponse.ok) {
             throw new Error(criarData?.message || "Não foi possível sincronizar a inspeção.");
           }
+          targetId = String(criarData.id);
+          perguntasBanco = Array.isArray(criarData.questions) ? criarData.questions : [];
+        } else {
+          // Inspeção pré-atribuída pelo supervisor (Web): NÃO duplicar criação!
+          targetId = pendente.id;
+          const buscaRes = await fetch(`${API_URL}/inspections/${targetId}`).catch(() => null);
+          if (buscaRes && buscaRes.ok) {
+            const buscaData = await buscaRes.json().catch(() => null);
+            perguntasBanco = Array.isArray(buscaData?.questions) ? buscaData.questions : (Array.isArray(buscaData?.items) ? buscaData.items : []);
+          }
+        }
 
-          const perguntasBanco = Array.isArray(criarData.questions)
-            ? criarData.questions
-            : [];
+        for (let index = 0; index < pendente.perguntas.length; index += 1) {
+          const pergunta = pendente.perguntas[index];
+          const resposta = pendente.respostas[pergunta.id];
 
-          for (let index = 0; index < pendente.perguntas.length; index += 1) {
-            const pergunta = pendente.perguntas[index];
-            const resposta = pendente.respostas[pergunta.id];
-
-            if (!resposta) {
-              continue;
-            }
-
-            const perguntaBanco = perguntasBanco[index];
-            const questionId = String(perguntaBanco?.id || pergunta.id);
-
-            const respostaResponse = await fetch(
-              `${API_URL}/inspections/${String(criarData.id)}/answers`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  questionId,
-                  userId: usuario?.id || null,
-                  value: String(resposta),
-                  observation: pendente.observacao || null,
-                  photoUrl: pendente.fotos?.[pergunta.id] || pendente.fotoOcorrencia || null,
-                  signatureUrl: index === 0 ? pendente.assinatura || null : null,
-                }),
-              }
-            );
-
-            const respostaData = await respostaResponse.json();
-            if (!respostaResponse.ok) {
-              throw new Error(
-                respostaData?.message || `Falha ao sincronizar a resposta ${questionId}.`
-              );
-            }
+          if (!resposta) {
+            continue;
           }
 
-          const finalizarResponse = await fetch(
-            `${API_URL}/inspections/${String(criarData.id)}/complete`,
+          const perguntaBanco = perguntasBanco[index] || perguntasBanco.find((q: any) => String(q.id) === pergunta.id || String(q.title || q.itemTitle) === pergunta.texto);
+          const questionId = String(perguntaBanco?.id || pergunta.id);
+
+          const respostaResponse = await fetch(
+            `${API_URL}/inspections/${targetId}/answers`,
             {
-              method: "PATCH",
+              method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                questionId,
                 userId: usuario?.id || null,
+                value: String(resposta),
                 observation: pendente.observacao || null,
+                photoUrl: pendente.fotos?.[pergunta.id] || pendente.fotoOcorrencia || null,
+                signatureUrl: index === 0 ? pendente.assinatura || null : null,
               }),
             }
           );
 
-          if (!finalizarResponse.ok) {
-            const finalizarData = await finalizarResponse.json();
+          const respostaData = await respostaResponse.json();
+          if (!respostaResponse.ok) {
             throw new Error(
-              finalizarData?.message || "Falha ao concluir a sincronização."
+              respostaData?.message || `Falha ao sincronizar a resposta ${questionId}.`
             );
           }
-
-          if (!cancelado) {
-            setInspecoesSalvas((listaAtual) => [
-              { ...pendente, id: String(criarData.id) },
-              ...listaAtual.filter((item) => item.id !== pendente.id),
-            ]);
-            setInspecoesPendentesOffline((listaAtual) =>
-              listaAtual.filter((item) => item.id !== pendente.id)
-            );
-          }
-
-          console.log("Inspeção offline sincronizada:", pendente.id);
-        } catch (error) {
-          console.error("Falha na sincronização da inspeção offline:", error);
-          break;
         }
+
+        const finalizarResponse = await fetch(
+          `${API_URL}/inspections/${targetId}/complete`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: usuario?.id || null,
+              observation: pendente.observacao || null,
+            }),
+          }
+        );
+
+        if (!finalizarResponse.ok) {
+          const finalizarData = await finalizarResponse.json();
+          throw new Error(
+            finalizarData?.message || "Falha ao concluir a sincronização."
+          );
+        }
+
+        setInspecoesSalvas((listaAtual) => [
+          { ...pendente, id: targetId, reviewStatus: "PENDENTE" },
+          ...listaAtual.filter((item) => item.id !== pendente.id && item.id !== targetId),
+        ]);
+        setInspecoesPendentesOffline((listaAtual) =>
+          listaAtual.filter((item) => item.id !== pendente.id)
+        );
+
+        enviadosComSucesso += 1;
+        console.log("Inspeção sincronizada sem duplicação:", targetId);
+      } catch (error) {
+        console.error("Falha na sincronização da inspeção offline:", error);
+        break;
       }
     }
 
-    sincronizarInspecoesPendentes();
+    setSincronizando(false);
+    await carregarInspecoesDoBanco();
+    return enviadosComSucesso;
+  }
 
-    return () => {
-      cancelado = true;
-    };
-  }, [autenticado, online, inspecoesPendentesOffline, usuario]);
+  async function executarSincronizacaoManual() {
+    if (!online) {
+      alert("Aparelho offline. Os dados estão preservados no armazenamento interno e serão sincronizados com a AWS quando houver conexão.");
+      return;
+    }
+    try {
+      if (inspecoesPendentesOffline.length > 0) {
+        const enviados = await sincronizarInspecoesPendentesInterno(inspecoesPendentesOffline);
+        alert(`Sincronização concluída! ${enviados} inspeção(ões) enviada(s) para a AWS com sucesso.`);
+      } else {
+        await carregarInspecoesDoBanco();
+        alert("Tudo atualizado! Todas as inspeções e modelos já estão sincronizados com a AWS.");
+      }
+    } catch (e: any) {
+      alert(e?.message || "Erro durante sincronização.");
+    }
+  }
+
+  useEffect(() => {
+    if (!autenticado || !online || inspecoesPendentesOffline.length === 0 || sincronizando) {
+      return;
+    }
+    sincronizarInspecoesPendentesInterno(inspecoesPendentesOffline);
+  }, [autenticado, online, inspecoesPendentesOffline.length]);
 
   function realizarLogin(usuarioRecebido: UsuarioLogado, tokenRecebido: string) {
     setUsuario(usuarioRecebido);
@@ -733,7 +810,7 @@ export default function App() {
           barStyle="light-content"
           backgroundColor="#062B57"
         />
-        <LoginScreen onLogin={realizarLogin} />
+        <LoginScreen onLogin={realizarLogin} servidorUrlAtual={servidorUrl} onSalvarServidorUrl={salvarCustomApiUrl} />
       </SafeAreaView>
     );
   }
@@ -777,7 +854,11 @@ export default function App() {
           online={online}
           inspecoesSalvas={inspecoesSalvas}
           setInspecoesSalvas={setInspecoesSalvas}
+          inspecoesAgendadas={inspecoesAgendadas}
+          recarregarInspecoes={carregarInspecoesDoBanco}
           setInspecoesPendentesOffline={setInspecoesPendentesOffline}
+          inspecoesPendentesOffline={inspecoesPendentesOffline}
+          sincronizarManual={executarSincronizacaoManual}
         />
       )}
 
@@ -810,14 +891,20 @@ export default function App() {
 
 function LoginScreen({
   onLogin,
+  servidorUrlAtual,
+  onSalvarServidorUrl,
 }: {
   onLogin: (usuario: UsuarioLogado, token: string) => void;
+  servidorUrlAtual?: string;
+  onSalvarServidorUrl?: (url: string) => Promise<void>;
 }) {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
+  const [modalServidorAberto, setModalServidorAberto] = useState(false);
+  const [inputServidorUrl, setInputServidorUrl] = useState(servidorUrlAtual || API_URL);
 
   async function entrar() {
     setErro("");
@@ -961,7 +1048,106 @@ function LoginScreen({
           >
             <Text style={styles.forgotText}>Esqueci minha senha</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{ marginTop: 18, alignItems: "center", flexDirection: "row", justifyContent: "center", paddingVertical: 8 }}
+            onPress={() => {
+              setInputServidorUrl(servidorUrlAtual || API_URL);
+              setModalServidorAberto(true);
+            }}
+            disabled={carregando}
+          >
+            <MaterialIcons name="settings" size={16} color="#0B4B87" />
+            <Text style={{ fontSize: 13, color: "#0B4B87", marginLeft: 6, fontWeight: "600" }}>
+              Configurar Servidor AWS / API
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {/* Modal de Configuração de Servidor */}
+        <Modal
+          visible={modalServidorAberto}
+          animationType="fade"
+          transparent={true}
+          onRequestClose={() => setModalServidorAberto(false)}
+        >
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+            <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 22, maxWidth: 440, width: "90%" }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <MaterialIcons name="dns" size={24} color="#0B4B87" />
+                  <Text style={{ fontSize: 17, fontWeight: "700", color: "#111827", marginLeft: 8 }}>
+                    Servidor da API (AWS)
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setModalServidorAberto(false)}>
+                  <MaterialIcons name="close" size={22} color="#7A889A" />
+                </TouchableOpacity>
+              </View>
+
+              <Text style={{ fontSize: 13, color: "#68778D", marginBottom: 14 }}>
+                Insira o endereço IP público ou URL da sua instância EC2 na AWS (porta 8080).
+              </Text>
+
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#334155", marginBottom: 4 }}>
+                URL do Servidor:
+              </Text>
+              <TextInput
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  borderWidth: 1,
+                  borderColor: "#CBD5E1",
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  fontSize: 14,
+                  color: "#1E293B",
+                  marginBottom: 12,
+                }}
+                value={inputServidorUrl}
+                onChangeText={setInputServidorUrl}
+                placeholder="http://3.123.45.67:8080"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+
+              <View style={{ flexDirection: "row", gap: 6, marginBottom: 16, flexWrap: "wrap" }}>
+                <TouchableOpacity
+                  style={{ backgroundColor: "#EBF3FC", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}
+                  onPress={() => setInputServidorUrl("http://localhost:8080")}
+                >
+                  <Text style={{ fontSize: 11, color: "#0B4B87", fontWeight: "600" }}>Localhost</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ backgroundColor: "#EBF3FC", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6 }}
+                  onPress={() => setInputServidorUrl("http://10.0.2.2:8080")}
+                >
+                  <Text style={{ fontSize: 11, color: "#0B4B87", fontWeight: "600" }}>Emulador Android</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: "#F1F5F9", paddingVertical: 12, borderRadius: 8, alignItems: "center" }}
+                  onPress={() => setModalServidorAberto(false)}
+                >
+                  <Text style={{ fontSize: 14, color: "#475569", fontWeight: "600" }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={{ flex: 1, backgroundColor: "#0B4B87", paddingVertical: 12, borderRadius: 8, alignItems: "center" }}
+                  onPress={async () => {
+                    if (onSalvarServidorUrl && inputServidorUrl.trim()) {
+                      await onSalvarServidorUrl(inputServidorUrl.trim());
+                    }
+                    setModalServidorAberto(false);
+                  }}
+                >
+                  <Text style={{ fontSize: 14, color: "#FFFFFF", fontWeight: "700" }}>Salvar Servidor</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <Text style={styles.loginFooter}>
           OpsControl • Gestão operacional
@@ -978,13 +1164,19 @@ function LoginScreen({
 function Header({
   titulo,
   subtitulo,
+  online,
+  pendentesCount,
+  onSincronizar,
 }: {
   titulo: string;
   subtitulo?: string;
+  online?: boolean;
+  pendentesCount?: number;
+  onSincronizar?: () => void;
 }) {
   return (
     <View style={styles.header}>
-      <View>
+      <View style={{ flex: 1 }}>
         <Text style={styles.headerLogo}>
           OpsControl
         </Text>
@@ -1000,13 +1192,51 @@ function Header({
         )}
       </View>
 
-      <TouchableOpacity style={styles.avatarHeader}>
-        <MaterialIcons
-          name="person"
-          size={22}
-          color="#FFFFFF"
-        />
-      </TouchableOpacity>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        {online !== undefined && (
+          <View style={{
+            flexDirection: "row",
+            alignItems: "center",
+            backgroundColor: online ? "#E6F4EA" : "#FCE8E6",
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            borderRadius: 12,
+          }}>
+            <MaterialIcons name={online ? "wifi" : "wifi-off"} size={13} color={online ? "#137333" : "#C5221F"} />
+            <Text style={{ fontSize: 10, fontWeight: "700", color: online ? "#137333" : "#C5221F", marginLeft: 3 }}>
+              {online ? "ONLINE" : "OFFLINE"}
+            </Text>
+          </View>
+        )}
+
+        {onSincronizar && (
+          <TouchableOpacity
+            onPress={onSincronizar}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: (pendentesCount && pendentesCount > 0) ? "#E37400" : "#0B4B87",
+              paddingHorizontal: 9,
+              paddingVertical: 5,
+              borderRadius: 8,
+            }}
+            activeOpacity={0.8}
+          >
+            <MaterialIcons name="sync" size={15} color="#FFFFFF" />
+            <Text style={{ color: "#FFFFFF", fontSize: 11, fontWeight: "700", marginLeft: 3 }}>
+              {pendentesCount && pendentesCount > 0 ? `${pendentesCount} sync` : "Sync"}
+            </Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity style={styles.avatarHeader}>
+          <MaterialIcons
+            name="person"
+            size={22}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -1023,7 +1253,7 @@ function DashboardScreen({
   const { width } = useWindowDimensions();
 
   const desktop = width >= 900;
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<any>(null);
 
   const [dashboard, setDashboard] = useState({
     equipamentosTotal: 0,
@@ -1036,6 +1266,26 @@ function DashboardScreen({
     inspecoesCanceladas: 0,
   });
 
+  const [progressoSemanal, setProgressoSemanal] = useState<number[]>([0, 0, 0, 0, 0, 0, 0]);
+  const [acoesCampo, setAcoesCampo] = useState<
+    Array<{
+      id: string;
+      icon: keyof typeof MaterialIcons.glyphMap;
+      title: string;
+      description: string;
+      type: "danger" | "warning" | "info";
+      destino: Tela;
+    }>
+  >([]);
+  const [naoConformidadesLista, setNaoConformidadesLista] = useState<
+    Array<{
+      id: string;
+      local: string;
+      equipamento: string;
+      status: "Crítico" | "Alta" | "Baixa";
+    }>
+  >([]);
+
   const [carregandoDashboard, setCarregandoDashboard] = useState(true);
   const [erroDashboard, setErroDashboard] = useState("");
 
@@ -1045,11 +1295,17 @@ function DashboardScreen({
         setCarregandoDashboard(true);
         setErroDashboard("");
 
-        const [equipamentosResponse, inspecoesResponse] =
-          await Promise.all([
-            fetch(`${API_URL}/equipments`),
-            fetch(`${API_URL}/inspections`),
-          ]);
+        const [
+          equipamentosResponse,
+          inspecoesResponse,
+          summaryResponse,
+          ncResponse,
+        ] = await Promise.all([
+          fetch(`${API_URL}/equipments`),
+          fetch(`${API_URL}/inspections`),
+          fetch(`${API_URL}/api/v1/dashboard/summary`).catch(() => null),
+          fetch(`${API_URL}/api/v1/non-conformities`).catch(() => null),
+        ]);
 
         if (!equipamentosResponse.ok) {
           throw new Error("Não foi possível carregar os equipamentos.");
@@ -1061,6 +1317,14 @@ function DashboardScreen({
 
         const equipamentosData = await equipamentosResponse.json();
         const inspecoesData = await inspecoesResponse.json();
+        const summaryData =
+          summaryResponse && summaryResponse.ok
+            ? await summaryResponse.json().catch(() => null)
+            : null;
+        const ncData =
+          ncResponse && ncResponse.ok
+            ? await ncResponse.json().catch(() => [])
+            : [];
 
         const equipamentos = Array.isArray(equipamentosData)
           ? equipamentosData
@@ -1092,6 +1356,95 @@ function DashboardScreen({
             (item: { status?: string }) => item.status === "CANCELLED"
           ).length,
         });
+
+        if (summaryData && Array.isArray(summaryData.weeklyProgress) && summaryData.weeklyProgress.length === 7) {
+          setProgressoSemanal(summaryData.weeklyProgress.map((n: any) => Number(n) || 0));
+        } else {
+          const contagens = [0, 0, 0, 0, 0, 0, 0];
+          inspecoes.forEach((insp: any) => {
+            const dtStr = insp.submittedAtServer || insp.updatedAt || insp.createdAt;
+            if (dtStr) {
+              const dt = new Date(dtStr);
+              if (!isNaN(dt.getTime())) {
+                const idx = (dt.getDay() + 6) % 7;
+                contagens[idx] += 1;
+              }
+            }
+          });
+          setProgressoSemanal(contagens);
+        }
+
+        const novasAcoes: Array<{
+          id: string;
+          icon: keyof typeof MaterialIcons.glyphMap;
+          title: string;
+          description: string;
+          type: "danger" | "warning" | "info";
+          destino: Tela;
+        }> = [];
+
+        inspecoes
+          .filter((item: any) => item.status === "IN_PROGRESS")
+          .slice(0, 2)
+          .forEach((item: any) => {
+            novasAcoes.push({
+              id: `insp-${item.id}`,
+              icon: "assignment",
+              title: String(item.title || item.templateTitle || "Inspeção Atribuída"),
+              description: `${item.equipment?.name || item.equipmentName || "Planta"} • Aguardando execução em campo`,
+              type: "info",
+              destino: "inspecoes",
+            });
+          });
+
+        inspecoes
+          .filter((item: any) => item.reviewStatus === "REJECTED" || item.reviewStatus === "REPROVADA")
+          .slice(0, 2)
+          .forEach((item: any) => {
+            novasAcoes.push({
+              id: `rej-${item.id}`,
+              icon: "error",
+              title: String(item.equipment?.name || item.title || "Inspeção Reprovada"),
+              description: `Reprovada pelo supervisor: ${item.reviewObservation || "Verificar parecer"}`,
+              type: "danger",
+              destino: "inspecoes",
+            });
+          });
+
+        equipamentos
+          .filter((eq: any) => eq.status === "MAINTENANCE")
+          .slice(0, 2)
+          .forEach((eq: any) => {
+            novasAcoes.push({
+              id: `eq-${eq.id}`,
+              icon: "build",
+              title: String(eq.name || "Equipamento"),
+              description: `Em manutenção • ${eq.location || "Local não informado"}`,
+              type: "warning",
+              destino: "equipamentos",
+            });
+          });
+
+        setAcoesCampo(novasAcoes.slice(0, 4));
+
+        const listaNc = Array.isArray(ncData)
+          ? ncData.slice(0, 5).map((nc: any, index: number) => {
+              const sev = String(nc.severity || "").toUpperCase();
+              const st: "Crítico" | "Alta" | "Baixa" =
+                sev === "CRITICAL"
+                  ? "Crítico"
+                  : sev === "HIGH" || sev === "MEDIUM"
+                  ? "Alta"
+                  : "Baixa";
+              return {
+                id: String(nc.id || `nc-${index}`),
+                local: String(nc.siteName || nc.clientName || "Unidade Operacional"),
+                equipamento: String(nc.equipmentName || nc.title || "Item não conforme"),
+                status: st,
+              };
+            })
+          : [];
+        setNaoConformidadesLista(listaNc);
       } catch (error) {
         console.error("Erro ao carregar dashboard:", error);
         setErroDashboard(
@@ -1109,7 +1462,7 @@ function DashboardScreen({
     <View style={styles.flex}>
       <Header
         titulo="Dashboard"
-        subtitulo="Visão geral operacional"
+        subtitulo="Operação em Campo • Técnico"
       />
 
       <ScrollView
@@ -1127,12 +1480,11 @@ function DashboardScreen({
 
         <View style={styles.pageTitle}>
           <Text style={styles.pageTitleText}>
-            Dashboard
+            Painel do Técnico
           </Text>
 
           <Text style={styles.pageDescription}>
-            Visão geral operacional e acompanhamento
-            das atividades de campo.
+            Acompanhe suas atividades em campo, equipamentos e status das avaliações do supervisor.
           </Text>
         </View>
 
@@ -1147,7 +1499,7 @@ function DashboardScreen({
           <StatCard
             titulo="Inspeções Concluídas"
             valor={carregandoDashboard ? "..." : String(dashboard.inspecoesConcluidas)}
-            descricao={`${dashboard.inspecoesTotal} inspeções cadastradas`}
+            descricao={`${dashboard.inspecoesTotal} inspeções registradas no banco`}
             icone="check-circle"
             tipo="success"
           />
@@ -1169,9 +1521,9 @@ function DashboardScreen({
           />
 
           <StatCard
-            titulo="Inspeções em Andamento"
+            titulo="Pendentes em Campo"
             valor={carregandoDashboard ? "..." : String(dashboard.inspecoesAndamento)}
-            descricao={`${dashboard.inspecoesCanceladas} canceladas`}
+            descricao="Atribuídas para execução"
             icone="schedule"
             tipo="danger"
           />
@@ -1194,128 +1546,102 @@ function DashboardScreen({
               </Text>
 
               <Text style={styles.cardSubtitle}>
-                Últimos 7 dias
+                Inspeções registradas no banco (Seg a Dom)
               </Text>
             </View>
 
-            <TouchableOpacity style={styles.periodButton}>
+            <View style={styles.periodButton}>
               <Text style={styles.periodText}>
                 7 dias
               </Text>
-
-              <MaterialIcons
-                name="keyboard-arrow-down"
-                size={18}
-                color="#56667D"
-              />
-            </TouchableOpacity>
+            </View>
           </View>
 
-          <WeeklyChart />
+          <WeeklyChart valores={progressoSemanal} />
         </View>
 
-        {/* AÇÕES RÁPIDAS */}
+        {/* AÇÕES RÁPIDAS DO TÉCNICO */}
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.cardTitle}>
-                Ações Rápidas
+                Minhas Atividades em Campo
               </Text>
 
               <Text style={styles.cardSubtitle}>
-                Atividades que precisam de atenção
+                Inspeções atribuídas pelo supervisor e alertas de equipamentos
               </Text>
             </View>
           </View>
 
-          <QuickAction
-            icon="error"
-            title="Bomba Submersa 04"
-            description="Falha crítica reportada - Unidade Alpha"
-            type="danger"
-          />
-
-          <QuickAction
-            icon="schedule"
-            title="Válvula de Pressão B"
-            description="Manutenção atrasada há 2 dias"
-            type="warning"
-          />
-
-          <QuickAction
-            icon="description"
-            title="Relatório Diário"
-            description="Pendente de aprovação do supervisor"
-            type="info"
-          />
+          {acoesCampo.length === 0 ? (
+            <View style={{ paddingHorizontal: 14, paddingVertical: 12 }}>
+              <Text style={{ color: "#68778D", fontSize: 12 }}>
+                Nenhuma pendência crítica no momento. Você pode iniciar uma nova inspeção em campo abaixo.
+              </Text>
+            </View>
+          ) : (
+            acoesCampo.map((acao) => (
+              <QuickAction
+                key={acao.id}
+                icon={acao.icon}
+                title={acao.title}
+                description={acao.description}
+                type={acao.type}
+                onPress={() => navegar(acao.destino)}
+              />
+            ))
+          )}
 
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => navegar("inspecoes")}
           >
             <MaterialIcons
-              name="assignment"
+              name="play-arrow"
               size={18}
               color="#FFFFFF"
             />
 
             <Text style={styles.primaryButtonText}>
-              Atribuir Tarefas
+              Executar Inspeção em Campo
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* NÃO CONFORMIDADES */}
+        {/* NÃO CONFORMIDADES DO BANCO */}
 
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <View>
               <Text style={styles.cardTitle}>
-                Não Conformidades
+                Não Conformidades Registradas
               </Text>
 
               <Text style={styles.cardSubtitle}>
-                Acompanhamento das inspeções
+                Ocorrências reais abertas nas inspeções
               </Text>
             </View>
-
-            <TouchableOpacity style={styles.filterButton}>
-              <MaterialIcons
-                name="filter-list"
-                size={17}
-                color="#50617A"
-              />
-
-              <Text style={styles.filterText}>
-                Filtrar
-              </Text>
-            </TouchableOpacity>
           </View>
 
-          <NonCompliance
-            local="Unidade de Extração Alpha"
-            equipamento="Bomba Submersa 04"
-            status="Crítico"
-          />
-
-          <NonCompliance
-            local="Refinaria Central"
-            equipamento="Válvula de Pressão B"
-            status="Alta"
-          />
-
-          <NonCompliance
-            local="Terminal Marítimo Sul"
-            equipamento="Correia Transportadora 2"
-            status="Baixa"
-          />
-
-          <NonCompliance
-            local="Planta de Processamento"
-            equipamento="Compressor Principal"
-            status="Alta"
-          />
+          {naoConformidadesLista.length === 0 ? (
+            <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
+              <Text style={{ color: "#68778D", fontSize: 12 }}>
+                Nenhuma não conformidade registrada no banco de dados.
+              </Text>
+            </View>
+          ) : (
+            naoConformidadesLista.map((nc) => (
+              <NonCompliance
+                key={nc.id}
+                local={nc.local}
+                equipamento={nc.equipamento}
+                status={nc.status}
+                onPress={() => navegar("inspecoes")}
+              />
+            ))
+          )}
         </View>
       </ScrollView>
 
@@ -1406,17 +1732,7 @@ function StatCard({
    GRÁFICO
 ========================================================= */
 
-function WeeklyChart() {
-  const valores = [
-    65,
-    95,
-    72,
-    125,
-    105,
-    155,
-    142,
-  ];
-
+function WeeklyChart({ valores }: { valores: number[] }) {
   const dias = [
     "Seg",
     "Ter",
@@ -1427,13 +1743,15 @@ function WeeklyChart() {
     "Dom",
   ];
 
+  const maxValor = Math.max(...valores, 4);
+
   return (
     <View style={styles.chartContainer}>
       <View style={styles.chartLabels}>
-        <Text style={styles.chartLabel}>200</Text>
-        <Text style={styles.chartLabel}>150</Text>
-        <Text style={styles.chartLabel}>100</Text>
-        <Text style={styles.chartLabel}>50</Text>
+        <Text style={styles.chartLabel}>{maxValor}</Text>
+        <Text style={styles.chartLabel}>{Math.round(maxValor * 0.75)}</Text>
+        <Text style={styles.chartLabel}>{Math.round(maxValor * 0.5)}</Text>
+        <Text style={styles.chartLabel}>{Math.round(maxValor * 0.25)}</Text>
         <Text style={styles.chartLabel}>0</Text>
       </View>
 
@@ -1464,7 +1782,7 @@ function WeeklyChart() {
                     styles.bar,
                     {
                       height:
-                        `${(valor / 200) * 100}%`,
+                        `${Math.max((valor / maxValor) * 100, valor > 0 ? 8 : 2)}%`,
                     },
                   ]}
                 />
@@ -1490,11 +1808,13 @@ function QuickAction({
   title,
   description,
   type,
+  onPress,
 }: {
   icon: keyof typeof MaterialIcons.glyphMap;
   title: string;
   description: string;
   type: "danger" | "warning" | "info";
+  onPress?: () => void;
 }) {
   return (
     <View style={styles.quickAction}>
@@ -1529,9 +1849,9 @@ function QuickAction({
         </Text>
       </View>
 
-      <TouchableOpacity>
+      <TouchableOpacity onPress={onPress}>
         <Text style={styles.viewText}>
-          Ver
+          Abrir
         </Text>
       </TouchableOpacity>
     </View>
@@ -1546,10 +1866,12 @@ function NonCompliance({
   local,
   equipamento,
   status,
+  onPress,
 }: {
   local: string;
   equipamento: string;
   status: "Crítico" | "Alta" | "Baixa";
+  onPress?: () => void;
 }) {
   return (
     <View style={styles.nonCompliance}>
@@ -1569,9 +1891,10 @@ function NonCompliance({
 
       <TouchableOpacity
         style={styles.detailsButton}
+        onPress={onPress}
       >
         <Text style={styles.detailsText}>
-          Ver detalhes
+          Ver nas inspeções
         </Text>
 
         <MaterialIcons
@@ -1641,7 +1964,7 @@ function StatusBadge({
 function FloatingScrollButtons({
   scrollRef,
 }: {
-  scrollRef: React.MutableRefObject<ScrollView | null>;
+  scrollRef: React.MutableRefObject<any>;
 }) {
   return (
     <View style={styles.scrollButtonsContainer} pointerEvents="box-none">
@@ -1690,23 +2013,32 @@ function InspecoesScreen({
   online,
   inspecoesSalvas,
   setInspecoesSalvas,
+  inspecoesAgendadas,
+  recarregarInspecoes,
   setInspecoesPendentesOffline,
+  inspecoesPendentesOffline,
+  sincronizarManual,
 }: {
   usuario: UsuarioLogado | null;
   online: boolean;
   inspecoesSalvas: InspecaoSalva[];
   setInspecoesSalvas: React.Dispatch<React.SetStateAction<InspecaoSalva[]>>;
+  inspecoesAgendadas: InspecaoAgendada[];
+  recarregarInspecoes: () => Promise<void>;
   setInspecoesPendentesOffline: React.Dispatch<React.SetStateAction<InspecaoPendenteOffline[]>>;
+  inspecoesPendentesOffline?: InspecaoPendenteOffline[];
+  sincronizarManual?: () => Promise<void>;
 }) {
-  const [nomeModelo, setNomeModelo] = useState(
-    "Inspeção de Compressores Industriais"
-  );
+  const [modelosBanco, setModelosBanco] = useState<ModeloChecklistBanco[]>([]);
+  const [modalQrCodeAberto, setModalQrCodeAberto] = useState(false);
+  const [inspecaoAlvoQr, setInspecaoAlvoQr] = useState<InspecaoAgendada | null>(null);
+  const [codigoManualQr, setCodigoManualQr] = useState("");
+  const [qrCodeValidado, setQrCodeValidado] = useState(false);
+  const [rascunhoRestaurado, setRascunhoRestaurado] = useState(false);
+  const [modeloSelecionadoId, setModeloSelecionadoId] = useState<string | null>(null);
+  const [nomeModelo, setNomeModelo] = useState("Checklist Operacional");
 
-  const [perguntas, setPerguntas] = useState<Pergunta[]>(
-    perguntasIniciais
-  );
-
-  const [mostrarTipos, setMostrarTipos] = useState(false);
+  const [perguntas, setPerguntas] = useState<Pergunta[]>([]);
 
   const [modoExecucao, setModoExecucao] = useState(false);
 
@@ -1719,9 +2051,7 @@ function InspecoesScreen({
 
   const [criandoInspecao, setCriandoInspecao] = useState(false);
 
-  const [equipamentos, setEquipamentos] = useState<Equipamento[]>(
-    equipamentosIniciais
-  );
+  const [equipamentos, setEquipamentos] = useState<Equipamento[]>([]);
 
   const [carregandoEquipamentos, setCarregandoEquipamentos] = useState(false);
 
@@ -1735,76 +2065,254 @@ function InspecoesScreen({
   const [selecionandoFoto, setSelecionandoFoto] = useState(false);
   const [assinatura, setAssinatura] = useState<string | null>(null);
   const [assinaturaModal, setAssinaturaModal] = useState(false);
-  const scrollRef = useRef<ScrollView | null>(null);
+  const scrollRef = useRef<any>(null);
 
-  // ETAPA 8 — estados da revisão e aprovação da inspeção.
+  // Modal de visualização de detalhes e parecer do supervisor (somente leitura para o técnico)
   const [inspecaoEmRevisao, setInspecaoEmRevisao] =
     useState<InspecaoSalva | null>(null);
   const [modalRevisao, setModalRevisao] = useState(false);
-  const [observacaoRevisao, setObservacaoRevisao] = useState("");
-  const [processandoRevisao, setProcessandoRevisao] = useState(false);
+
+  // Teste 09: Salva automaticamente rascunho em andamento no armazenamento local
+  useEffect(() => {
+    if (!modoExecucao || !inspecaoId) return;
+
+    const rascunho = {
+      modoExecucao: true,
+      inspecaoId,
+      nomeModelo,
+      modeloSelecionadoId,
+      equipamentoSelecionado,
+      perguntas,
+      respostas,
+      observacao,
+      fotos,
+      fotoOcorrencia,
+      assinatura,
+      qrCodeValidado,
+      timestamp: Date.now(),
+    };
+
+    AsyncStorage.setItem(RASCUNHO_INSPECAO_STORAGE_KEY, JSON.stringify(rascunho)).catch((err) =>
+      console.error("Erro ao salvar rascunho:", err)
+    );
+  }, [
+    modoExecucao,
+    inspecaoId,
+    nomeModelo,
+    modeloSelecionadoId,
+    equipamentoSelecionado,
+    perguntas,
+    respostas,
+    observacao,
+    fotos,
+    fotoOcorrencia,
+    assinatura,
+    qrCodeValidado,
+  ]);
+
+  // Teste 09: Ao abrir a tela, recupera rascunho preservado se o app foi fechado/reaberto offline
+  useEffect(() => {
+    let montado = true;
+    AsyncStorage.getItem(RASCUNHO_INSPECAO_STORAGE_KEY).then((dados) => {
+      if (!dados || !montado) return;
+      try {
+        const r = JSON.parse(dados);
+        if (r && r.modoExecucao && r.inspecaoId) {
+          setInspecaoId(r.inspecaoId);
+          setNomeModelo(r.nomeModelo || "Checklist Operacional");
+          setModeloSelecionadoId(r.modeloSelecionadoId || null);
+          setEquipamentoSelecionado(r.equipamentoSelecionado || null);
+          setPerguntas(r.perguntas || []);
+          setRespostas(r.respostas || {});
+          setObservacao(r.observacao || "");
+          setFotos(r.fotos || {});
+          setFotoOcorrencia(r.fotoOcorrencia || null);
+          setAssinatura(r.assinatura || null);
+          setQrCodeValidado(Boolean(r.qrCodeValidado));
+          setInspecaoIniciada(true);
+          setModoExecucao(true);
+          setRascunhoRestaurado(true);
+          console.log("Rascunho de inspeção em andamento recuperado com sucesso!");
+        }
+      } catch (e) {
+        console.error("Erro ao ler rascunho:", e);
+      }
+    }).catch(() => {});
+    return () => { montado = false; };
+  }, []);
+
+  function abrirLeitorQrCode(agendada?: InspecaoAgendada) {
+    setInspecaoAlvoQr(agendada || null);
+    setCodigoManualQr(agendada ? agendada.equipamentoCodigo : "");
+    setModalQrCodeAberto(true);
+  }
+
+  function processarCodigoQr(rawCode: string) {
+    if (!rawCode || !rawCode.trim()) return;
+    const codigoLimpo = rawCode.trim().toUpperCase();
+
+    if (inspecaoAlvoQr) {
+      const esperado = (inspecaoAlvoQr.equipamentoCodigo || "").trim().toUpperCase();
+      const idEsperado = (inspecaoAlvoQr.equipamentoId || "").trim().toUpperCase();
+      if (codigoLimpo === esperado || codigoLimpo === idEsperado || codigoLimpo.includes(esperado)) {
+        setModalQrCodeAberto(false);
+        setQrCodeValidado(true);
+        alert(`Equipamento identificado com sucesso!\n${inspecaoAlvoQr.equipamentoNome} (${inspecaoAlvoQr.equipamentoCodigo})`);
+        iniciarInspecaoAgendada(inspecaoAlvoQr);
+      } else {
+        alert(`Código lido: "${codigoLimpo}".\nNão corresponde ao equipamento esperado desta inspeção: "${inspecaoAlvoQr.equipamentoCodigo}".`);
+      }
+    } else {
+      const agEncontrada = inspecoesAgendadas.find(
+        (a) => (a.equipamentoCodigo || "").trim().toUpperCase() === codigoLimpo ||
+               (a.equipamentoId || "").trim().toUpperCase() === codigoLimpo
+      );
+      if (agEncontrada) {
+        setModalQrCodeAberto(false);
+        setQrCodeValidado(true);
+        alert(`Inspeção localizada para o equipamento ${agEncontrada.equipamentoNome}!`);
+        iniciarInspecaoAgendada(agEncontrada);
+        return;
+      }
+
+      const eqEncontrado = equipamentos.find(
+        (e) => (e.codigo || "").trim().toUpperCase() === codigoLimpo ||
+               (e.id || "").trim().toUpperCase() === codigoLimpo
+      );
+      if (eqEncontrado) {
+        setModalQrCodeAberto(false);
+        setQrCodeValidado(true);
+        setEquipamentoSelecionado(eqEncontrado);
+        setModoExecucao(true);
+        alert(`Equipamento identificado: ${eqEncontrado.nome} (${eqEncontrado.codigo}). Checklist iniciado.`);
+        return;
+      }
+
+      alert(`Nenhum equipamento encontrado com o código "${codigoLimpo}".`);
+    }
+  }
 
   useEffect(() => {
-    async function carregarEquipamentos() {
+    async function carregarEquipamentosEModelos() {
       try {
         setCarregandoEquipamentos(true);
         setErroEquipamentos("");
 
-        const response = await fetch(`${API_URL}/equipments`);
+        const [eqResponse, tmplResponse] = await Promise.all([
+          fetch(`${API_URL}/equipments`),
+          fetch(`${API_URL}/api/v1/inspection-templates`).catch(() => null),
+        ]);
 
-        if (!response.ok) {
+        if (!eqResponse.ok) {
           throw new Error("Não foi possível carregar os equipamentos.");
         }
 
-        const data = await response.json();
+        const data = await eqResponse.json();
 
-        const equipamentosFormatados: Equipamento[] = data.map(
-          (equipamento: {
-            id: string;
-            name: string;
-            code: string;
-            location: string;
-            status: "ACTIVE" | "MAINTENANCE" | "INACTIVE";
-          }) => ({
-            id: equipamento.id,
-            nome: equipamento.name,
-            codigo: equipamento.code,
-            local: equipamento.location,
-            tipo: "Equipamento industrial",
-            responsavel: "",
-            status:
-              equipamento.status === "ACTIVE"
-                ? "Ativo"
-                : equipamento.status === "MAINTENANCE"
-                ? "Manutenção"
-                : "Inativo",
-          })
-        );
+        const equipamentosFormatados: Equipamento[] = Array.isArray(data)
+          ? data.map(
+              (equipamento: {
+                id: string;
+                name: string;
+                code: string;
+                location: string;
+                status: "ACTIVE" | "MAINTENANCE" | "INACTIVE";
+              }) => ({
+                id: equipamento.id,
+                nome: equipamento.name,
+                codigo: equipamento.code,
+                local: equipamento.location,
+                tipo: "Equipamento industrial",
+                responsavel: "",
+                status:
+                  equipamento.status === "ACTIVE"
+                    ? "Ativo"
+                    : equipamento.status === "MAINTENANCE"
+                    ? "Manutenção"
+                    : "Inativo",
+              })
+            )
+          : [];
 
         setEquipamentos(equipamentosFormatados);
+        AsyncStorage.setItem(EQUIPAMENTOS_STORAGE_KEY, JSON.stringify(equipamentosFormatados)).catch(() => {});
+
+        if (tmplResponse && tmplResponse.ok) {
+          const tmplData = await tmplResponse.json().catch(() => []);
+          if (Array.isArray(tmplData) && tmplData.length > 0) {
+            const listaModelos: ModeloChecklistBanco[] = [];
+            for (const tmpl of tmplData) {
+              let perguntasModelo: Pergunta[] = [];
+              try {
+                const verRes = await fetch(
+                  `${API_URL}/api/v1/inspection-templates/${tmpl.id}/active-version`
+                );
+                if (verRes.ok) {
+                  const verData = await verRes.json();
+                  const secoes = Array.isArray(verData?.sections) ? verData.sections : [];
+                  secoes.forEach((sec: any) => {
+                    const itens = Array.isArray(sec?.items) ? sec.items : [];
+                    itens.forEach((item: any, idx: number) => {
+                      const rType = String(item.responseType || "").toUpperCase();
+                      perguntasModelo.push({
+                        id: String(item.id || `item-${idx}`),
+                        texto: String(item.title || item.code || `Item ${idx + 1}`),
+                        tipo:
+                          rType === "SINGLE_CHOICE" || rType === "MULTIPLE_CHOICE"
+                            ? "Múltipla escolha"
+                            : rType === "PHOTO"
+                            ? "Foto"
+                            : rType === "TEXT_SHORT" || rType === "TEXT_LONG"
+                            ? "Texto"
+                            : "Sim / Não",
+                        obrigatoria: Boolean(item.required),
+                      });
+                    });
+                  });
+                }
+              } catch {
+                // Ignora falha individual de versão
+              }
+              listaModelos.push({
+                id: String(tmpl.id),
+                titulo: String(tmpl.title || "Checklist Operacional"),
+                descricao: String(tmpl.description || "Modelo oficial do banco de dados"),
+                perguntas: perguntasModelo,
+              });
+            }
+            setModelosBanco(listaModelos);
+            const primeiroComPerguntas =
+              listaModelos.find((m) => m.perguntas.length > 0) || listaModelos[0];
+            if (primeiroComPerguntas) {
+              setModeloSelecionadoId(primeiroComPerguntas.id);
+              setNomeModelo(primeiroComPerguntas.titulo);
+              setPerguntas(primeiroComPerguntas.perguntas);
+            }
+          }
+        }
       } catch (error) {
-        console.error("Erro ao carregar equipamentos:", error);
+        console.error("Erro ao carregar equipamentos e modelos:", error);
         setErroEquipamentos(
           "Não foi possível carregar os equipamentos do servidor."
         );
-        setEquipamentos(equipamentosIniciais);
+        AsyncStorage.getItem(EQUIPAMENTOS_STORAGE_KEY).then((cached) => {
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) setEquipamentos(parsed);
+          }
+        }).catch(() => {});
       } finally {
         setCarregandoEquipamentos(false);
       }
     }
 
-    carregarEquipamentos();
+    carregarEquipamentosEModelos();
   }, []);
 
-  function adicionarPergunta() {
-    const novaPergunta: Pergunta = {
-      id: `local-${Date.now()}`,
-      texto: "Nova pergunta de inspeção",
-      tipo: "Sim / Não",
-      obrigatoria: false,
-    };
-
-    setPerguntas([...perguntas, novaPergunta]);
+  function selecionarModeloBanco(modelo: ModeloChecklistBanco) {
+    setModeloSelecionadoId(modelo.id);
+    setNomeModelo(modelo.titulo);
+    setPerguntas(modelo.perguntas);
   }
 
   function selecionarEquipamento(equipamento: Equipamento) {
@@ -1814,6 +2322,64 @@ function InspecoesScreen({
     setObservacao("");
     setFotos({});
     setFotoOcorrencia(null);
+  }
+
+  async function iniciarInspecaoAgendada(agendada: InspecaoAgendada) {
+    const eqEncontrado = equipamentos.find((e) => e.id === agendada.equipamentoId);
+    const eqAlvo: Equipamento = eqEncontrado || {
+      id: agendada.equipamentoId || agendada.id,
+      nome: agendada.equipamentoNome,
+      codigo: agendada.equipamentoCodigo,
+      local: agendada.equipamentoLocal,
+      tipo: "Equipamento",
+      responsavel: usuario?.name || "",
+      status: "Ativo",
+    };
+
+    try {
+      setCriandoInspecao(true);
+      await fetch(`${API_URL}/api/v1/inspections/${agendada.id}/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startedAtDevice: new Date().toISOString() }),
+      }).catch(() => null);
+
+      const detRes = await fetch(`${API_URL}/inspections/${agendada.id}`).catch(() => null);
+      let perguntasCarregadas = agendada.perguntas;
+      if (detRes && detRes.ok) {
+        const detData = await detRes.json().catch(() => null);
+        const listaQ = detData?.questions || detData?.items || [];
+        if (Array.isArray(listaQ) && listaQ.length > 0) {
+          perguntasCarregadas = listaQ.map((q: any, idx: number) => ({
+            id: String(q.id || `q-${idx}`),
+            texto: String(q.title || q.itemTitle || q.text || `Item ${idx + 1}`),
+            tipo:
+              q.type === "MULTIPLE_CHOICE" || q.type === "SINGLE_CHOICE"
+                ? "Múltipla escolha"
+                : q.type === "PHOTO"
+                ? "Foto"
+                : q.type === "PARAGRAPH" || q.type === "SHORT_TEXT" || q.type === "TEXT_SHORT"
+                ? "Texto"
+                : "Sim / Não",
+            obrigatoria: Boolean(q.required),
+          }));
+        }
+      }
+
+      setEquipamentoSelecionado(eqAlvo);
+      setNomeModelo(agendada.titulo);
+      setPerguntas(perguntasCarregadas);
+      setInspecaoId(agendada.id);
+      setRespostas({});
+      setObservacao("");
+      setFotos({});
+      setFotoOcorrencia(null);
+      setAssinatura(null);
+      setModoExecucao(true);
+      setInspecaoIniciada(true);
+    } finally {
+      setCriandoInspecao(false);
+    }
   }
 
   async function iniciarInspecao() {
@@ -1855,10 +2421,11 @@ function InspecoesScreen({
         },
         body: JSON.stringify({
           title: nomeModelo,
-          description: "Inspeção realizada pelo aplicativo OpsControl.",
+          description: "Inspeção realizada em campo pelo técnico no aplicativo OpsControl.",
           equipmentId: equipamentoSelecionado.id,
+          templateId: modeloSelecionadoId || null,
           responsibleId: usuario?.id || null,
-          questions: perguntasParaBackend,
+          questions: perguntasParaBackend.length > 0 ? perguntasParaBackend : undefined,
         }),
       });
 
@@ -1876,13 +2443,13 @@ function InspecoesScreen({
         const perguntasDoBanco: Pergunta[] = data.questions.map(
           (pergunta: any) => ({
             id: String(pergunta.id),
-            texto: String(pergunta.title),
+            texto: String(pergunta.title || pergunta.itemTitle),
             tipo:
-              pergunta.type === "MULTIPLE_CHOICE"
+              pergunta.type === "MULTIPLE_CHOICE" || pergunta.type === "SINGLE_CHOICE"
                 ? "Múltipla escolha"
                 : pergunta.type === "PHOTO"
                 ? "Foto"
-                : pergunta.type === "PARAGRAPH"
+                : pergunta.type === "PARAGRAPH" || pergunta.type === "SHORT_TEXT"
                 ? "Texto"
                 : "Sim / Não",
             obrigatoria: Boolean(pergunta.required),
@@ -1893,8 +2460,6 @@ function InspecoesScreen({
       }
 
       setInspecaoIniciada(true);
-
-      console.log("Inspeção criada com perguntas do PostgreSQL:", data);
     } catch (error) {
       console.error("Erro ao iniciar inspeção:", error);
       alert(
@@ -1916,36 +2481,62 @@ function InspecoesScreen({
     try {
       setSelecionandoFoto(true);
 
-      const permissao = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const capturarImagem = async (usarCamera: boolean) => {
+        try {
+          if (usarCamera) {
+            const perm = await ImagePicker.requestCameraPermissionsAsync();
+            if (!perm.granted) {
+              alert("Permissão para usar a câmera não concedida.");
+              return;
+            }
+            const res = await ImagePicker.launchCameraAsync({
+              allowsEditing: true,
+              quality: 0.5,
+              base64: true,
+            });
+            if (!res.canceled && res.assets?.[0]) {
+              const asset = res.assets[0];
+              const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+              if (questionId) setFotos((prev) => ({ ...prev, [questionId]: uri }));
+              else setFotoOcorrencia(uri);
+            }
+          } else {
+            const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!perm.granted) {
+              alert("Permissão para acessar a galeria não concedida.");
+              return;
+            }
+            const res = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ["images"],
+              allowsEditing: true,
+              quality: 0.5,
+              base64: true,
+            });
+            if (!res.canceled && res.assets?.[0]) {
+              const asset = res.assets[0];
+              const uri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+              if (questionId) setFotos((prev) => ({ ...prev, [questionId]: uri }));
+              else setFotoOcorrencia(uri);
+            }
+          }
+        } catch (e) {
+          console.error("Erro na captura de imagem:", e);
+        }
+      };
 
-      if (!permissao.granted) {
-        alert("Permissão para acessar as fotos não foi concedida.");
-        return;
-      }
-
-      const resultado = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (resultado.canceled || !resultado.assets?.[0]?.uri) {
-        return;
-      }
-
-      const uri = resultado.assets[0].uri;
-
-      if (questionId) {
-        setFotos((estadoAtual) => ({
-          ...estadoAtual,
-          [questionId]: uri,
-        }));
+      if (Platform.OS === "web") {
+        await capturarImagem(false);
       } else {
-        setFotoOcorrencia(uri);
+        Alert.alert(
+          "Evidência Fotográfica",
+          "Como deseja registrar a imagem?",
+          [
+            { text: "Tirar Foto (Câmera)", onPress: () => capturarImagem(true) },
+            { text: "Escolher da Galeria", onPress: () => capturarImagem(false) },
+            { text: "Cancelar", style: "cancel" },
+          ]
+        );
       }
-    } catch (error) {
-      console.error("Erro ao selecionar foto:", error);
-      alert("Não foi possível adicionar a foto.");
     } finally {
       setSelecionandoFoto(false);
     }
@@ -2046,6 +2637,9 @@ function InspecoesScreen({
       setFotoOcorrencia(null);
       setAssinatura(null);
       setAssinaturaModal(false);
+      setQrCodeValidado(false);
+      setRascunhoRestaurado(false);
+      await AsyncStorage.removeItem(RASCUNHO_INSPECAO_STORAGE_KEY).catch(() => {});
       return;
     }
 
@@ -2060,8 +2654,6 @@ function InspecoesScreen({
           signatureUrl: index === 0 ? assinatura : null,
         }));
 
-      // O backend recebe UMA resposta por requisição.
-      // Enviamos cada resposta individualmente para /answers.
       for (const resposta of respostasBackend) {
         const respostaResponse = await fetch(
           `${API_URL}/inspections/${inspecaoId}/answers`,
@@ -2115,29 +2707,10 @@ function InspecoesScreen({
         );
       }
 
-      const novaInspecao: InspecaoSalva = {
-        id: inspecaoId,
-        titulo: nomeModelo,
-        equipamentoId: equipamentoSelecionado.id,
-        equipamentoNome: equipamentoSelecionado.nome,
-        equipamentoCodigo: equipamentoSelecionado.codigo,
-        tecnico: usuario?.name || "Técnico não identificado",
-        status: "CONCLUIDA",
-        reviewStatus: "PENDENTE",
-        respostas: { ...respostas },
-        observacao,
-        dataConclusao: new Date().toISOString(),
-        fotos: { ...fotos },
-        assinatura,
-      };
-
-      setInspecoesSalvas((listaAtual) => [
-        novaInspecao,
-        ...listaAtual.filter((item) => item.id !== novaInspecao.id),
-      ]);
+      await recarregarInspecoes();
 
       alert(
-        `Inspeção salva com sucesso para ${equipamentoSelecionado.nome}.`
+        `Inspeção concluída e enviada para avaliação do Supervisor (${equipamentoSelecionado.nome}).`
       );
 
       setModoExecucao(false);
@@ -2150,6 +2723,9 @@ function InspecoesScreen({
       setFotoOcorrencia(null);
       setAssinatura(null);
       setAssinaturaModal(false);
+      setQrCodeValidado(false);
+      setRascunhoRestaurado(false);
+      await AsyncStorage.removeItem(RASCUNHO_INSPECAO_STORAGE_KEY).catch(() => {});
     } catch (error) {
       console.error("Erro ao finalizar inspeção:", error);
 
@@ -2161,150 +2737,9 @@ function InspecoesScreen({
     }
   }
 
-  function traduzirStatusFinal(inspecao: InspecaoSalva) {
-    if (inspecao.reviewStatus === "APROVADA") return "APROVADA";
-    if (inspecao.reviewStatus === "REPROVADA") return "REPROVADA";
-    return "PENDENTE";
-  }
-
-  async function atualizarEquipamentoAposRevisao(
-    inspecao: InspecaoSalva,
-    decisao: "APROVADA" | "REPROVADA"
-  ) {
-    // ETAPA 10 — fechamento operacional:
-    // inspeção aprovada libera o equipamento; inspeção reprovada
-    // direciona o equipamento para manutenção.
-    const novoStatus: StatusEquipamento =
-      decisao === "APROVADA" ? "Ativo" : "Manutenção";
-
-    try {
-      const response = await fetch(
-        `${API_URL}/equipments/${inspecao.equipamentoId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status:
-              novoStatus === "Ativo"
-                ? "ACTIVE"
-                : novoStatus === "Manutenção"
-                ? "MAINTENANCE"
-                : "INACTIVE",
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(
-          data?.message ||
-            "A revisão foi registrada, mas não foi possível atualizar o equipamento."
-        );
-      }
-
-      return novoStatus;
-    } catch (error) {
-      console.error("Erro ao atualizar equipamento após revisão:", error);
-      throw error;
-    }
-  }
-
-  async function abrirRevisao(inspecao: InspecaoSalva) {
+  function abrirDetalhesInspecao(inspecao: InspecaoSalva) {
     setInspecaoEmRevisao(inspecao);
-    setObservacaoRevisao(inspecao.observacaoRevisao || "");
     setModalRevisao(true);
-  }
-
-  async function concluirRevisao(decisao: "APROVADA" | "REPROVADA") {
-    if (!inspecaoEmRevisao) return;
-
-    if (decisao === "REPROVADA" && !observacaoRevisao.trim()) {
-      alert("Informe a justificativa da reprovação.");
-      return;
-    }
-
-    setProcessandoRevisao(true);
-
-    const atualizada: InspecaoSalva = {
-      ...inspecaoEmRevisao,
-      reviewStatus: decisao,
-      revisadoPor: usuario?.name || "Responsável pela revisão",
-      observacaoRevisao: observacaoRevisao.trim(),
-      dataRevisao: new Date().toISOString(),
-      situacaoFinal: decisao,
-      dataEncerramento: new Date().toISOString(),
-      equipamentoStatusFinal:
-        decisao === "APROVADA" ? "Ativo" : "Manutenção",
-    };
-
-    try {
-      // ETAPA 8 — tenta persistir a revisão no backend.
-      const response = await fetch(
-        `${API_URL}/inspections/${inspecaoEmRevisao.id}/review`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            status: decisao === "APROVADA" ? "APPROVED" : "REJECTED",
-            reviewerId: usuario?.id || null,
-            observation: observacaoRevisao.trim() || null,
-          }),
-        }
-      );
-
-      if (!response.ok && response.status !== 404 && response.status !== 405) {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data?.message || "Não foi possível registrar a revisão.");
-      }
-
-      // ETAPA 10 — fecha o fluxo operacional atualizando o equipamento.
-      let equipamentoStatusFinal: StatusEquipamento =
-        decisao === "APROVADA" ? "Ativo" : "Manutenção";
-
-      try {
-        equipamentoStatusFinal = await atualizarEquipamentoAposRevisao(
-          atualizada,
-          decisao
-        );
-      } catch (errorEquipamento) {
-        console.warn(
-          "Revisão registrada, mas o status do equipamento não foi atualizado:",
-          errorEquipamento
-        );
-        alert(
-          "A revisão foi registrada. Não foi possível atualizar o status do equipamento automaticamente."
-        );
-      }
-
-      const atualizadaFinal: InspecaoSalva = {
-        ...atualizada,
-        equipamentoStatusFinal,
-      };
-
-      // Mantém a atualização local mesmo em uma API que ainda não possua a rota /review.
-      setInspecoesSalvas((lista) =>
-        lista.map((item) => (item.id === atualizadaFinal.id ? atualizadaFinal : item))
-      );
-
-      setModalRevisao(false);
-      setInspecaoEmRevisao(null);
-      setObservacaoRevisao("");
-
-      alert(
-        decisao === "APROVADA"
-          ? "Inspeção aprovada com sucesso."
-          : "Inspeção reprovada. A justificativa foi registrada."
-      );
-    } catch (error) {
-      console.error("Erro na revisão da inspeção:", error);
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Não foi possível concluir a revisão."
-      );
-    } finally {
-      setProcessandoRevisao(false);
-    }
   }
 
   if (modoExecucao) {
@@ -2313,6 +2748,9 @@ function InspecoesScreen({
         <Header
           titulo="Inspeções"
           subtitulo="Execução de inspeções"
+          online={online}
+          pendentesCount={inspecoesPendentesOffline ? inspecoesPendentesOffline.length : 0}
+          onSincronizar={sincronizarManual}
         />
 
         <ScrollView
@@ -2331,13 +2769,49 @@ function InspecoesScreen({
           bounces={true}
           directionalLockEnabled={true}
         >
+          {rascunhoRestaurado && (
+            <View style={{ backgroundColor: "#E6F4EA", borderWidth: 1, borderColor: "#CEEAD6", padding: 10, borderRadius: 8, flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+              <MaterialIcons name="restore" size={20} color="#137333" />
+              <Text style={{ fontSize: 12, color: "#137333", fontWeight: "600", marginLeft: 6, flex: 1 }}>
+                Rascunho offline recuperado automaticamente com respostas e fotos preservadas!
+              </Text>
+            </View>
+          )}
+
           <View style={styles.executionHeader}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => {
-                setModoExecucao(false);
-                setInspecaoIniciada(false);
-                setEquipamentoSelecionado(null);
+                Alert.alert(
+                  "Pausar inspeção",
+                  "Seus dados e fotos estão preservados no rascunho offline.",
+                  [
+                    { text: "Continuar Preenchendo", style: "cancel" },
+                    {
+                      text: "Pausar e Voltar",
+                      onPress: () => {
+                        setModoExecucao(false);
+                      },
+                    },
+                    {
+                      text: "Descartar Rascunho",
+                      style: "destructive",
+                      onPress: async () => {
+                        await AsyncStorage.removeItem(RASCUNHO_INSPECAO_STORAGE_KEY).catch(() => {});
+                        setModoExecucao(false);
+                        setInspecaoIniciada(false);
+                        setEquipamentoSelecionado(null);
+                        setRespostas({});
+                        setFotos({});
+                        setFotoOcorrencia(null);
+                        setObservacao("");
+                        setAssinatura(null);
+                        setQrCodeValidado(false);
+                        setRascunhoRestaurado(false);
+                      },
+                    },
+                  ]
+                );
               }}
             >
               <MaterialIcons
@@ -2661,7 +3135,7 @@ function InspecoesScreen({
                         placeholder="Digite a resposta..."
                         placeholderTextColor="#9AA5B5"
                         value={resposta || ""}
-                        onChangeText={(valor) =>
+                        onChangeText={(valor: string) =>
                           responderPergunta(pergunta.id, valor)
                         }
                         multiline
@@ -2925,31 +3399,119 @@ function InspecoesScreen({
     <View style={styles.flex}>
       <Header
         titulo="Inspeções"
-        subtitulo="Construtor de modelos"
+        subtitulo="Execução em Campo • Técnico"
       />
+
+      {/* MODAL DE LEITURA E VALIDAÇÃO DE QR CODE (TESTE 07) */}
+      <Modal
+        visible={modalQrCodeAberto}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalQrCodeAberto(false)}
+      >
+        <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "center", alignItems: "center" }}>
+          <View style={{ backgroundColor: "#FFFFFF", borderRadius: 14, padding: 20, maxWidth: 440, width: "90%", maxHeight: "90%" }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <MaterialIcons name="qr-code-scanner" size={24} color="#0B4B87" />
+                <Text style={{ fontSize: 17, fontWeight: "700", color: "#111827", marginLeft: 8 }}>
+                  Leitor de QR Code
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => setModalQrCodeAberto(false)}>
+                <MaterialIcons name="close" size={22} color="#7A889A" />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={{ fontSize: 13, color: "#68778D", marginBottom: 12 }}>
+              {inspecaoAlvoQr
+                ? `Aponte a câmera para o QR Code do equipamento "${inspecaoAlvoQr.equipamentoNome}" (${inspecaoAlvoQr.equipamentoCodigo}).`
+                : "Aponte a câmera para o QR Code de qualquer equipamento cadastrado."}
+            </Text>
+
+            {Platform.OS !== "web" ? (
+              <View style={{ width: "100%", height: 210, borderRadius: 10, overflow: "hidden", backgroundColor: "#000000", marginBottom: 12 }}>
+                <CameraView
+                  style={{ flex: 1 }}
+                  facing="back"
+                  barcodeScannerSettings={{
+                    barcodeTypes: ["qr"],
+                  }}
+                  onBarcodeScanned={(result: any) => {
+                    if (result && result.data) {
+                      processarCodigoQr(result.data);
+                    }
+                  }}
+                />
+              </View>
+            ) : (
+              <View style={{ width: "100%", height: 110, borderRadius: 10, backgroundColor: "#F0F4F8", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
+                <MaterialIcons name="qr-code" size={44} color="#0B4B87" />
+                <Text style={{ fontSize: 12, color: "#68778D", marginTop: 4 }}>
+                  Ambiente Web: utilize a validação manual abaixo.
+                </Text>
+              </View>
+            )}
+
+            <View style={{ backgroundColor: "#F8FAFC", padding: 12, borderRadius: 8, borderWidth: 1, borderColor: "#E2E8F0" }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "#334155", marginBottom: 6 }}>
+                Ou digite o código do QR Code (ex: {inspecaoAlvoQr ? inspecaoAlvoQr.equipamentoCodigo : "EQ-101"}):
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                <TextInput
+                  style={{
+                    flex: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderWidth: 1,
+                    borderColor: "#CBD5E1",
+                    borderRadius: 6,
+                    paddingHorizontal: 10,
+                    paddingVertical: 8,
+                    fontSize: 14,
+                    color: "#1E293B",
+                  }}
+                  placeholder={inspecaoAlvoQr ? inspecaoAlvoQr.equipamentoCodigo : "EQ-101"}
+                  value={codigoManualQr}
+                  onChangeText={setCodigoManualQr}
+                  autoCapitalize="characters"
+                />
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#0B4B87",
+                    paddingHorizontal: 16,
+                    paddingVertical: 8,
+                    borderRadius: 6,
+                    justifyContent: "center",
+                  }}
+                  onPress={() => processarCodigoQr(codigoManualQr || (inspecaoAlvoQr ? inspecaoAlvoQr.equipamentoCodigo : "EQ-101"))}
+                >
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 13 }}>Validar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={modalRevisao}
         transparent
         animationType="slide"
         onRequestClose={() => {
-          if (!processandoRevisao) {
-            setModalRevisao(false);
-            setInspecaoEmRevisao(null);
-          }
+          setModalRevisao(false);
+          setInspecaoEmRevisao(null);
         }}
       >
         <View style={styles.reviewModalOverlay}>
           <View style={styles.reviewModal}>
             <View style={styles.reviewModalHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.reviewModalTitle}>Revisão da inspeção</Text>
+                <Text style={styles.reviewModalTitle}>Detalhes e Avaliação do Supervisor</Text>
                 <Text style={styles.reviewModalSubtitle}>
-                  Validação final do resultado apresentado pelo técnico.
+                  Consulta das respostas enviadas e do parecer oficial do supervisor.
                 </Text>
               </View>
               <TouchableOpacity
-                disabled={processandoRevisao}
                 onPress={() => {
                   setModalRevisao(false);
                   setInspecaoEmRevisao(null);
@@ -2984,22 +3546,47 @@ function InspecoesScreen({
                 </View>
 
                 <View style={styles.reviewSection}>
-                  <Text style={styles.reviewSectionTitle}>Resultado da inspeção</Text>
-                  <View style={styles.reviewResultRow}>
-                    <View style={styles.reviewResultIcon}>
-                      <MaterialIcons name="fact-check" size={22} color="#0B4B87" />
+                  <Text style={styles.reviewSectionTitle}>Parecer do Supervisor</Text>
+                  {inspecaoEmRevisao.reviewStatus === "PENDENTE" ? (
+                    <View style={styles.reviewResultRow}>
+                      <View style={styles.reviewResultIcon}>
+                        <MaterialIcons name="hourglass-top" size={22} color="#D88900" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.reviewResultTitle}>Aguardando Avaliação do Supervisor</Text>
+                        <Text style={styles.reviewResultText}>
+                          Esta inspeção foi enviada pelo técnico e aguarda a avaliação (Aprovação ou Reprovação) exclusiva do Supervisor no Painel de Operações.
+                        </Text>
+                      </View>
                     </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.reviewResultTitle}>Inspeção concluída</Text>
-                      <Text style={styles.reviewResultText}>
-                        O técnico finalizou o checklist e enviou os dados para revisão.
+                  ) : (
+                    <View style={styles.previousReviewBox}>
+                      <Text style={styles.previousReviewTitle}>
+                        Resultado da Avaliação:{" "}
+                        {inspecaoEmRevisao.reviewStatus === "APROVADA"
+                          ? "APROVADA PELO SUPERVISOR"
+                          : "REPROVADA PELO SUPERVISOR"}
+                      </Text>
+                      {inspecaoEmRevisao.revisadoPor ? (
+                        <Text style={styles.previousReviewText}>
+                          Supervisor avaliador: {inspecaoEmRevisao.revisadoPor}
+                        </Text>
+                      ) : null}
+                      {inspecaoEmRevisao.dataRevisao ? (
+                        <Text style={styles.previousReviewText}>
+                          Data da avaliação: {new Date(inspecaoEmRevisao.dataRevisao).toLocaleString("pt-BR")}
+                        </Text>
+                      ) : null}
+                      <Text style={styles.previousReviewText}>
+                        Parecer / Observação do Supervisor:{" "}
+                        {inspecaoEmRevisao.observacaoRevisao || "Nenhuma observação adicional registrada."}
                       </Text>
                     </View>
-                  </View>
+                  )}
                 </View>
 
                 <View style={styles.reviewSection}>
-                  <Text style={styles.reviewSectionTitle}>Observação do técnico</Text>
+                  <Text style={styles.reviewSectionTitle}>Observação registrada em campo</Text>
                   <View style={styles.reviewObservationBox}>
                     <Text style={styles.reviewObservationText}>
                       {inspecaoEmRevisao.observacao || "Nenhuma observação informada."}
@@ -3133,76 +3720,20 @@ function InspecoesScreen({
                     </View>
                   )}
                 </View>
-
-                <View style={styles.reviewSection}>
-                  <Text style={styles.reviewSectionTitle}>Decisão da revisão</Text>
-                  <TextInput
-                    style={styles.reviewInput}
-                    placeholder="Observação da revisão ou justificativa da reprovação"
-                    placeholderTextColor="#8B98AA"
-                    value={observacaoRevisao}
-                    onChangeText={setObservacaoRevisao}
-                    multiline
-                    textAlignVertical="top"
-                    editable={!processandoRevisao}
-                  />
-                </View>
-
-                {inspecaoEmRevisao.reviewStatus !== "PENDENTE" && (
-                  <View style={styles.previousReviewBox}>
-                    <Text style={styles.previousReviewTitle}>Histórico da revisão</Text>
-                    <Text style={styles.previousReviewText}>
-                      Status: {inspecaoEmRevisao.reviewStatus === "APROVADA" ? "Aprovada" : "Reprovada"}
-                    </Text>
-                    {inspecaoEmRevisao.revisadoPor ? (
-                      <Text style={styles.previousReviewText}>
-                        Responsável: {inspecaoEmRevisao.revisadoPor}
-                      </Text>
-                    ) : null}
-                    {inspecaoEmRevisao.dataRevisao ? (
-                      <Text style={styles.previousReviewText}>
-                        Data da revisão: {new Date(inspecaoEmRevisao.dataRevisao).toLocaleString("pt-BR")}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.previousReviewText}>
-                      Observação: {inspecaoEmRevisao.observacaoRevisao || "Nenhuma observação registrada."}
-                    </Text>
-                  </View>
-                )}
               </ScrollView>
             )}
 
             <View style={styles.reviewModalButtons}>
               <TouchableOpacity
-                style={styles.rejectReviewButton}
-                disabled={processandoRevisao}
-                onPress={() => concluirRevisao("REPROVADA")}
+                style={[styles.approveReviewButton, { flex: 1, backgroundColor: "#0B4B87" }]}
+                onPress={() => {
+                  setModalRevisao(false);
+                  setInspecaoEmRevisao(null);
+                }}
                 activeOpacity={0.8}
               >
-                {processandoRevisao ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <MaterialIcons name="cancel" size={19} color="#FFFFFF" />
-                    <Text style={styles.reviewActionText}>Reprovar</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.approveReviewButton}
-                disabled={processandoRevisao}
-                onPress={() => concluirRevisao("APROVADA")}
-                activeOpacity={0.8}
-              >
-                {processandoRevisao ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <>
-                    <MaterialIcons name="check-circle" size={19} color="#FFFFFF" />
-                    <Text style={styles.reviewActionText}>Aprovar</Text>
-                  </>
-                )}
+                <MaterialIcons name="check" size={19} color="#FFFFFF" />
+                <Text style={styles.reviewActionText}>Fechar Detalhes</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -3222,6 +3753,210 @@ function InspecoesScreen({
         bounces={true}
         directionalLockEnabled={true}
       >
+        <Text style={styles.pageTitleText}>
+          Operações de Campo (Técnico)
+        </Text>
+
+        <Text style={styles.pageDescription}>
+          Execute as inspeções atribuídas pelo supervisor ou inicie uma nova vistoria em campo e acompanhe o parecer de avaliação.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.executeInspectionButton}
+          onPress={() => setModoExecucao(true)}
+        >
+          <View style={styles.executeInspectionIcon}>
+            <MaterialIcons
+              name="play-arrow"
+              size={23}
+              color="#0B4B87"
+            />
+          </View>
+
+          <View style={styles.executeInspectionContent}>
+            <Text style={styles.executeInspectionTitle}>
+              Iniciar Nova Inspeção em Campo
+            </Text>
+
+            <Text style={styles.executeInspectionDescription}>
+              Selecione um equipamento do banco e execute o checklist oficial.
+            </Text>
+          </View>
+
+          <MaterialIcons
+            name="chevron-right"
+            size={24}
+            color="#7A889A"
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.executeInspectionButton, { backgroundColor: "#062B57", borderColor: "#062B57", marginBottom: 14 }]}
+          onPress={() => abrirLeitorQrCode()}
+        >
+          <View style={[styles.executeInspectionIcon, { backgroundColor: "rgba(255,255,255,0.18)" }]}>
+            <MaterialIcons
+              name="qr-code-scanner"
+              size={23}
+              color="#FFFFFF"
+            />
+          </View>
+
+          <View style={styles.executeInspectionContent}>
+            <Text style={[styles.executeInspectionTitle, { color: "#FFFFFF" }]}>
+              Escanear QR Code do Equipamento (Teste 07)
+            </Text>
+
+            <Text style={[styles.executeInspectionDescription, { color: "#CFE2FE" }]}>
+              Identifique o equipamento via câmera e abra o checklist imediatamente.
+            </Text>
+          </View>
+
+          <MaterialIcons
+            name="chevron-right"
+            size={24}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+
+        {/* INSPEÇÕES ATRIBUÍDAS / AGENDADAS PELO SUPERVISOR NO BANCO */}
+        <View style={styles.card}>
+          <View style={styles.cardHeader}>
+            <View>
+              <Text style={styles.cardTitle}>
+                Inspeções Atribuídas pelo Supervisor
+              </Text>
+              <Text style={styles.cardSubtitle}>
+                Ordens de inspeção agendadas no painel aguardando execução do técnico
+              </Text>
+            </View>
+
+            <View style={styles.counter}>
+              <Text style={styles.counterText}>
+                {inspecoesAgendadas.length}
+              </Text>
+            </View>
+          </View>
+
+          {inspecoesAgendadas.length === 0 ? (
+            <View style={{ paddingHorizontal: 14, paddingVertical: 14 }}>
+              <Text style={{ color: "#68778D", fontSize: 12 }}>
+                Nenhuma inspeção pendente atribuída pelo supervisor no momento.
+              </Text>
+            </View>
+          ) : (
+            inspecoesAgendadas.map((agendada) => (
+              <View key={agendada.id} style={styles.savedInspectionCard}>
+                <View style={[styles.savedInspectionIcon, { backgroundColor: "#EBF3FC" }]}>
+                  <MaterialIcons
+                    name="assignment-late"
+                    size={22}
+                    color="#0B4B87"
+                  />
+                </View>
+
+                <View style={styles.savedInspectionContent}>
+                  <Text style={styles.savedInspectionTitle}>
+                    {agendada.titulo}
+                  </Text>
+
+                  <Text style={styles.savedInspectionEquipment}>
+                    {agendada.equipamentoNome} • {agendada.equipamentoCodigo}
+                  </Text>
+
+                  <Text style={styles.savedInspectionMeta}>
+                    Local: {agendada.equipamentoLocal}
+                  </Text>
+
+                  <Text style={styles.savedInspectionMeta}>
+                    Instruções: {agendada.instrucoes}
+                  </Text>
+
+                  <Text style={styles.savedInspectionMeta}>
+                    Checklist: {agendada.perguntas.length} itens de verificação
+                  </Text>
+                </View>
+
+                <View style={styles.savedInspectionActions}>
+                  <View style={[styles.reviewBadge, styles.reviewBadgePending]}>
+                    <Text style={styles.reviewBadgeText}>Aguardando Execução</Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.reviewButton}
+                    onPress={() => iniciarInspecaoAgendada(agendada)}
+                    disabled={criandoInspecao}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons name="play-arrow" size={18} color="#FFFFFF" />
+                    <Text style={styles.reviewButtonText}>Executar Agora</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.reviewButton, { backgroundColor: "#137333", marginTop: 6 }]}
+                    onPress={() => abrirLeitorQrCode(agendada)}
+                    disabled={criandoInspecao}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons name="qr-code-scanner" size={17} color="#FFFFFF" />
+                    <Text style={styles.reviewButtonText}>Ler QR Code</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+
+        {/* MODELOS DE CHECKLIST DISPONÍVEIS NO BANCO (CRIADOS PELO SUPERVISOR) */}
+        {modelosBanco.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.cardTitle}>
+                  Modelo de Checklist Ativo
+                </Text>
+                <Text style={styles.cardSubtitle}>
+                  Modelos publicados pelo supervisor no banco de dados ({perguntas.length} itens no modelo selecionado)
+                </Text>
+              </View>
+            </View>
+
+            {modelosBanco.map((modelo) => {
+              const selecionado = modelo.id === modeloSelecionadoId;
+              return (
+                <TouchableOpacity
+                  key={modelo.id}
+                  onPress={() => selecionarModeloBanco(modelo)}
+                  style={[
+                    styles.executionEquipment,
+                    selecionado && {
+                      borderColor: "#0B4B87",
+                      backgroundColor: "#F0F6FC",
+                    },
+                  ]}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.executionEquipmentIcon}>
+                    <MaterialIcons
+                      name={selecionado ? "radio-button-checked" : "radio-button-unchecked"}
+                      size={22}
+                      color="#0B4B87"
+                    />
+                  </View>
+                  <View style={styles.executionEquipmentContent}>
+                    <Text style={styles.executionEquipmentName}>
+                      {modelo.titulo}
+                    </Text>
+                    <Text style={styles.executionEquipmentCode}>
+                      {modelo.perguntas.length} perguntas • {modelo.descricao}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
         {inspecoesSalvas.length > 0 && (
           <View style={styles.finalFlowCard}>
             <View style={styles.finalFlowHeader}>
@@ -3229,9 +3964,9 @@ function InspecoesScreen({
                 <MaterialIcons name="task-alt" size={22} color="#0B4B87" />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.finalFlowTitle}>Fechamento do fluxo</Text>
+                <Text style={styles.finalFlowTitle}>Avaliações do Supervisor</Text>
                 <Text style={styles.finalFlowSubtitle}>
-                  Resumo das inspeções concluídas e revisadas.
+                  Acompanhamento das suas inspeções enviadas para avaliação do supervisor.
                 </Text>
               </View>
             </View>
@@ -3239,11 +3974,11 @@ function InspecoesScreen({
             <View style={styles.finalFlowStats}>
               <View style={styles.finalFlowStat}>
                 <Text style={styles.finalFlowStatValue}>{totalInspecoesFinais}</Text>
-                <Text style={styles.finalFlowStatLabel}>Total</Text>
+                <Text style={styles.finalFlowStatLabel}>Enviadas</Text>
               </View>
               <View style={styles.finalFlowStat}>
                 <Text style={styles.finalFlowStatValue}>{totalPendentes}</Text>
-                <Text style={styles.finalFlowStatLabel}>Pendentes</Text>
+                <Text style={styles.finalFlowStatLabel}>Em Avaliação</Text>
               </View>
               <View style={styles.finalFlowStat}>
                 <Text style={styles.finalFlowStatValue}>{totalAprovadas}</Text>
@@ -3263,8 +3998,8 @@ function InspecoesScreen({
               />
               <Text style={styles.finalFlowMessageText}>
                 {totalPendentes === 0
-                  ? "Todas as inspeções deste histórico possuem decisão de revisão."
-                  : `${totalPendentes} inspeção${totalPendentes > 1 ? "ões" : ""} aguardando revisão.`}
+                  ? "Todas as suas inspeções concluídas já foram avaliadas pelo supervisor."
+                  : `${totalPendentes} inspeção${totalPendentes > 1 ? "ões" : ""} aguardando avaliação do supervisor no painel.`}
               </Text>
             </View>
           </View>
@@ -3275,10 +4010,10 @@ function InspecoesScreen({
             <View style={styles.cardHeader}>
               <View>
                 <Text style={styles.cardTitle}>
-                  Histórico de Inspeções
+                  Minhas Inspeções Concluídas
                 </Text>
                 <Text style={styles.cardSubtitle}>
-                  Inspeções finalizadas e salvas no banco de dados
+                  Inspeções enviadas pelo técnico e parecer do supervisor
                 </Text>
               </View>
 
@@ -3309,7 +4044,7 @@ function InspecoesScreen({
                   </Text>
 
                   <Text style={styles.savedInspectionMeta}>
-                    Técnico: {inspecao.tecnico}
+                    Técnico executor: {inspecao.tecnico}
                   </Text>
 
                   <Text style={styles.savedInspectionMeta}>
@@ -3319,22 +4054,22 @@ function InspecoesScreen({
 
                   {inspecao.reviewStatus !== "PENDENTE" && (
                     <Text style={styles.savedInspectionMeta}>
-                      Revisada em{" "}
+                      Avaliada pelo supervisor em{" "}
                       {inspecao.dataRevisao
                         ? new Date(inspecao.dataRevisao).toLocaleString("pt-BR")
                         : "data não informada"}
                     </Text>
                   )}
 
-                  {inspecao.situacaoFinal !== "PENDENTE" && (
+                  {inspecao.observacaoRevisao ? (
                     <Text style={styles.savedInspectionMeta}>
-                      Situação final: {inspecao.situacaoFinal === "APROVADA" ? "Aprovada" : "Reprovada"}
+                      Parecer do supervisor: {inspecao.observacaoRevisao}
                     </Text>
-                  )}
+                  ) : null}
 
                   {inspecao.equipamentoStatusFinal && (
                     <Text style={styles.savedInspectionMeta}>
-                      Equipamento após revisão: {inspecao.equipamentoStatusFinal}
+                      Status do equipamento: {inspecao.equipamentoStatusFinal}
                     </Text>
                   )}
                 </View>
@@ -3352,31 +4087,25 @@ function InspecoesScreen({
                   >
                     <Text style={styles.reviewBadgeText}>
                       {inspecao.reviewStatus === "APROVADA"
-                        ? "Aprovada"
+                        ? "Aprovada pelo Supervisor"
                         : inspecao.reviewStatus === "REPROVADA"
-                        ? "Reprovada"
-                        : "Pendente de revisão"}
+                        ? "Reprovada pelo Supervisor"
+                        : "Aguardando Supervisor"}
                     </Text>
                   </View>
 
                   <TouchableOpacity
                     style={styles.reviewButton}
-                    onPress={() => abrirRevisao(inspecao)}
+                    onPress={() => abrirDetalhesInspecao(inspecao)}
                     activeOpacity={0.8}
                   >
                     <MaterialIcons
-                      name={
-                        inspecao.reviewStatus === "PENDENTE"
-                          ? "rate-review"
-                          : "visibility"
-                      }
+                      name="visibility"
                       size={18}
                       color="#FFFFFF"
                     />
                     <Text style={styles.reviewButtonText}>
-                      {inspecao.reviewStatus === "PENDENTE"
-                        ? "Revisar"
-                        : "Ver revisão"}
+                      Ver parecer
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -3384,175 +4113,6 @@ function InspecoesScreen({
             ))}
           </View>
         )}
-
-        <Text style={styles.pageTitleText}>
-          Construtor de Inspeção
-        </Text>
-
-        <Text style={styles.pageDescription}>
-          Crie e configure modelos de inspeção para sua equipe.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.executeInspectionButton}
-          onPress={() => setModoExecucao(true)}
-        >
-          <View style={styles.executeInspectionIcon}>
-            <MaterialIcons
-              name="play-arrow"
-              size={23}
-              color="#0B4B87"
-            />
-          </View>
-
-          <View style={styles.executeInspectionContent}>
-            <Text style={styles.executeInspectionTitle}>
-              Executar Inspeção
-            </Text>
-
-            <Text style={styles.executeInspectionDescription}>
-              Selecione um equipamento e execute o checklist em campo.
-            </Text>
-          </View>
-
-          <MaterialIcons
-            name="chevron-right"
-            size={24}
-            color="#7A889A"
-          />
-        </TouchableOpacity>
-
-        <View style={styles.card}>
-          <Text style={styles.inputLabel}>
-            Nome do modelo
-          </Text>
-
-          <TextInput
-            value={nomeModelo}
-            onChangeText={setNomeModelo}
-            style={styles.input}
-            placeholder="Digite o nome"
-            placeholderTextColor="#9AA5B5"
-          />
-        </View>
-
-        <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.cardHeader}
-            onPress={() => setMostrarTipos(!mostrarTipos)}
-          >
-            <View>
-              <Text style={styles.cardTitle}>
-                Tipos de Pergunta
-              </Text>
-
-              <Text style={styles.cardSubtitle}>
-                Escolha o tipo de resposta
-              </Text>
-            </View>
-
-            <MaterialIcons
-              name={
-                mostrarTipos
-                  ? "keyboard-arrow-up"
-                  : "keyboard-arrow-down"
-              }
-              size={23}
-              color="#173C68"
-            />
-          </TouchableOpacity>
-
-          {mostrarTipos && (
-            <>
-              <QuestionType
-                icon="toggle-on"
-                title="Sim / Não"
-                description="Resposta binária"
-              />
-
-              <QuestionType
-                icon="radio-button-checked"
-                title="Múltipla escolha"
-                description="Selecione uma opção"
-              />
-
-              <QuestionType
-                icon="text-fields"
-                title="Texto"
-                description="Resposta livre"
-              />
-
-              <QuestionType
-                icon="photo-camera"
-                title="Foto"
-                description="Registro fotográfico"
-              />
-            </>
-          )}
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <View>
-              <Text style={styles.cardTitle}>
-                Perguntas
-              </Text>
-
-              <Text style={styles.cardSubtitle}>
-                {perguntas.length} perguntas cadastradas
-              </Text>
-            </View>
-
-            <View style={styles.counter}>
-              <Text style={styles.counterText}>
-                {perguntas.length}
-              </Text>
-            </View>
-          </View>
-
-          {perguntas.map((pergunta, index) => (
-            <QuestionCard
-              key={pergunta.id}
-              numero={index + 1}
-              pergunta={pergunta}
-            />
-          ))}
-
-          <TouchableOpacity
-            style={styles.addQuestion}
-            onPress={adicionarPergunta}
-          >
-            <MaterialIcons
-              name="add"
-              size={20}
-              color="#0B4A86"
-            />
-
-            <Text style={styles.addQuestionText}>
-              Adicionar Pergunta
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.secondaryButton}>
-            <Text style={styles.secondaryText}>
-              Cancelar
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.primaryButton}>
-            <MaterialIcons
-              name="save"
-              size={18}
-              color="#FFFFFF"
-            />
-
-            <Text style={styles.primaryButtonText}>
-              Salvar Modelo
-            </Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
 
       <FloatingScrollButtons scrollRef={scrollRef} />
@@ -5011,7 +5571,7 @@ function PerfilScreen({
     <View style={styles.flex}>
       <Header
         titulo="Perfil"
-        subtitulo="Configurações do supervisor"
+        subtitulo="Área do Técnico • Configurações"
       />
 
       <ScrollView

@@ -28,6 +28,8 @@ public class InspectionItemSnapshotDTO {
     private int itemOrder;
     private int order;
     private String title;
+    private String text;
+    private String prompt;
     private String type;
     private boolean answered;
 
@@ -45,6 +47,8 @@ public class InspectionItemSnapshotDTO {
                 .itemCode(s.getItemCode())
                 .itemTitle(s.getItemTitle())
                 .title(s.getItemTitle())
+                .text(s.getItemTitle())
+                .prompt(s.getItemTitle())
                 .itemDescription(s.getItemDescription())
                 .responseType(s.getResponseType() != null ? s.getResponseType().name() : "TEXT_SHORT")
                 .type(mobileType)
@@ -60,7 +64,7 @@ public class InspectionItemSnapshotDTO {
     public static String mapMobileQuestionType(String responseType) {
         if (responseType == null) return "SHORT_TEXT";
         return switch (responseType.toUpperCase()) {
-            case "CONFORM_NON_CONFORM", "BOOLEAN", "COMPLIANCE" -> "COMPLIANCE";
+            case "CONFORMITY", "CONFORM_NON_CONFORM", "BOOLEAN", "COMPLIANCE" -> "COMPLIANCE";
             case "SINGLE_CHOICE", "MULTIPLE_CHOICE" -> "MULTIPLE_CHOICE";
             case "PHOTO" -> "PHOTO";
             default -> "SHORT_TEXT";
