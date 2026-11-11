@@ -23,30 +23,39 @@ else
     echo "Swap ja ativo."
 fi
 
-# 2. Atualizar pacotes do sistema
-echo "[2/5] Atualizando repositorios do sistema..."
-sudo apt-get update -y
+# 2. Atualizar pacotes e instalar dependencias (Universal: Ubuntu/Debian ou Amazon Linux/RHEL)
+echo "[2/5] Identificando sistema operacional e instalando Git e Docker..."
 
-# 3. Instalar Docker e Docker Compose se nao existirem
-echo "[3/5] Verificando instalacao do Docker e Docker Compose..."
-if ! command -v docker &> /dev/null; then
-    echo "Instalando Docker Engine..."
-    sudo apt-get install -y ca-certificates curl gnupg lsb-release
-    sudo install -m 0755 -d /etc/apt/keyrings
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
-    sudo chmod a+r /etc/apt/keyrings/docker.gpg
+if command -v dnf &> /dev/null; then
+    echo "Sistema detectado: Amazon Linux 2023 / Fedora / RHEL (dnf)"
+    sudo dnf update -y
+    sudo dnf install -y git docker
+    sudo systemctl enable --now docker
+    sudo usermod -aG docker $USER || true
 
-    echo \
-      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-      $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
+    # Instalar Docker Compose v2 se nao estiver disponivel
+    if ! docker compose version &> /dev/null; then
+        echo "Instalando Docker Compose v2 plugin..."
+        sudo mkdir -p /usr/local/lib/docker/cli-plugins
+        sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+        sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+    fi
+elif command -v apt-get &> /dev/null; then
+    echo "Sistema detectado: Ubuntu / Debian (apt)"
     sudo apt-get update -y
-    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-    sudo usermod -aG docker $USER
-    echo "Docker instalado com sucesso!"
+    sudo apt-get install -y git ca-certificates curl gnupg lsb-release
+    
+    if ! command -v docker &> /dev/null; then
+        sudo install -m 0755 -d /etc/apt/keyrings
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg --yes
+        sudo chmod a+r /etc/apt/keyrings/docker.gpg
+        echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+        sudo apt-get update -y
+        sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+        sudo usermod -aG docker $USER || true
+    fi
 else
-    echo "Docker ja esta instalado."
+    echo "Gerenciador de pacotes nao identificado, tentando comandos genericos..."
 fi
 
 # 4. Construir e subir os containers com Docker Compose
