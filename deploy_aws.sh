@@ -33,13 +33,19 @@ if command -v dnf &> /dev/null; then
     sudo systemctl enable --now docker
     sudo usermod -aG docker $USER || true
 
-    # Instalar Docker Compose v2 se nao estiver disponivel
+    # Instalar Docker Compose v2 e Docker Buildx se nao estiverem disponiveis
     if ! docker compose version &> /dev/null; then
         echo "Instalando Docker Compose v2 plugin..."
         sudo mkdir -p /usr/local/lib/docker/cli-plugins
         sudo curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
         sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
     fi
+
+    echo "Garantindo instalacao do Docker Buildx plugin..."
+    sudo mkdir -p /usr/local/lib/docker/cli-plugins /usr/libexec/docker/cli-plugins
+    sudo curl -SL https://github.com/docker/buildx/releases/download/v0.39.0/buildx-v0.39.0.linux-amd64 -o /usr/local/lib/docker/cli-plugins/docker-buildx
+    sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-buildx
+    sudo cp /usr/local/lib/docker/cli-plugins/docker-buildx /usr/libexec/docker/cli-plugins/docker-buildx
 elif command -v apt-get &> /dev/null; then
     echo "Sistema detectado: Ubuntu / Debian (apt)"
     sudo apt-get update -y
