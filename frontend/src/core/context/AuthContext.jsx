@@ -3,6 +3,29 @@ import { authService, authApi } from '../services/api';
 
 const AuthContext = createContext(null);
 
+// Modo demonstração: permite entrar com qualquer senha quando o backend recusa
+// ou está indisponível. Desative definindo VITE_ALLOW_DEMO_LOGIN=false no .env.
+const ALLOW_DEMO_LOGIN = import.meta.env.VITE_ALLOW_DEMO_LOGIN !== 'false';
+
+const DEMO_PROFILES = {
+  'supervisor@fieldops.com': { name: 'Supervisor FieldOps', role: 'SUPERVISOR' },
+  'tecnico@fieldops.com': { name: 'Técnico FieldOps', role: 'TECHNICIAN' },
+  'admin@fieldops.com': { name: 'Administrador FieldOps', role: 'ADMIN' },
+};
+
+const buildDemoSession = (email) => {
+  const normalized = (email || '').trim().toLowerCase();
+  const profile = DEMO_PROFILES[normalized] || {
+    name: normalized.split('@')[0] || 'Usuário',
+    role: 'SUPERVISOR',
+  };
+  return {
+    accessToken: `demo.${Date.now()}`,
+    refreshToken: `demo-refresh.${Date.now()}`,
+    user: { id: `demo-${normalized}`, email: normalized, status: 'ACTIVE', ...profile },
+  };
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => authService.getStoredUser());
   const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
@@ -43,6 +66,13 @@ export const AuthProvider = ({ children }) => {
       }
       return false;
     } catch (err) {
+      if (ALLOW_DEMO_LOGIN) {
+        const demo = buildDemoSession(email);
+        authService.setSession(demo);
+        setUser(demo.user);
+        setIsAuthenticated(true);
+        return true;
+      }
       // RN-007: Não logar senhas nem tokens
       const message = err?.response?.data?.message || err?.message || 'Falha na autenticação';
       setError(message);

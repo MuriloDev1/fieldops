@@ -16,6 +16,9 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const currentProfile = demoProfiles.find((profile) => profile.email === email);
+  const submitLabel = `Entrar como ${currentProfile ? currentProfile.label : 'Usuário'}`;
+
   const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e) => {
@@ -79,7 +82,7 @@ export const LoginPage = () => {
           )}
 
           <button type="submit" className="login-submit" disabled={submitting}>
-            {submitting ? 'Autenticando...' : 'Entrar como Supervisor'}
+            {submitting ? 'Autenticando...' : submitLabel}
           </button>
         </form>
 
