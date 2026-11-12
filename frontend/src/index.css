@@ -1439,3 +1439,108 @@ tbody td { font-size: 0.9rem; }
 
 .pill-button { border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--text); }
 .pill-button:hover { background: var(--primary-soft); border-color: #c9dbf7; color: var(--primary); }
+
+/* ==========================================================================
+   Novos componentes: avisos (toast), menus suspensos, navegação inferior, gráficos
+   ========================================================================== */
+
+/* Toasts */
+.toast-region { position: fixed; right: 1rem; bottom: 1rem; z-index: 100; display: grid; gap: 0.6rem; width: min(380px, calc(100vw - 2rem)); pointer-events: none; }
+.toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 0.65rem; padding: 0.8rem 0.9rem; background: var(--panel); border: 1px solid var(--line); border-left-width: 4px; border-radius: 12px; box-shadow: 0 12px 32px rgba(13, 27, 45, 0.18); font-size: 0.88rem; animation: toast-in 0.25s ease; }
+.toast span { flex: 1; line-height: 1.4; padding-top: 1px; }
+.toast button { border: 0; background: transparent; color: var(--muted); padding: 2px; border-radius: 6px; display: grid; place-items: center; }
+.toast button:hover { background: var(--panel-alt); color: var(--text); }
+.toast-success { border-left-color: var(--success); } .toast-success > svg { color: var(--success); }
+.toast-error { border-left-color: var(--danger); } .toast-error > svg { color: var(--danger); }
+.toast-info { border-left-color: var(--secondary); } .toast-info > svg { color: var(--secondary); }
+@keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* Menus suspensos da topbar */
+.search-wrap { position: relative; }
+.dropdown { position: absolute; top: calc(100% + 0.5rem); left: 0; min-width: 260px; max-width: 92vw; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 40px rgba(13, 27, 45, 0.16); z-index: 40; overflow: hidden; animation: pop-in 0.15s ease; }
+.menu-wrap .dropdown { left: auto; right: 0; }
+.dropdown.notifications { width: 340px; }
+.dropdown-title { padding: 0.75rem 0.9rem; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); }
+.dropdown-list { max-height: 340px; overflow-y: auto; }
+.dropdown-empty { padding: 1rem 0.9rem; color: var(--muted); font-size: 0.85rem; }
+.dropdown-item { display: flex; align-items: center; gap: 0.65rem; width: 100%; padding: 0.7rem 0.9rem; border: 0; background: transparent; color: var(--text); text-align: left; font-size: 0.88rem; }
+.dropdown-item:hover { background: var(--panel-alt); }
+.dropdown-item svg { color: var(--muted); flex-shrink: 0; }
+.dropdown-item.danger, .dropdown-item.danger svg { color: var(--danger); }
+.dropdown-item.stacked { align-items: flex-start; border-bottom: 1px solid var(--line); }
+.dropdown-item.stacked:last-child { border-bottom: 0; }
+.alert-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 8px; flex-shrink: 0; }
+.alert-icon.nc { background: var(--danger-soft); color: var(--danger); }
+.alert-icon.inspection { background: var(--warning-soft); color: #a06700; }
+.alert-icon svg { color: inherit; }
+.alert-copy { min-width: 0; }
+.alert-copy strong { display: block; font-size: 0.84rem; font-weight: 600; line-height: 1.3; }
+.alert-copy small { display: block; margin-top: 0.15rem; color: var(--muted); font-size: 0.74rem; }
+.user-menu { min-width: 220px; }
+.user-menu-head { padding: 0.8rem 0.9rem; border-bottom: 1px solid var(--line); }
+.user-menu-head strong, .user-menu-head small { display: block; }
+.user-menu-head small { color: var(--muted); margin-top: 0.1rem; }
+.topbar-actions button.has-badge { position: relative; }
+.notif-count { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; display: grid; place-items: center; border-radius: 999px; background: var(--danger); color: #fff; font-size: 0.65rem; font-weight: 700; border: 2px solid #fff; }
+
+/* Barra de navegação inferior (mobile) */
+.bottom-nav { display: none; }
+.bottom-nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; flex: 1; min-width: 0; padding: 0.45rem 0.2rem; border: 0; background: transparent; color: var(--muted); font-size: 0.68rem; font-weight: 600; text-decoration: none; }
+.bottom-nav-item span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bottom-nav-item.active { color: var(--primary); }
+.bottom-nav-item.active svg { color: var(--secondary); }
+
+/* Estado de carregamento (skeleton) */
+.is-loading .stat-value, .is-loading .stat-foot { color: transparent !important; border-radius: 8px; background: linear-gradient(90deg, #e9eff7 25%, #f6f9fd 50%, #e9eff7 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; user-select: none; }
+.is-loading .stat-value { width: 55%; }
+.is-loading .stat-foot { width: 80%; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+
+/* Gráfico semanal: valores nas barras */
+.bar-column .bar { position: relative; transition: filter 0.15s ease; }
+.bar-value { position: absolute; left: 50%; bottom: calc(100% + 4px); transform: translateX(-50%); font-style: normal; font-size: 0.68rem; font-weight: 700; color: var(--primary); opacity: 0; transition: opacity 0.15s ease; pointer-events: none; }
+.bar-column:hover .bar-value { opacity: 1; }
+.bar-column:hover .bar { filter: brightness(1.15); }
+
+/* Analytics */
+.analytics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+.analytics-card { padding: 1.25rem 1.35rem; display: grid; gap: 0.9rem; align-content: start; }
+.analytics-card h3 { margin: 0 0 0.2rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1rem; }
+.info-row { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 0.65rem; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
+.info-row.last { border-bottom: 0; padding-bottom: 0; }
+.info-row span { color: var(--muted); }
+.flow-bar { display: grid; gap: 0.4rem; }
+.flow-bar-head { display: flex; justify-content: space-between; font-size: 0.88rem; }
+.flow-bar-head span { color: var(--muted); }
+.flow-bar-head small { color: var(--muted); font-weight: 500; }
+.split-bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; background: var(--slate-soft); }
+.split-ok { background: var(--success); transition: width 0.4s ease; }
+.split-nok { background: var(--danger); transition: width 0.4s ease; }
+.split-legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.1rem; font-size: 0.82rem; color: var(--muted); }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 0.35rem; }
+.dot.ok { background: var(--success); }
+.dot.nok { background: var(--danger); }
+
+/* Login: link auxiliar */
+.login-extra { display: flex; justify-content: flex-end; margin-top: -0.4rem; }
+.login-link { border: 0; background: transparent; padding: 0; color: #93c5fd; font-size: 0.8rem; font-weight: 600; }
+.login-link:hover { text-decoration: underline; }
+
+@media (max-width: 760px) {
+  .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 12; display: flex; background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -6px 20px rgba(13, 27, 45, 0.06); }
+  .bottom-nav-item { min-height: 56px; }
+  .main-panel { padding-bottom: 68px; }
+  .toast-region { bottom: 76px; }
+  .dropdown.notifications { position: fixed; left: 0.75rem; right: 0.75rem; top: 70px; width: auto; }
+  .search-wrap { flex: 1; }
+  .search-box { width: 100%; }
+  .topbar-actions button { width: 40px; height: 40px; }
+}
+
+/* Itens dos menus suspensos nao herdam o estilo dos botoes de icone da topbar */
+.topbar-actions .dropdown .dropdown-item { width: 100%; height: auto; display: flex; justify-content: flex-start; border: 0; border-radius: 0; background: transparent; color: var(--text); }
+.topbar-actions .dropdown .dropdown-item:hover { background: var(--panel-alt); color: var(--text); border: 0; }
+.topbar-actions .dropdown .dropdown-item.danger { color: var(--danger); }
+
+.quick-list { grid-template-columns: minmax(0, 1fr); }
+.quick-item { min-width: 0; }

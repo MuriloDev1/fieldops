@@ -3,6 +3,9 @@ import Modal from '../components/Modal';
 import { StatCard } from '../shared/components/StatCard';
 import { DataTable } from '../shared/components/DataTable';
 import { StatusBadge } from '../shared/components/StatusBadge';
+import { useToast } from '../core/context/ToastContext';
+import { isDemoSession } from '../core/demo';
+import { nonConformities as mockNcs, technicians as mockTechs, inspections as mockInspections, equipment as mockEquipment } from '../data/mockData';
 import { dashboardApi, nonConformitiesApi, usersApi, equipmentApi, inspectionsApi } from '../core/services/api';
 
 const quickMenuItems = [
@@ -18,7 +21,19 @@ const columns = [
   { header: 'Status', key: 'status', render: (val) => <StatusBadge status={val} /> },
 ];
 
+const DEMO_SUMMARY = {
+  completedInspections: '128',
+  nonConformityRate: '7.4%',
+  activeTechnicians: '12',
+  overdueInspections: '3',
+  weeklyProgress: [12, 18, 15, 22, 19, 8, 5],
+};
+
+const toSeverity = (priority) => (priority === 'Alta' ? 'Crítico' : priority === 'Média' ? 'Alta' : 'Baixa');
+
 export const DashboardPage = () => {
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
@@ -39,6 +54,37 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     const loadDashboard = async () => {
+      if (isDemoSession()) {
+        setSummary(DEMO_SUMMARY);
+        setRows(
+          mockNcs.map((nc) => ({
+            id: nc.id,
+            local: nc.equipment,
+            equipment: nc.equipment,
+            date: nc.date,
+            status: toSeverity(nc.priority),
+            description: nc.description,
+          }))
+        );
+        setQuickItems([
+          ...mockEquipment
+            .filter((e) => e.status === 'Alerta' || e.status === 'Em manutenção')
+            .slice(0, 2)
+            .map((e) => ({
+              label: e.name,
+              detail: `${e.status} (${e.location})`,
+              status: e.status === 'Alerta' ? 'danger' : 'warning',
+            })),
+          ...mockInspections
+            .filter((i) => i.status === 'Em andamento')
+            .slice(0, 1)
+            .map((i) => ({ label: i.name, detail: 'Pendente aprovação do supervisor', status: 'info' })),
+        ]);
+        setTechnicians(mockTechs.map((t) => t.name));
+        setLoading(false);
+        return;
+      }
+
       try {
         const [summaryData, ncData, usersData, eqData, inspData] = await Promise.all([
           dashboardApi.getSummary(),
@@ -124,10 +170,14 @@ export const DashboardPage = () => {
         }
       } catch (err) {
         console.error('Erro ao carregar dados do banco no Dashboard:', err);
+        toast.error('Não foi possível carregar os dados do dashboard.');
+      } finally {
+        setLoading(false);
       }
     };
 
     loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -148,13 +198,15 @@ export const DashboardPage = () => {
 
   const handleAssignTask = (technician) => {
     setAssignedMessage(`Tarefa atribuída a ${technician} com sucesso.`);
+    toast.success(`Tarefa atribuída a ${technician}.`);
     setAssignOpen(false);
     setMenuOpen(false);
   };
 
   const handleQuickMenuAction = (action) => {
     setMenuOpen(false);
-    setAssignedMessage(`${action} foi acionado com sucesso.`);
+    setAssignedMessage('');
+    toast.success(`${action} foi acionado com sucesso.`);
     setAssignOpen(false);
   };
 
@@ -178,6 +230,7 @@ export const DashboardPage = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success('Exportação concluída.');
   };
 
   const filteredRows = statusFilter
@@ -191,36 +244,11 @@ export const DashboardPage = () => {
         <p>Visão geral operacional e acompanhamento de campo.</p>
       </div>
 
-      {assignedMessage && (
-        <div
-          style={{
-            marginBottom: '1rem',
-            padding: '0.75rem 1rem',
-            backgroundColor: 'rgba(16, 185, 129, 0.15)',
-            border: '1px solid #10b981',
-            borderRadius: '0.5rem',
-            color: '#34d399',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span>{assignedMessage}</span>
-          <button
-            type="button"
-            onClick={() => setAssignedMessage('')}
-            style={{ background: 'transparent', border: 'none', color: '#34d399', cursor: 'pointer', fontWeight: 700 }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      <div className="stats-grid">
+      <div className={`stats-grid ${loading ? 'is-loading' : ''}`} aria-busy={loading}>
         <StatCard
           title="Inspeções Concluídas"
           value={summary.completedInspections}
-          footerText="+5.2% vs mês anterior"
+          footerText="Total no período"
           type="positive"
           icon="✓"
         />
@@ -282,7 +310,9 @@ export const DashboardPage = () => {
                             className="bar"
                             style={{ height: `${Math.min((value / maxVal) * 100, 100)}%` }}
                             title={`${value} inspeções`}
-                          />
+                          >
+                            <span className="bar-value">{value}</span>
+                          </div>
                           <span>{['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][index]}</span>
                         </div>
                       ))}

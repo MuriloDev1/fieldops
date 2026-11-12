@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../core/context/AuthContext';
+import { useToast } from '../core/context/ToastContext';
 
 const demoProfiles = [
   { label: 'Supervisor', email: 'supervisor@fieldops.com' },
@@ -19,7 +20,10 @@ export const LoginPage = () => {
   const currentProfile = demoProfiles.find((profile) => profile.email === email);
   const submitLabel = `Entrar como ${currentProfile ? currentProfile.label : 'Usuário'}`;
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const toast = useToast();
+
+  // Sem destino prévio, a raiz redireciona para a página inicial do perfil.
+  const from = location.state?.from?.pathname || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,6 +77,16 @@ export const LoginPage = () => {
               placeholder="Digite sua senha"
               required
             />
+          </div>
+
+          <div className="login-extra">
+            <button
+              type="button"
+              className="login-link"
+              onClick={() => toast.info('Para redefinir a senha, solicite ao administrador do sistema.')}
+            >
+              Esqueci minha senha
+            </button>
           </div>
 
           {error && (

@@ -1,22 +1,65 @@
 import { useState, useEffect } from 'react';
 import { StatCard } from '../shared/components/StatCard';
 import { dashboardApi } from '../core/services/api';
-import { Activity, Building2 } from 'lucide-react';
+import { isDemoSession } from '../core/demo';
+import { Activity, Building2, Gauge } from 'lucide-react';
+
+const EMPTY_SUMMARY = {
+  totalClients: 0,
+  activeSites: 0,
+  totalEquipments: 0,
+  criticalEquipments: 0,
+  scheduledInspections: 0,
+  inProgressInspections: 0,
+  completedInspections: 0,
+  openNonConformities: 0,
+  conformanceRate: 0,
+};
+
+const DEMO_SUMMARY = {
+  totalClients: 3,
+  activeSites: 6,
+  totalEquipments: 136,
+  criticalEquipments: 4,
+  scheduledInspections: 48,
+  inProgressInspections: 12,
+  completedInspections: 128,
+  openNonConformities: 9,
+  conformanceRate: 92.6,
+};
+
+const InfoRow = ({ label, value, color, last }) => (
+  <div className={`info-row ${last ? 'last' : ''}`}>
+    <span>{label}</span>
+    <strong style={color ? { color } : undefined}>{value}</strong>
+  </div>
+);
+
+const FlowBar = ({ label, value, total, color }) => {
+  const percent = total > 0 ? Math.round((value / total) * 100) : 0;
+  return (
+    <div className="flow-bar">
+      <div className="flow-bar-head">
+        <span>{label}</span>
+        <strong>
+          {value} <small>({percent}%)</small>
+        </strong>
+      </div>
+      <div className="progress-track">
+        <div className="progress-fill" style={{ width: `${percent}%`, background: color }} />
+      </div>
+    </div>
+  );
+};
 
 export const AnalyticsPage = () => {
-  const [summary, setSummary] = useState({
-    totalClients: 0,
-    activeSites: 0,
-    totalEquipments: 0,
-    criticalEquipments: 0,
-    scheduledInspections: 0,
-    inProgressInspections: 0,
-    completedInspections: 0,
-    openNonConformities: 0,
-    conformanceRate: 0,
-  });
+  const [summary, setSummary] = useState(EMPTY_SUMMARY);
 
   useEffect(() => {
+    if (isDemoSession()) {
+      setSummary(DEMO_SUMMARY);
+      return;
+    }
     dashboardApi
       .getSummary()
       .then((data) => {
@@ -27,6 +70,11 @@ export const AnalyticsPage = () => {
       });
   }, []);
 
+  const totalInspections =
+    summary.totalInspections ??
+    (summary.scheduledInspections + summary.inProgressInspections + summary.completedInspections);
+  const conformance = summary.conformanceRate != null ? Number(summary.conformanceRate) : 0;
+
   return (
     <>
       <div className="page-title-wrap">
@@ -34,19 +82,19 @@ export const AnalyticsPage = () => {
         <p>Métricas consolidadas de eficiência e acompanhamento do banco de dados.</p>
       </div>
 
-      <div className="stats-grid" style={{ marginBottom: '2rem' }}>
+      <div className="stats-grid">
         <StatCard
           title="Total de Inspeções"
-          value={String(summary.totalInspections ?? (summary.scheduledInspections + summary.inProgressInspections + summary.completedInspections))}
+          value={String(totalInspections)}
           footerText={`${summary.scheduledInspections || 0} agendadas`}
           type="positive"
           icon="📋"
         />
         <StatCard
           title="Conformidade Geral"
-          value={`${summary.conformanceRate != null ? Number(summary.conformanceRate).toFixed(1) : '0.0'}%`}
+          value={`${conformance.toFixed(1)}%`}
           footerText="Índice em tempo real"
-          type={summary.conformanceRate >= 90 ? 'positive' : 'warning'}
+          type={conformance >= 90 ? 'positive' : 'warning'}
           icon="📈"
         />
         <StatCard
@@ -65,48 +113,43 @@ export const AnalyticsPage = () => {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-        <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '1.5rem' }}>
-          <h3 style={{ margin: '0 0 1rem 0', color: '#f8fafc', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Building2 size={20} color="#38bdf8" />
+      <div className="analytics-grid">
+        <section className="panel analytics-card">
+          <h3>
+            <Building2 size={20} color="#2d7df1" />
             Infraestrutura Operacional
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
-              <span style={{ color: '#94a3b8' }}>Clientes Atendidos</span>
-              <strong style={{ color: '#fff' }}>{summary.totalClients}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
-              <span style={{ color: '#94a3b8' }}>Plantas & Locais Ativos</span>
-              <strong style={{ color: '#fff' }}>{summary.activeSites}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.5rem' }}>
-              <span style={{ color: '#94a3b8' }}>Equipamentos Monitorados</span>
-              <strong style={{ color: '#fff' }}>{summary.totalEquipments}</strong>
-            </div>
-          </div>
-        </div>
+          <InfoRow label="Clientes Atendidos" value={summary.totalClients} />
+          <InfoRow label="Plantas & Locais Ativos" value={summary.activeSites} />
+          <InfoRow label="Equipamentos Monitorados" value={summary.totalEquipments} last />
+        </section>
 
-        <div style={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '1.5rem' }}>
-          <h3 style={{ margin: '0 0 1rem 0', color: '#f8fafc', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Activity size={20} color="#10b981" />
+        <section className="panel analytics-card">
+          <h3>
+            <Activity size={20} color="#1d9a63" />
             Fluxo de Inspeções
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
-              <span style={{ color: '#94a3b8' }}>Agendadas / Pendentes</span>
-              <strong style={{ color: '#f59e0b' }}>{summary.scheduledInspections}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #334155', paddingBottom: '0.5rem' }}>
-              <span style={{ color: '#94a3b8' }}>Em Execução no Campo</span>
-              <strong style={{ color: '#38bdf8' }}>{summary.inProgressInspections}</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '0.5rem' }}>
-              <span style={{ color: '#94a3b8' }}>Finalizadas & Revisadas</span>
-              <strong style={{ color: '#10b981' }}>{summary.completedInspections}</strong>
-            </div>
+          <FlowBar label="Agendadas / Pendentes" value={summary.scheduledInspections} total={totalInspections} color="#d79b14" />
+          <FlowBar label="Em Execução no Campo" value={summary.inProgressInspections} total={totalInspections} color="#2d7df1" />
+          <FlowBar label="Finalizadas & Revisadas" value={summary.completedInspections} total={totalInspections} color="#1d9a63" />
+        </section>
+
+        <section className="panel analytics-card">
+          <h3>
+            <Gauge size={20} color="#0d3f85" />
+            Conformes × Não conformes
+          </h3>
+          <div className="split-bar" role="img" aria-label={`${conformance.toFixed(1)}% conformes`}>
+            <div className="split-ok" style={{ width: `${Math.min(conformance, 100)}%` }} />
+            <div className="split-nok" style={{ width: `${Math.max(100 - conformance, 0)}%` }} />
           </div>
-        </div>
+          <div className="split-legend">
+            <span><i className="dot ok" /> Conformes {conformance.toFixed(1)}%</span>
+            <span><i className="dot nok" /> Não conformes {Math.max(100 - conformance, 0).toFixed(1)}%</span>
+          </div>
+          <InfoRow label="Não conformidades abertas" value={summary.openNonConformities || 0} color="#d94b4b" />
+          <InfoRow label="Equipamentos críticos" value={summary.criticalEquipments || 0} color="#d79b14" last />
+        </section>
       </div>
     </>
   );
