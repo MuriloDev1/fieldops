@@ -57,28 +57,28 @@ ON CONFLICT (id) DO NOTHING;
 -- -----------------------------------------------------------------------------
 INSERT INTO inspection_templates (id, title, description, category, status, current_version, created_by)
 VALUES 
-    ('t1111111-1111-1111-1111-111111111111', 'Inspeção de Compressores Industriais', 'Checklist periódico de rotina e segurança para compressores', 'Compressores', 'ACTIVE', 1, '90000000-0000-0000-0000-000000000002')
+    ('d1111111-1111-1111-1111-111111111111', 'Inspeção de Compressores Industriais', 'Checklist periódico de rotina e segurança para compressores', 'Compressores', 'ACTIVE', 1, '90000000-0000-0000-0000-000000000002')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO inspection_template_versions (id, template_id, version_number, title_snapshot, description_snapshot, published_by, published_at, active_for_new_inspections)
 VALUES 
-    ('v1111111-1111-1111-1111-111111111111', 't1111111-1111-1111-1111-111111111111', 1, 'Inspeção de Compressores Industriais', 'Checklist periódico de rotina e segurança para compressores', '90000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, true)
+    ('d2222222-1111-1111-1111-111111111111', 'd1111111-1111-1111-1111-111111111111', 1, 'Inspeção de Compressores Industriais', 'Checklist periódico de rotina e segurança para compressores', '90000000-0000-0000-0000-000000000002', CURRENT_TIMESTAMP, true)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO template_sections (id, template_version_id, title, description, display_order)
 VALUES 
-    ('s1111111-1111-1111-1111-111111111111', 'v1111111-1111-1111-1111-111111111111', 'Identificação e Condições Gerais', 'Checagens visuais do ambiente e carcaça', 1),
-    ('s2222222-2222-2222-2222-222222222222', 'v1111111-1111-1111-1111-111111111111', 'Sistema Mecânico e Lubrificação', 'Níveis de óleo, vibração e ruído', 2),
-    ('s3333333-3333-3333-3333-333333333333', 'v1111111-1111-1111-1111-111111111111', 'Sistema Elétrico e Segurança', 'Painel de controle, cabos e botão de emergência', 3)
+    ('d3111111-1111-1111-1111-111111111111', 'd2222222-1111-1111-1111-111111111111', 'Identificação e Condições Gerais', 'Checagens visuais do ambiente e carcaça', 1),
+    ('d3222222-2222-2222-2222-222222222222', 'd2222222-1111-1111-1111-111111111111', 'Sistema Mecânico e Lubrificação', 'Níveis de óleo, vibração e ruído', 2),
+    ('d3333333-3333-3333-3333-333333333333', 'd2222222-1111-1111-1111-111111111111', 'Sistema Elétrico e Segurança', 'Painel de controle, cabos e botão de emergência', 3)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO template_items (id, section_id, code, title, description, response_type, required, observation_required_on_failure, evidence_required_on_failure, display_order)
 VALUES 
-    ('i1111111-1111-1111-1111-111111111111', 's1111111-1111-1111-1111-111111111111', 'ITEM-01', 'A proteção do equipamento está íntegra?', 'Verifique trincas, ausência de parafusos e partes soltas.', 'CONFORMITY', true, true, true, 1),
-    ('i2222222-2222-2222-2222-222222222222', 's1111111-1111-1111-1111-111111111111', 'ITEM-02', 'A área ao redor está limpa e desobstruída?', 'Garantir acesso rápido e ventilação adequada.', 'BOOLEAN', true, false, false, 2),
-    ('i3333333-3333-3333-3333-333333333333', 's2222222-2222-2222-2222-222222222222', 'ITEM-03', 'O nível de óleo está na faixa indicada no visor?', 'Verificar visor de nível de óleo com compressor parado.', 'CONFORMITY', true, true, true, 3),
-    ('i4444444-4444-4444-4444-444444444444', 's2222222-2222-2222-2222-222222222222', 'ITEM-04', 'Qual a pressão atual indicada no manômetro (bar)?', 'Informar o valor numérico em bar.', 'NUMBER', true, false, false, 4),
-    ('i5555555-5555-5555-5555-555555555555', 's3333333-3333-3333-3333-333333333333', 'ITEM-05', 'O botão de parada de emergência está operante?', 'Testar atuação física e destravamento.', 'CONFORMITY', true, true, true, 5)
+    ('d4111111-1111-1111-1111-111111111111', 'd3111111-1111-1111-1111-111111111111', 'ITEM-01', 'A proteção do equipamento está íntegra?', 'Verifique trincas, ausência de parafusos e partes soltas.', 'CONFORMITY', true, true, true, 1),
+    ('d4222222-2222-2222-2222-222222222222', 'd3111111-1111-1111-1111-111111111111', 'ITEM-02', 'A área ao redor está limpa e desobstruída?', 'Garantir acesso rápido e ventilação adequada.', 'BOOLEAN', true, false, false, 2),
+    ('d4333333-3333-3333-3333-333333333333', 'd3222222-2222-2222-2222-222222222222', 'ITEM-03', 'O nível de óleo está na faixa indicada no visor?', 'Verificar visor de nível de óleo com compressor parado.', 'CONFORMITY', true, true, true, 3),
+    ('d4444444-4444-4444-4444-444444444444', 'd3222222-2222-2222-2222-222222222222', 'ITEM-04', 'Qual a pressão atual indicada no manômetro (bar)?', 'Informar o valor numérico em bar.', 'NUMBER', true, false, false, 4),
+    ('d4555555-5555-5555-5555-555555555555', 'd3333333-3333-3333-3333-333333333333', 'ITEM-05', 'O botão de parada de emergência está operante?', 'Testar atuação física e destravamento.', 'CONFORMITY', true, true, true, 5)
 ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
@@ -87,19 +87,19 @@ ON CONFLICT (id) DO NOTHING;
 INSERT INTO inspections (id, template_version_id, client_id, site_id, equipment_id, technician_id, supervisor_id, created_by, title, instructions, priority, status, scheduled_for, started_at_server, submitted_at_server, completed_at_device)
 VALUES 
     -- 6.1 ASSIGNED (Atribuída / Agendada)
-    ('c1111111-1111-1111-1111-111111111111', 'v1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'e1111111-1111-1111-1111-111111111111', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Preventiva Bomba Submersa 04', 'Verificar vedação e temperatura dos mancais.', 'HIGH', 'ASSIGNED', CURRENT_TIMESTAMP + INTERVAL '2 days', NULL, NULL, NULL),
+    ('c1111111-1111-1111-1111-111111111111', 'd2222222-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a1111111-1111-1111-1111-111111111111', 'e1111111-1111-1111-1111-111111111111', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Preventiva Bomba Submersa 04', 'Verificar vedação e temperatura dos mancais.', 'HIGH', 'ASSIGNED', CURRENT_TIMESTAMP + INTERVAL '2 days', NULL, NULL, NULL),
 
     -- 6.2 IN_PROGRESS (Em Andamento)
-    ('c2222222-2222-2222-2222-222222222222', 'v1111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'a4444444-4444-4444-4444-444444444444', 'e4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Compressor Principal Atlas Copco', 'Checagem de filtros e ruídos com medidor acústico.', 'CRITICAL', 'IN_PROGRESS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '2 hours', NULL, NULL),
+    ('c2222222-2222-2222-2222-222222222222', 'd2222222-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'a4444444-4444-4444-4444-444444444444', 'e4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Compressor Principal Atlas Copco', 'Checagem de filtros e ruídos com medidor acústico.', 'CRITICAL', 'IN_PROGRESS', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP - INTERVAL '2 hours', NULL, NULL),
 
     -- 6.3 SUBMITTED (Em Revisão com Não Conformidade gerada)
-    ('c3333333-3333-3333-3333-333333333333', 'v1111111-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333333', 'a5555555-5555-5555-5555-555555555555', 'e5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Auditoria Elétrica Painel Leste Klabin', 'Verificar aquecimento térmico nos barramentos principais.', 'HIGH', 'SUBMITTED', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP - INTERVAL '6 hours', CURRENT_TIMESTAMP - INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '3 hours'),
+    ('c3333333-3333-3333-3333-333333333333', 'd2222222-1111-1111-1111-111111111111', '33333333-3333-3333-3333-333333333333', 'a5555555-5555-5555-5555-555555555555', 'e5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Auditoria Elétrica Painel Leste Klabin', 'Verificar aquecimento térmico nos barramentos principais.', 'HIGH', 'SUBMITTED', CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP - INTERVAL '6 hours', CURRENT_TIMESTAMP - INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '3 hours'),
 
     -- 6.4 APPROVED (Aprovada)
-    ('c4444444-4444-4444-4444-444444444444', 'v1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a2222222-2222-2222-2222-222222222222', 'e2222222-2222-2222-2222-222222222222', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Periódica Válvula de Pressão B', 'Calibração e teste de vedação em bancada.', 'MEDIUM', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '2 hours', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '4 hours', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '4 hours'),
+    ('c4444444-4444-4444-4444-444444444444', 'd2222222-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a2222222-2222-2222-2222-222222222222', 'e2222222-2222-2222-2222-222222222222', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Periódica Válvula de Pressão B', 'Calibração e teste de vedação em bancada.', 'MEDIUM', 'APPROVED', CURRENT_TIMESTAMP - INTERVAL '3 days', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '2 hours', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '4 hours', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '4 hours'),
 
     -- 6.5 REJECTED (Reprovada com Justificativa)
-    ('c5555555-5555-5555-5555-555555555555', 'v1111111-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a3333333-3333-3333-3333-333333333333', 'e3333333-3333-3333-3333-333333333333', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Correia Transportadora 2', 'Verificação de alinhamento e roletes de carga.', 'HIGH', 'REJECTED', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '1 hour', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '3 hours')
+    ('c5555555-5555-5555-5555-555555555555', 'd2222222-1111-1111-1111-111111111111', '11111111-1111-1111-1111-111111111111', 'a3333333-3333-3333-3333-333333333333', 'e3333333-3333-3333-3333-333333333333', '90000000-0000-0000-0000-000000000003', '90000000-0000-0000-0000-000000000002', '90000000-0000-0000-0000-000000000002', 'Inspeção Correia Transportadora 2', 'Verificação de alinhamento e roletes de carga.', 'HIGH', 'REJECTED', CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '1 hour', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '3 hours', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '3 hours')
 ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
@@ -124,16 +124,16 @@ ON CONFLICT (id) DO NOTHING;
 -- -----------------------------------------------------------------------------
 INSERT INTO inspection_responses (id, inspection_id, inspection_item_id, conformity, observation, answered_by)
 VALUES 
-    ('r3333333-3333-3333-3333-333333333331', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333331', 'CONFORMING', 'Atuação mecânica e elétrica testada com sucesso.', '90000000-0000-0000-0000-000000000003'),
-    ('r3333333-3333-3333-3333-333333333332', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333332', 'NON_CONFORMING', 'Ponto quente de 78°C detectado na fase S do barramento primário.', '90000000-0000-0000-0000-000000000003'),
-    ('r4444444-4444-4444-4444-444444444441', 'c4444444-4444-4444-4444-444444444444', 'b4444444-4444-4444-4444-444444444441', 'CONFORMING', 'Conforme especificação do fabricante.', '90000000-0000-0000-0000-000000000003'),
-    ('r5555555-5555-5555-5555-555555555551', 'c5555555-5555-5555-5555-555555555555', 'b5555555-5555-5555-5555-555555555551', 'NON_CONFORMING', 'Proteção lateral com folga excessiva e parafuso espanado.', '90000000-0000-0000-0000-000000000003')
+    ('d6333333-3333-3333-3333-333333333331', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333331', 'CONFORMING', 'Atuação mecânica e elétrica testada com sucesso.', '90000000-0000-0000-0000-000000000003'),
+    ('d6333333-3333-3333-3333-333333333332', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333332', 'NON_CONFORMING', 'Ponto quente de 78°C detectado na fase S do barramento primário.', '90000000-0000-0000-0000-000000000003'),
+    ('d6444444-4444-4444-4444-444444444441', 'c4444444-4444-4444-4444-444444444444', 'b4444444-4444-4444-4444-444444444441', 'CONFORMING', 'Conforme especificação do fabricante.', '90000000-0000-0000-0000-000000000003'),
+    ('d6555555-5555-5555-5555-555555555551', 'c5555555-5555-5555-5555-555555555555', 'b5555555-5555-5555-5555-555555555551', 'NON_CONFORMING', 'Proteção lateral com folga excessiva e parafuso espanado.', '90000000-0000-0000-0000-000000000003')
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO non_conformities (id, inspection_id, inspection_item_id, response_id, title, description, severity, status, created_by)
 VALUES 
-    ('nc333333-3333-3333-3333-333333333331', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333332', 'r3333333-3333-3333-3333-333333333332', 'Sobreaquecimento em barramento primário do Painel Leste', 'Temperatura de 78°C acima do limite operacional seguro de 65°C.', 'HIGH', 'OPEN', '90000000-0000-0000-0000-000000000003'),
-    ('nc555555-5555-5555-5555-555555555551', 'c5555555-5555-5555-5555-555555555555', 'b5555555-5555-5555-5555-555555555551', 'r5555555-5555-5555-5555-555555555551', 'Proteção mecânica solta na correia transportadora', 'Risco de desprendimento durante operação de carregamento de minério.', 'CRITICAL', 'OPEN', '90000000-0000-0000-0000-000000000003')
+    ('d5333333-3333-3333-3333-333333333331', 'c3333333-3333-3333-3333-333333333333', 'b3333333-3333-3333-3333-333333333332', 'd6333333-3333-3333-3333-333333333332', 'Sobreaquecimento em barramento primário do Painel Leste', 'Temperatura de 78°C acima do limite operacional seguro de 65°C.', 'HIGH', 'OPEN', '90000000-0000-0000-0000-000000000003'),
+    ('d5555555-5555-5555-5555-555555555551', 'c5555555-5555-5555-5555-555555555555', 'b5555555-5555-5555-5555-555555555551', 'd6555555-5555-5555-5555-555555555551', 'Proteção mecânica solta na correia transportadora', 'Risco de desprendimento durante operação de carregamento de minério.', 'CRITICAL', 'OPEN', '90000000-0000-0000-0000-000000000003')
 ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
@@ -141,8 +141,8 @@ ON CONFLICT (id) DO NOTHING;
 -- -----------------------------------------------------------------------------
 INSERT INTO inspection_reviews (id, inspection_id, reviewer_id, decision, comments, reviewed_at, review_cycle)
 VALUES 
-    ('rev44444-4444-4444-4444-444444444444', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000002', 'APPROVED', 'Inspeção aprovada. Todos os parâmetros operacionais em conformidade.', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '6 hours', 1),
-    ('rev55555-5555-5555-5555-555555555555', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000002', 'REJECTED', 'Reprovada por ausência de foto detalhada da folga mecânica. Favor refazer evidência.', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '5 hours', 1)
+    ('d7444444-4444-4444-4444-444444444444', 'c4444444-4444-4444-4444-444444444444', '90000000-0000-0000-0000-000000000002', 'APPROVED', 'Inspeção aprovada. Todos os parâmetros operacionais em conformidade.', CURRENT_TIMESTAMP - INTERVAL '3 days' + INTERVAL '6 hours', 1),
+    ('d7555555-5555-5555-5555-555555555555', 'c5555555-5555-5555-5555-555555555555', '90000000-0000-0000-0000-000000000002', 'REJECTED', 'Reprovada por ausência de foto detalhada da folga mecânica. Favor refazer evidência.', CURRENT_TIMESTAMP - INTERVAL '5 days' + INTERVAL '5 hours', 1)
 ON CONFLICT (id) DO NOTHING;
 
 -- -----------------------------------------------------------------------------
