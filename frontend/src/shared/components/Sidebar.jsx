@@ -39,7 +39,11 @@ export const Sidebar = ({ onNavigate }) => {
   return (
     <aside className="sidebar">
       <div className="brand-box">
-        <div className="brand-logo">OpsControl Pro</div>
+        <div className="brand-mark" aria-hidden="true">F</div>
+        <div className="brand-text">
+          <div className="brand-logo">OpsControl Pro</div>
+          <span className="brand-sub">FieldOps Admin</span>
+        </div>
       </div>
 
       <nav className="side-nav" aria-label="Menu lateral">
@@ -73,31 +77,22 @@ export const Sidebar = ({ onNavigate }) => {
           <UserRound size={20} />
         </div>
 
-        <div style={{ flex: 1 }}>
+        <div className="profile-meta">
           <div className="profile-name">
-            {user?.name || 'Supervisor Profile'}
+            {user?.name || 'Perfil do Supervisor'}
           </div>
 
           <div className="profile-role">
-            {user?.role || 'Regional Supervisor'}
+            {user?.role || 'Supervisor Regional'}
           </div>
         </div>
 
         <button
           type="button"
+          className="logout-button"
           onClick={logout}
           title="Sair"
           aria-label="Sair"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#94a3b8',
-            cursor: 'pointer',
-            padding: '0.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
         >
           <LogOut size={19} strokeWidth={1.8} />
         </button>

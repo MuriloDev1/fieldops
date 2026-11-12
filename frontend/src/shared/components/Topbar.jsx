@@ -23,7 +23,8 @@ export const Topbar = ({ onOpenMobileMenu }) => {
 
         <input
           type="text"
-          placeholder="Search operations, teams, or reports..."
+          placeholder="Buscar operações, equipes ou relatórios..."
+          aria-label="Buscar"
         />
       </div>
 
