@@ -1,4 +1,7 @@
 import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useToast } from '../core/context/ToastContext';
+import { useAuth } from '../core/context/AuthContext';
 import Button from '../components/Button';
 import Badge from '../components/Badge';
 import Input from '../components/Input';
@@ -10,7 +13,18 @@ const statusTone = {
   pendente: 'warning',
 };
 
-export default function InspectionWorkflowPage({ inspection, onComplete, onBack }) {
+export default function InspectionWorkflowPage() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const { user } = useAuth();
+  const inspection = location.state?.inspection;
+  const backPath = location.state?.from || '/my-inspections';
+  const onComplete = () => {
+    toast.success('Inspeção finalizada e registrada no histórico.');
+    navigate(backPath, { replace: true });
+  };
+
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [notes, setNotes] = useState('');
@@ -70,7 +84,7 @@ export default function InspectionWorkflowPage({ inspection, onComplete, onBack 
           </div>
           <div className="summary-card">
             <label>Técnico</label>
-            <strong>{inspection?.technician ?? 'Ana Costa'}</strong>
+            <strong>{inspection?.technician ?? user?.name ?? 'Ana Costa'}</strong>
           </div>
           <div className="summary-card">
             <label>Data</label>
@@ -174,7 +188,7 @@ export default function InspectionWorkflowPage({ inspection, onComplete, onBack 
       </div>
 
       <div className="inspection-actions">
-        <Button variant="secondary" onClick={prevQuestion} disabled={index === 0}>Voltar</Button>
+        <Button variant="secondary" onClick={index === 0 ? () => navigate(backPath) : prevQuestion}>{index === 0 ? 'Cancelar' : 'Voltar'}</Button>
         <Button onClick={nextQuestion}>{index < inspectionQuestions.length - 1 ? 'Próxima pergunta' : 'Resumo da inspeção'}</Button>
       </div>
     </div>

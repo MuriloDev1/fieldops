@@ -1,40 +1,12 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../core/context/AuthContext';
 
-import {
-  LayoutDashboard,
-  Building2,
-  MapPin,
-  Settings2,
-  ClipboardList,
-  Users,
-  ChartNoAxesCombined,
-  FileText,
-  Settings,
-  LogOut,
-  UserRound,
-  ListChecks,
-  AlertTriangle,
-  History
-} from 'lucide-react';
-
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/clients', label: 'Clientes', icon: Building2 },
-  { path: '/locations', label: 'Locais & Plantas', icon: MapPin },
-  { path: '/equipment', label: 'Equipamentos', icon: Settings2 },
-  { path: '/templates', label: 'Modelos Checklist', icon: ListChecks },
-  { path: '/operations', label: 'Operações', icon: ClipboardList },
-  { path: '/non-conformities', label: 'Não Conformidades', icon: AlertTriangle },
-  { path: '/history', label: 'Histórico & Auditoria', icon: History },
-  { path: '/team', label: 'Equipe de Campo', icon: Users },
-  { path: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
-  { path: '/reports', label: 'Relatórios', icon: FileText },
-  { path: '/settings', label: 'Configurações', icon: Settings },
-];
+import { LogOut, UserRound } from 'lucide-react';
+import { getNavItems, ROLE_LABELS, normalizeRole } from '../../core/permissions';
 
 export const Sidebar = ({ onNavigate }) => {
   const { user, logout } = useAuth();
+  const navItems = getNavItems(user?.role);
 
   return (
     <aside className="sidebar">
@@ -83,7 +55,7 @@ export const Sidebar = ({ onNavigate }) => {
           </div>
 
           <div className="profile-role">
-            {user?.role || 'Supervisor Regional'}
+            {ROLE_LABELS[normalizeRole(user?.role)]}
           </div>
         </div>
 
