@@ -160,6 +160,7 @@ export const TeamManagementPage = () => {
       </div>
 
       <DataTable
+        loading={loading}
         title="Técnicos de Campo"
         columns={columns}
         data={users}
