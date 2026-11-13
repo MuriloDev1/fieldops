@@ -89,7 +89,7 @@ export const LocationsPage = () => {
       </div>
 
       <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <label style={{ color: '#cbd5e1', fontSize: '0.875rem', fontWeight: 500 }}>
+        <label style={{ color: '#586779', fontSize: '0.875rem', fontWeight: 500 }}>
           Filtrar por Cliente:
         </label>
         <select
@@ -97,10 +97,10 @@ export const LocationsPage = () => {
           onChange={(e) => setSelectedCustomerId(e.target.value)}
           style={{
             padding: '0.5rem 1rem',
-            backgroundColor: '#1e293b',
-            border: '1px solid #334155',
+            backgroundColor: '#ffffff',
+            border: '1px solid #dfe7f1',
             borderRadius: '0.375rem',
-            color: '#ffffff',
+            color: '#1d2736',
             fontSize: '0.875rem'
           }}
         >
@@ -129,14 +129,14 @@ export const LocationsPage = () => {
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Cliente Vinculado *
             </label>
             <select
               value={formData.customerId}
               onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
               required
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             >
               {customers.map((cust) => (
                 <option key={cust.id} value={cust.id}>{cust.name}</option>
@@ -145,7 +145,7 @@ export const LocationsPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Nome da Planta / Unidade *
             </label>
             <input
@@ -154,54 +154,54 @@ export const LocationsPage = () => {
               placeholder="Ex: Refinaria Central - Galpão B"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <div style={{ flex: 2 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>Cidade *</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>Cidade *</label>
               <input
                 type="text"
                 required
                 placeholder="Ex: Macaé"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>UF *</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>UF *</label>
               <input
                 type="text"
                 required
                 placeholder="RJ"
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>Endereço Completo</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>Endereço Completo</label>
             <input
               type="text"
               placeholder="Rua, Número, Bairro, CEP"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>Supervisor de Campo</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>Supervisor de Campo</label>
             <input
               type="text"
               placeholder="Nome do supervisor responsável"
               value={formData.supervisor}
               onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
