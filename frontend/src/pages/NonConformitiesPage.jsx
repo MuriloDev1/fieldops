@@ -3,7 +3,6 @@ import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
 import { StatusBadge } from '../shared/components/StatusBadge';
 import { nonConformitiesApi } from '../core/services/api';
-import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { useToast } from '../core/context/ToastContext';
 
 const severityConfig = {
@@ -44,7 +43,7 @@ export const NonConformitiesPage = () => {
 
   const handleUpdateStatus = async (id, newStatus) => {
     try {
-      const updated = await nonConformitiesApi.updateStatus(id, newStatus);
+      await nonConformitiesApi.updateStatus(id, newStatus);
       setItems((prev) => prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item)));
       if (selectedItem?.id === id) {
         setSelectedItem((prev) => ({ ...prev, status: newStatus }));
