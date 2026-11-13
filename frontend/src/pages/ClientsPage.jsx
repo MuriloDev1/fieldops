@@ -79,7 +79,7 @@ export const ClientsPage = () => {
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Razão Social / Nome Fantasia *
             </label>
             <input
@@ -88,12 +88,12 @@ export const ClientsPage = () => {
               placeholder="Ex: Petrobras S.A."
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               CNPJ *
             </label>
             <input
@@ -102,12 +102,12 @@ export const ClientsPage = () => {
               placeholder="00.000.000/0001-00"
               value={formData.cnpj}
               onChange={(e) => setFormData({ ...formData, cnpj: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               E-mail de Contato *
             </label>
             <input
@@ -116,12 +116,12 @@ export const ClientsPage = () => {
               placeholder="contato@empresa.com"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Telefone
             </label>
             <input
@@ -129,7 +129,7 @@ export const ClientsPage = () => {
               placeholder="(00) 00000-0000"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
