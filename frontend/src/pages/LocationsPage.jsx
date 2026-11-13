@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { sitesApi, clientsApi } from '../core/services/api';
 import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
+import { useToast } from '../core/context/ToastContext';
 
 export const LocationsPage = () => {
+  const toast = useToast();
   const [locations, setLocations] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -67,7 +69,7 @@ export const LocationsPage = () => {
       setFormData({ name: '', customerId: customers[0]?.id || '', city: '', state: '', address: '', supervisor: '' });
       setIsDrawerOpen(false);
     } catch (err) {
-      alert('Erro ao salvar local no banco de dados: ' + (err?.response?.data?.message || err.message));
+      toast.error('Erro ao salvar local no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -119,7 +121,7 @@ export const LocationsPage = () => {
         data={filteredLocations}
         totalCount={filteredLocations.length}
         currentPage={1}
-        onRowAction={(row) => alert(`Planta: ${row.name}\nEndereço: ${row.address || row.addressLine}`)}
+        onRowAction={(row) => toast.info(`Planta: ${row.name} — Endereço: ${row.address || row.addressLine}`)}
       />
 
       <ModalDrawer
