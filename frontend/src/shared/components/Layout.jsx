@@ -4,12 +4,14 @@ import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 import { BottomNav } from './BottomNav';
 import { useAuth } from '../../core/context/AuthContext';
+import { usePageTitle } from '../../core/usePageTitle';
 import { canAccess, getHomePath, isKnownPath } from '../../core/permissions';
 
 export const Layout = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user } = useAuth();
   const { pathname } = useLocation();
+  usePageTitle();
 
   useEffect(() => {
     setMobileMenuOpen(false);
