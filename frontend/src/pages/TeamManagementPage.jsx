@@ -88,7 +88,7 @@ export const TeamManagementPage = () => {
               width: '34px',
               height: '34px',
               borderRadius: '50%',
-              backgroundColor: '#0284c7',
+              backgroundColor: '#0d3f85',
               color: '#fff',
               display: 'flex',
               alignItems: 'center',
@@ -100,8 +100,8 @@ export const TeamManagementPage = () => {
             {val ? val.split(' ').map((n) => n[0]).slice(0, 2).join('') : 'U'}
           </div>
           <div>
-            <strong style={{ color: '#f8fafc', display: 'block' }}>{val}</strong>
-            <small style={{ color: '#94a3b8' }}>{row.email}</small>
+            <strong style={{ color: '#1d2736', display: 'block' }}>{val}</strong>
+            <small style={{ color: '#627087' }}>{row.email}</small>
           </div>
         </div>
       ),
@@ -143,7 +143,7 @@ export const TeamManagementPage = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            backgroundColor: '#0284c7',
+            backgroundColor: '#0d3f85',
             color: '#fff',
             border: 'none',
             borderRadius: '6px',
@@ -174,7 +174,7 @@ export const TeamManagementPage = () => {
       >
         <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Nome Completo *
             </label>
             <input
@@ -186,16 +186,16 @@ export const TeamManagementPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               E-mail Corporativo *
             </label>
             <input
@@ -207,16 +207,16 @@ export const TeamManagementPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Senha de Acesso *
             </label>
             <input
@@ -228,16 +228,16 @@ export const TeamManagementPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Papel / Perfil *
             </label>
             <select
@@ -246,10 +246,10 @@ export const TeamManagementPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             >
               <option value="TECHNICIAN">Técnico de Campo</option>
@@ -259,7 +259,7 @@ export const TeamManagementPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Telefone de Contato
             </label>
             <input
@@ -270,10 +270,10 @@ export const TeamManagementPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             />
           </div>
@@ -285,8 +285,8 @@ export const TeamManagementPage = () => {
               style={{
                 flex: 1,
                 padding: '0.625rem',
-                backgroundColor: '#334155',
-                color: '#fff',
+                backgroundColor: '#dfe7f1',
+                color: '#1d2736',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
@@ -299,7 +299,7 @@ export const TeamManagementPage = () => {
               style={{
                 flex: 1,
                 padding: '0.625rem',
-                backgroundColor: '#0284c7',
+                backgroundColor: '#0d3f85',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '6px',
@@ -321,10 +321,10 @@ export const TeamManagementPage = () => {
       >
         {selectedUser && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ backgroundColor: '#0f172a', padding: '1rem', borderRadius: '8px', border: '1px solid #334155' }}>
-              <h3 style={{ margin: '0 0 0.5rem 0', color: '#fff', fontSize: '1.15rem' }}>{selectedUser.name}</h3>
-              <p style={{ margin: '0 0 0.5rem 0', color: '#38bdf8' }}>{roleLabels[selectedUser.role] || selectedUser.role}</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', color: '#94a3b8', fontSize: '0.875rem' }}>
+            <div style={{ backgroundColor: '#f7f9fc', padding: '1rem', borderRadius: '8px', border: '1px solid #dfe7f1' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: '#1d2736', fontSize: '1.15rem' }}>{selectedUser.name}</h3>
+              <p style={{ margin: '0 0 0.5rem 0', color: '#2d7df1' }}>{roleLabels[selectedUser.role] || selectedUser.role}</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', color: '#627087', fontSize: '0.875rem' }}>
                 <span>✉ {selectedUser.email}</span>
                 <span>📞 {selectedUser.phone || 'Sem telefone cadastrado'}</span>
                 <span>📍 Região: {selectedUser.region || 'Refinaria Central'}</span>
@@ -332,8 +332,8 @@ export const TeamManagementPage = () => {
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid #334155', paddingTop: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.5rem' }}>
+            <div style={{ borderTop: '1px solid #dfe7f1', paddingTop: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.5rem' }}>
                 Ações Administrativas
               </label>
               <button
@@ -342,8 +342,8 @@ export const TeamManagementPage = () => {
                 style={{
                   width: '100%',
                   padding: '0.625rem',
-                  backgroundColor: selectedUser.status === 'ACTIVE' ? '#ef4444' : '#10b981',
-                  color: '#fff',
+                  backgroundColor: selectedUser.status === 'ACTIVE' ? '#d94b4b' : '#1d9a63',
+                  color: '#1d2736',
                   border: 'none',
                   borderRadius: '6px',
                   fontWeight: 600,
