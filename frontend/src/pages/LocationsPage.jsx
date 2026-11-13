@@ -19,6 +19,8 @@ export const LocationsPage = () => {
     supervisor: ''
   });
 
+  const [loading, setLoading] = useState(true);
+
   const loadData = async () => {
     try {
       const [sitesData, clientsData] = await Promise.all([
@@ -35,6 +37,8 @@ export const LocationsPage = () => {
       }
     } catch (err) {
       console.error('Erro ao carregar locais do banco:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,6 +120,7 @@ export const LocationsPage = () => {
       </div>
 
       <DataTable
+        loading={loading}
         title="Plantas Operacionais"
         columns={columns}
         data={filteredLocations}
