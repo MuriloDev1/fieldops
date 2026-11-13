@@ -71,6 +71,7 @@ export const ClientsPage = () => {
         data={customers}
         totalCount={customers.length}
         currentPage={1}
+        loading={loading}
         onRowAction={(row) => toast.info(`Cliente: ${row.name} — CNPJ: ${row.cnpj || row.document}`)}
       />
 
