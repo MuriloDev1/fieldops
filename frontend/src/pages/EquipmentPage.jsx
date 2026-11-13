@@ -76,8 +76,8 @@ export const EquipmentPage = () => {
       key: 'qrCodeId',
       render: (val, row) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <QrCode size={20} color="#38bdf8" />
-          <code style={{ fontSize: '0.75rem', backgroundColor: '#0f172a', padding: '0.2rem 0.4rem', borderRadius: '0.25rem', color: '#38bdf8' }}>
+          <QrCode size={20} color="#2d7df1" />
+          <code style={{ fontSize: '0.75rem', backgroundColor: '#f7f9fc', padding: '0.2rem 0.4rem', borderRadius: '0.25rem', color: '#2d7df1' }}>
             {val || row.qrCode || row.code}
           </code>
         </div>
@@ -164,7 +164,7 @@ export const EquipmentPage = () => {
 
       <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label style={{ color: '#cbd5e1', fontSize: '0.875rem', fontWeight: 500 }}>Cliente:</label>
+          <label style={{ color: '#586779', fontSize: '0.875rem', fontWeight: 500 }}>Cliente:</label>
           <select
             value={selectedCustomerId}
             onChange={(e) => {
@@ -173,10 +173,10 @@ export const EquipmentPage = () => {
             }}
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
+              backgroundColor: '#ffffff',
+              border: '1px solid #dfe7f1',
               borderRadius: '0.375rem',
-              color: '#ffffff',
+              color: '#1d2736',
               fontSize: '0.875rem'
             }}
           >
@@ -188,16 +188,16 @@ export const EquipmentPage = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <label style={{ color: '#cbd5e1', fontSize: '0.875rem', fontWeight: 500 }}>Planta / Local:</label>
+          <label style={{ color: '#586779', fontSize: '0.875rem', fontWeight: 500 }}>Planta / Local:</label>
           <select
             value={selectedLocationId}
             onChange={(e) => setSelectedLocationId(e.target.value)}
             style={{
               padding: '0.5rem 1rem',
-              backgroundColor: '#1e293b',
-              border: '1px solid #334155',
+              backgroundColor: '#ffffff',
+              border: '1px solid #dfe7f1',
               borderRadius: '0.375rem',
-              color: '#ffffff',
+              color: '#1d2736',
               fontSize: '0.875rem'
             }}
           >
@@ -227,24 +227,24 @@ export const EquipmentPage = () => {
       >
         {selectedEquipment && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ backgroundColor: '#0f172a', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #334155' }}>
+            <div style={{ backgroundColor: '#f7f9fc', padding: '1rem', borderRadius: '0.5rem', border: '1px solid #dfe7f1' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <code style={{ color: '#38bdf8', fontWeight: 700 }}>
+                <code style={{ color: '#2d7df1', fontWeight: 700 }}>
                   {selectedEquipment.qrCodeId || selectedEquipment.qrCode || selectedEquipment.code}
                 </code>
                 <StatusBadge status={selectedEquipment.status} />
               </div>
-              <h3 style={{ margin: '0 0 0.35rem 0', color: '#fff' }}>{selectedEquipment.name}</h3>
-              <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.875rem' }}>
+              <h3 style={{ margin: '0 0 0.35rem 0', color: '#1d2736' }}>{selectedEquipment.name}</h3>
+              <p style={{ margin: 0, color: '#627087', fontSize: '0.875rem' }}>
                 {selectedEquipment.type} • Nº Série: {selectedEquipment.serialNumber || '-'}
               </p>
-              <p style={{ margin: '0.35rem 0 0 0', color: '#cbd5e1', fontSize: '0.85rem' }}>
+              <p style={{ margin: '0.35rem 0 0 0', color: '#586779', fontSize: '0.85rem' }}>
                 {selectedEquipment.customerName || selectedEquipment.clientName} — {selectedEquipment.locationName || selectedEquipment.siteName || selectedEquipment.location}
               </p>
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
                 Atualizar Status Operacional
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -272,7 +272,7 @@ export const EquipmentPage = () => {
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Nome do Equipamento *
             </label>
             <input
@@ -281,18 +281,18 @@ export const EquipmentPage = () => {
               placeholder="Ex: Bomba Centrifuga X1"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Tipo de Equipamento *
             </label>
             <select
               value={formData.type}
               onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             >
               <option value="Bomba Hidráulica">Bomba Hidráulica</option>
               <option value="Válvula de Segurança">Válvula de Segurança</option>
@@ -304,14 +304,14 @@ export const EquipmentPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Cliente *
             </label>
             <select
               value={formData.customerId}
               onChange={(e) => handleCustomerChangeInForm(e.target.value)}
               required
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             >
               {customers.map((cust) => (
                 <option key={cust.id} value={cust.id}>{cust.name}</option>
@@ -320,14 +320,14 @@ export const EquipmentPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Planta / Local *
             </label>
             <select
               value={formData.locationId}
               onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
               required
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             >
               {availableFormLocations.map((loc) => (
                 <option key={loc.id} value={loc.id}>{loc.name}</option>
@@ -336,7 +336,7 @@ export const EquipmentPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Número de Série
             </label>
             <input
@@ -344,12 +344,12 @@ export const EquipmentPage = () => {
               placeholder="Ex: SN-8849-2023"
               value={formData.serialNumber}
               onChange={(e) => setFormData({ ...formData, serialNumber: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Identificador Exclusivo do QR Code (para App Mobile) *
             </label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -358,7 +358,7 @@ export const EquipmentPage = () => {
                 required
                 value={formData.qrCodeId}
                 onChange={(e) => setFormData({ ...formData, qrCodeId: e.target.value })}
-                style={{ flex: 1, padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#38bdf8', fontWeight: 'bold' }}
+                style={{ flex: 1, padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#2d7df1', fontWeight: 'bold' }}
               />
               <button
                 type="button"
@@ -371,22 +371,22 @@ export const EquipmentPage = () => {
             </div>
           </div>
 
-          <div style={{ backgroundColor: '#0f172a', padding: '1rem', borderRadius: '0.5rem', border: '1px dashed #334155', textAlign: 'center' }}>
+          <div style={{ backgroundColor: '#f7f9fc', padding: '1rem', borderRadius: '0.5rem', border: '1px dashed #dfe7f1', textAlign: 'center' }}>
             <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '0.5rem' }}>📱 QR</span>
-            <span style={{ color: '#38bdf8', fontWeight: 'bold', fontSize: '0.875rem' }}>{formData.qrCodeId}</span>
-            <p style={{ color: '#64748b', fontSize: '0.75rem', margin: '0.25rem 0 0 0' }}>
+            <span style={{ color: '#2d7df1', fontWeight: 'bold', fontSize: '0.875rem' }}>{formData.qrCodeId}</span>
+            <p style={{ color: '#627087', fontSize: '0.75rem', margin: '0.25rem 0 0 0' }}>
               Pronto para ser impresso e fixado no equipamento.
             </p>
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Status Operacional Inicial
             </label>
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             >
               <option value="OK">OK (Operativo)</option>
               <option value="Alta">Alta Atenção</option>
