@@ -13,6 +13,7 @@ import {
 } from '../core/services/api';
 import { InspectionTimeline } from '../shared/components/InspectionTimeline';
 import { Plus, CheckCircle2, XCircle, Play, Send } from 'lucide-react';
+import { useToast } from '../core/context/ToastContext';
 
 const priorityTones = {
   LOW: { label: 'Baixa', color: '#1d9a63', bg: 'rgba(16, 185, 129, 0.15)' },
@@ -34,6 +35,7 @@ const statusLabels = {
 };
 
 export const OperationsPage = () => {
+  const toast = useToast();
   const [inspections, setInspections] = useState([]);
   const [clients, setClients] = useState([]);
   const [sites, setSites] = useState([]);
@@ -136,7 +138,7 @@ export const OperationsPage = () => {
   const handleCreateInspection = async (e) => {
     e.preventDefault();
     if (!formData.clientId || !formData.siteId) {
-      alert('Selecione ao menos o Cliente e o Local.');
+      toast.error('Selecione ao menos o Cliente e o Local.');
       return;
     }
 
@@ -155,9 +157,9 @@ export const OperationsPage = () => {
       const created = await inspectionsApi.create(payload);
       setInspections((prev) => [created, ...prev]);
       setIsNewDrawerOpen(false);
-      alert('Inspeção agendada com sucesso com checklist vinculado!');
+      toast.success('Inspeção agendada com sucesso com checklist vinculado!');
     } catch (err) {
-      alert('Erro ao agendar inspeção: ' + (err.message || 'Verifique os dados'));
+      toast.error('Erro ao agendar inspeção: ' + (err.message || 'Verifique os dados'));
     }
   };
 
@@ -176,7 +178,7 @@ export const OperationsPage = () => {
       });
       setChecklistAnswers(initialAnswers);
     } catch (err) {
-      alert('Erro ao iniciar: ' + err.message);
+      toast.error('Erro ao iniciar: ' + err.message);
     }
   };
 
@@ -200,9 +202,9 @@ export const OperationsPage = () => {
       const updated = await inspectionsApi.submit(id, { answers: answersPayload });
       setInspections((prev) => prev.map((item) => (item.id === id ? updated : item)));
       setSelectedInspection(updated);
-      alert('Checklist enviado para revisão do supervisor!');
+      toast.success('Checklist enviado para revisão do supervisor!');
     } catch (err) {
-      alert('Erro ao submeter checklist: ' + err.message);
+      toast.error('Erro ao submeter checklist: ' + err.message);
     } finally {
       setIsReviewing(false);
     }
@@ -212,11 +214,11 @@ export const OperationsPage = () => {
     try {
       setIsReviewing(true);
       await reviewsApi.approve(id, reviewReason || 'Inspeção conforme, aprovada pelo supervisor.');
-      alert('Inspeção APROVADA com sucesso!');
+      toast.success('Inspeção APROVADA com sucesso!');
       setSelectedInspection(null);
       loadData();
     } catch (err) {
-      alert('Erro ao aprovar: ' + err.message);
+      toast.error('Erro ao aprovar: ' + err.message);
     } finally {
       setIsReviewing(false);
     }
@@ -224,17 +226,17 @@ export const OperationsPage = () => {
 
   const handleReject = async (id) => {
     if (!reviewReason) {
-      alert('O motivo da reprovação é obrigatório segundo a regra de conformidade.');
+      toast.error('O motivo da reprovação é obrigatório segundo a regra de conformidade.');
       return;
     }
     try {
       setIsReviewing(true);
       await reviewsApi.reject(id, reviewReason);
-      alert('Inspeção REPROVADA e devolvida para correção.');
+      toast.success('Inspeção REPROVADA e devolvida para correção.');
       setSelectedInspection(null);
       loadData();
     } catch (err) {
-      alert('Erro ao reprovar: ' + err.message);
+      toast.error('Erro ao reprovar: ' + err.message);
     } finally {
       setIsReviewing(false);
     }
