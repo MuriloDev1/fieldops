@@ -25,10 +25,11 @@ export const Layout = () => {
 
   return (
     <div className="dashboard-shell">
+      <a href="#conteudo" className="skip-link">Pular para o conteúdo</a>
       <Sidebar />
       <main className="main-panel">
         <Topbar onOpenMobileMenu={() => setMobileMenuOpen(true)} />
-        <section className="content">
+        <section className="content" id="conteudo" tabIndex={-1}>
           <Outlet />
         </section>
       </main>
