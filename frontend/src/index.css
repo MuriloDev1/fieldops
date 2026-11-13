@@ -1549,3 +1549,7 @@ tbody td { font-size: 0.9rem; }
 .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--line); border-top-color: var(--secondary); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -4px; margin-right: 0.4rem; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .table-message { text-align: center; padding: 2rem 1rem; color: var(--muted); }
+
+.skip-link { position: absolute; left: 0.75rem; top: -48px; z-index: 200; padding: 0.6rem 0.9rem; border-radius: 10px; background: var(--primary); color: #fff; font-weight: 600; font-size: 0.85rem; transition: top 0.15s ease; }
+.skip-link:focus { top: 0.75rem; }
+.content:focus { outline: none; }
