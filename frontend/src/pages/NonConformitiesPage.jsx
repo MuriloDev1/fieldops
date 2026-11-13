@@ -6,10 +6,10 @@ import { nonConformitiesApi } from '../core/services/api';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 
 const severityConfig = {
-  LOW: { label: 'Baixa', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
-  MEDIUM: { label: 'Média', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
+  LOW: { label: 'Baixa', color: '#1d9a63', bg: 'rgba(16, 185, 129, 0.15)' },
+  MEDIUM: { label: 'Média', color: '#d79b14', bg: 'rgba(245, 158, 11, 0.15)' },
   HIGH: { label: 'Alta', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
-  CRITICAL: { label: 'Crítica', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
+  CRITICAL: { label: 'Crítica', color: '#d94b4b', bg: 'rgba(239, 68, 68, 0.15)' },
 };
 
 const statusConfig = {
@@ -58,7 +58,7 @@ export const NonConformitiesPage = () => {
       header: 'Código',
       key: 'id',
       render: (val) => (
-        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#f87171' }}>
+        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#d94b4b' }}>
           {val ? (val.length > 8 ? val.substring(0, 8) + '...' : val) : '-'}
         </span>
       ),
@@ -67,7 +67,7 @@ export const NonConformitiesPage = () => {
       header: 'Descrição do Problema',
       key: 'description',
       render: (val) => (
-        <div style={{ maxWidth: '380px', color: '#f8fafc', fontWeight: 500 }}>
+        <div style={{ maxWidth: '380px', color: '#1d2736', fontWeight: 500 }}>
           {val}
         </div>
       ),
@@ -76,7 +76,7 @@ export const NonConformitiesPage = () => {
       header: 'Severidade',
       key: 'severity',
       render: (val) => {
-        const s = severityConfig[val] || { label: val || 'Média', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' };
+        const s = severityConfig[val] || { label: val || 'Média', color: '#627087', bg: 'rgba(148,163,184,0.1)' };
         return (
           <span
             style={{
@@ -132,9 +132,9 @@ export const NonConformitiesPage = () => {
       >
         {selectedItem && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ backgroundColor: '#0f172a', padding: '1rem', borderRadius: '8px', border: '1px solid #334155' }}>
+            <div style={{ backgroundColor: '#f7f9fc', padding: '1rem', borderRadius: '8px', border: '1px solid #dfe7f1' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.85rem', color: '#94a3b8' }}>ID: {selectedItem.id}</span>
+                <span style={{ fontSize: '0.85rem', color: '#627087' }}>ID: {selectedItem.id}</span>
                 <span
                   style={{
                     fontSize: '0.75rem',
@@ -142,24 +142,24 @@ export const NonConformitiesPage = () => {
                     padding: '0.2rem 0.5rem',
                     borderRadius: '4px',
                     backgroundColor: severityConfig[selectedItem.severity]?.bg || 'rgba(239, 68, 68, 0.2)',
-                    color: severityConfig[selectedItem.severity]?.color || '#ef4444',
+                    color: severityConfig[selectedItem.severity]?.color || '#d94b4b',
                   }}
                 >
                   Severidade: {severityConfig[selectedItem.severity]?.label || selectedItem.severity}
                 </span>
               </div>
-              <p style={{ margin: '0.5rem 0', color: '#fff', fontSize: '0.95rem', lineHeight: 1.5 }}>
+              <p style={{ margin: '0.5rem 0', color: '#1d2736', fontSize: '0.95rem', lineHeight: 1.5 }}>
                 {selectedItem.description}
               </p>
               {selectedItem.equipment && (
-                <p style={{ margin: '0.5rem 0 0 0', color: '#94a3b8', fontSize: '0.85rem' }}>
-                  Ativo Afetado: <strong style={{ color: '#cbd5e1' }}>{selectedItem.equipment}</strong>
+                <p style={{ margin: '0.5rem 0 0 0', color: '#627087', fontSize: '0.85rem' }}>
+                  Ativo Afetado: <strong style={{ color: '#586779' }}>{selectedItem.equipment}</strong>
                 </p>
               )}
             </div>
 
-            <div style={{ borderTop: '1px solid #334155', paddingTop: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', color: '#cbd5e1', fontSize: '0.9rem' }}>
+            <div style={{ borderTop: '1px solid #dfe7f1', paddingTop: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.75rem 0', color: '#586779', fontSize: '0.9rem' }}>
                 Alterar Status do Apontamento
               </h4>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
@@ -168,7 +168,7 @@ export const NonConformitiesPage = () => {
                   onClick={() => handleUpdateStatus(selectedItem.id, 'IN_PROGRESS')}
                   style={{
                     padding: '0.625rem',
-                    backgroundColor: '#0284c7',
+                    backgroundColor: '#0d3f85',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '6px',
@@ -183,7 +183,7 @@ export const NonConformitiesPage = () => {
                   onClick={() => handleUpdateStatus(selectedItem.id, 'RESOLVED')}
                   style={{
                     padding: '0.625rem',
-                    backgroundColor: '#10b981',
+                    backgroundColor: '#1d9a63',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '6px',
