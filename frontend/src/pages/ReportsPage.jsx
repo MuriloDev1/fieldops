@@ -73,11 +73,11 @@ export const ReportsPage = () => {
       <section className="panel" style={{ padding: '1.5rem' }}>
         <h2>Relatórios Disponíveis</h2>
         <ul style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#1e293b', borderRadius: '0.375rem' }}>
+          <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#ffffff', borderRadius: '0.375rem' }}>
             <span>Relatório Mensal de Não Conformidades (PDF)</span>
             <button type="button" className="pill-button" onClick={handleDownloadNCReport}>Download</button>
           </li>
-          <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#1e293b', borderRadius: '0.375rem' }}>
+          <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#ffffff', borderRadius: '0.375rem' }}>
             <span>Histórico Semanal de Inspeções (CSV)</span>
             <button type="button" className="pill-button" onClick={handleDownloadInspectionsCsv}>Download</button>
           </li>
