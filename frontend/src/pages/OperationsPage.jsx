@@ -352,6 +352,7 @@ export const OperationsPage = () => {
       </div>
 
       <DataTable
+        loading={loading}
         title="Inspeções Registradas"
         columns={columns}
         data={inspections}
