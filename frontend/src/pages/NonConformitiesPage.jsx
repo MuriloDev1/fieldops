@@ -4,6 +4,7 @@ import { ModalDrawer } from '../shared/components/ModalDrawer';
 import { StatusBadge } from '../shared/components/StatusBadge';
 import { nonConformitiesApi } from '../core/services/api';
 import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { useToast } from '../core/context/ToastContext';
 
 const severityConfig = {
   LOW: { label: 'Baixa', color: '#1d9a63', bg: 'rgba(16, 185, 129, 0.15)' },
@@ -20,6 +21,7 @@ const statusConfig = {
 };
 
 export const NonConformitiesPage = () => {
+  const toast = useToast();
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -47,9 +49,9 @@ export const NonConformitiesPage = () => {
       if (selectedItem?.id === id) {
         setSelectedItem((prev) => ({ ...prev, status: newStatus }));
       }
-      alert(`Status atualizado para: ${statusConfig[newStatus]?.label || newStatus}`);
+      toast.success(`Status atualizado para: ${statusConfig[newStatus]?.label || newStatus}`);
     } catch (err) {
-      alert('Erro ao atualizar status: ' + err.message);
+      toast.error('Erro ao atualizar status: ' + err.message);
     }
   };
 
