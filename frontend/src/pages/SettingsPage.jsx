@@ -8,7 +8,7 @@ export const SettingsPage = () => {
 
       <section className="panel" style={{ padding: '1.5rem' }}>
         <h2>Geral</h2>
-        <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginTop: '0.5rem' }}>
+        <p style={{ color: '#627087', fontSize: '0.875rem', marginTop: '0.5rem' }}>
           Parâmetros de sincronização, limites de alertas e definições globais do FieldOps.
         </p>
       </section>
