@@ -4,6 +4,7 @@ import { ModalDrawer } from '../shared/components/ModalDrawer';
 import { StatusBadge } from '../shared/components/StatusBadge';
 import { usersApi } from '../core/services/api';
 import { UserPlus } from 'lucide-react';
+import { useToast } from '../core/context/ToastContext';
 
 const roleLabels = {
   ADMIN: 'Administrador',
@@ -18,6 +19,7 @@ const statusLabels = {
 };
 
 export const TeamManagementPage = () => {
+  const toast = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -60,9 +62,9 @@ export const TeamManagementPage = () => {
         role: 'TECHNICIAN',
         phone: '',
       });
-      alert('Colaborador cadastrado com sucesso!');
+      toast.success('Colaborador cadastrado com sucesso!');
     } catch (err) {
-      alert('Erro ao cadastrar colaborador: ' + (err.message || 'Verifique os dados'));
+      toast.error('Erro ao cadastrar colaborador: ' + (err.message || 'Verifique os dados'));
     }
   };
 
@@ -73,7 +75,7 @@ export const TeamManagementPage = () => {
       setUsers((prev) => prev.map((u) => (u.id === user.id ? updated : u)));
       if (selectedUser?.id === user.id) setSelectedUser(updated);
     } catch (err) {
-      alert('Erro ao alterar status: ' + err.message);
+      toast.error('Erro ao alterar status: ' + err.message);
     }
   };
 
