@@ -223,6 +223,8 @@ Suas principais atividades são:
 - Finalizar as inspeções;
 - Realizar correções quando solicitadas.
 
+> **Nota de Gestão de Partes Interessadas:** A análise aprofundada de poder e interesse de todos os intervenientes do projeto (Banca Avaliadora, Supervisores, Técnicos, Administradores, Clientes e Infraestrutura Cloud) está detalhada na [Matriz de Rede de Poder/Interesse dos Stakeholders](matriz_poder_interesse_stakeholders.md) fundamentada na metodologia de Fábio Câmara Araújo de Carvalho.
+
 ---
 
 ## 10. Principais Funcionalidades

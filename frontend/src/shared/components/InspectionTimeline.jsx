@@ -21,7 +21,7 @@ const EVENT_CONFIG = {
     label: 'Inspeção Criada',
     defaultDesc: 'Agendamento registrado e snapshot imutável de itens gerado.',
     icon: Calendar,
-    color: '#38bdf8',
+    color: '#2d7df1',
     bg: 'rgba(56, 189, 248, 0.15)',
     border: 'rgba(56, 189, 248, 0.4)'
   },
@@ -37,7 +37,7 @@ const EVENT_CONFIG = {
     label: 'Execução Iniciada em Campo',
     defaultDesc: 'Técnico realizou validação via QR Code e iniciou o checklist.',
     icon: Play,
-    color: '#f59e0b',
+    color: '#d79b14',
     bg: 'rgba(245, 158, 11, 0.15)',
     border: 'rgba(245, 158, 11, 0.4)'
   },
@@ -61,7 +61,7 @@ const EVENT_CONFIG = {
     label: 'Inspeção Aprovada',
     defaultDesc: 'Conformidade validada sem ressalvas impeditivas.',
     icon: CheckCircle2,
-    color: '#10b981',
+    color: '#1d9a63',
     bg: 'rgba(16, 185, 129, 0.15)',
     border: 'rgba(16, 185, 129, 0.4)'
   },
@@ -69,7 +69,7 @@ const EVENT_CONFIG = {
     label: 'Inspeção Reprovada com Justificativa',
     defaultDesc: 'Apontamento de não conformidade ou necessidade de retificação.',
     icon: XCircle,
-    color: '#ef4444',
+    color: '#d94b4b',
     bg: 'rgba(239, 68, 68, 0.15)',
     border: 'rgba(239, 68, 68, 0.4)'
   },
@@ -77,7 +77,7 @@ const EVENT_CONFIG = {
     label: 'Inspeção Cancelada',
     defaultDesc: 'Cancelamento formal registrado no painel administrativo.',
     icon: AlertOctagon,
-    color: '#94a3b8',
+    color: '#627087',
     bg: 'rgba(148, 163, 184, 0.15)',
     border: 'rgba(148, 163, 184, 0.4)'
   }
@@ -100,7 +100,7 @@ function formatDate(isoString) {
   }
 }
 
-export function InspectionTimeline({ inspectionId, initialEvents = [], inspectionData = null }) {
+export function InspectionTimeline({ inspectionId, initialEvents = [] }) {
   const [events, setEvents] = useState(initialEvents);
   const [loading, setLoading] = useState(!initialEvents || initialEvents.length === 0);
   const [expandedIndex, setExpandedIndex] = useState(null);
@@ -118,17 +118,12 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
         setLoading(true);
         const data = await inspectionsApi.getHistory(inspectionId);
         if (isMounted) {
-          if (Array.isArray(data) && data.length > 0) {
-            setEvents(data);
-          } else {
-            // Se a API retornar vazio (ex: dados mockados locais), gera linha do tempo consistente com o status
-            setEvents(generateFallbackTimeline(inspectionData || { id: inspectionId }));
-          }
+          setEvents(Array.isArray(data) ? data : []);
         }
       } catch (err) {
-        console.warn('[InspectionTimeline] Usando histórico padrão derivado:', err);
+        console.error('[InspectionTimeline] Erro ao carregar histórico do banco:', err);
         if (isMounted) {
-          setEvents(generateFallbackTimeline(inspectionData || { id: inspectionId }));
+          setEvents([]);
         }
       } finally {
         if (isMounted) {
@@ -142,11 +137,11 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
     return () => {
       isMounted = false;
     };
-  }, [inspectionId, inspectionData]);
+  }, [inspectionId]);
 
   if (loading) {
     return (
-      <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8' }}>
+      <div style={{ padding: '1.5rem', textAlign: 'center', color: '#627087' }}>
         <Clock className="animate-spin" size={24} style={{ margin: '0 auto 0.5rem auto' }} />
         <p style={{ margin: 0, fontSize: '0.875rem' }}>Carregando trilha de auditoria...</p>
       </div>
@@ -158,13 +153,13 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
       <div style={{
         padding: '1.5rem',
         textAlign: 'center',
-        backgroundColor: '#0f172a',
+        backgroundColor: '#f7f9fc',
         borderRadius: '8px',
-        border: '1px dashed #334155',
-        color: '#94a3b8'
+        border: '1px dashed #dfe7f1',
+        color: '#627087'
       }}>
-        <Clock size={28} style={{ margin: '0 auto 0.5rem auto', color: '#64748b' }} />
-        <h4 style={{ margin: '0 0 0.25rem 0', color: '#cbd5e1' }}>Nenhum evento registrado</h4>
+        <Clock size={28} style={{ margin: '0 auto 0.5rem auto', color: '#627087' }} />
+        <h4 style={{ margin: '0 0 0.25rem 0', color: '#586779' }}>Nenhum evento registrado</h4>
         <p style={{ margin: 0, fontSize: '0.85rem' }}>
           Os eventos da linha do tempo são gravados automaticamente conforme o ciclo operacional evolui (RN-086).
         </p>
@@ -179,19 +174,19 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
         alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: '0.75rem',
-        borderBottom: '1px solid #334155',
+        borderBottom: '1px solid #dfe7f1',
         paddingBottom: '0.5rem'
       }}>
-        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#f8fafc', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1d2736', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Linha do Tempo de Mudanças de Estado
         </span>
         <span style={{
           fontSize: '0.75rem',
           padding: '0.15rem 0.5rem',
           borderRadius: '999px',
-          backgroundColor: '#1e293b',
-          color: '#38bdf8',
-          border: '1px solid #334155'
+          backgroundColor: '#ffffff',
+          color: '#2d7df1',
+          border: '1px solid #dfe7f1'
         }}>
           {events.length} {events.length === 1 ? 'evento' : 'eventos'} (RN-086)
         </span>
@@ -205,7 +200,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
           top: '1rem',
           bottom: '1rem',
           width: '2px',
-          backgroundColor: '#334155',
+          backgroundColor: '#dfe7f1',
           zIndex: 0
         }} />
 
@@ -215,7 +210,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
             label: event.actionLabel || event.action || 'Transição de Estado',
             defaultDesc: event.description || 'Evento registrado na auditoria.',
             icon: Clock,
-            color: '#94a3b8',
+            color: '#627087',
             bg: 'rgba(148, 163, 184, 0.15)',
             border: 'rgba(148, 163, 184, 0.4)'
           };
@@ -240,7 +235,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
                   width: '2.5rem',
                   height: '2.5rem',
                   borderRadius: '50%',
-                  backgroundColor: '#0f172a',
+                  backgroundColor: '#f7f9fc',
                   border: `2px solid ${config.color}`,
                   boxShadow: `0 0 12px ${config.bg}`,
                   display: 'flex',
@@ -256,7 +251,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
               <div
                 style={{
                   flex: 1,
-                  backgroundColor: '#1e293b',
+                  backgroundColor: '#ffffff',
                   borderRadius: '8px',
                   border: `1px solid ${config.border}`,
                   padding: '0.85rem 1rem',
@@ -267,7 +262,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#f8fafc' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#1d2736' }}>
                       {event.actionLabel || config.label}
                     </span>
                     {idx === events.length - 1 && (
@@ -285,7 +280,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
                     )}
                   </div>
 
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <span style={{ fontSize: '0.75rem', color: '#627087', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <Clock size={12} />
                     {formatDate(event.occurredAt)}
                   </span>
@@ -298,9 +293,9 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
                   gap: '0.5rem',
                   marginTop: '0.4rem',
                   fontSize: '0.8rem',
-                  color: '#cbd5e1'
+                  color: '#586779'
                 }}>
-                  <Shield size={13} style={{ color: '#38bdf8' }} />
+                  <Shield size={13} style={{ color: '#2d7df1' }} />
                   <span>
                     <strong>{event.actorName || 'Sistema'}</strong>
                   </span>
@@ -309,15 +304,15 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
                       fontSize: '0.7rem',
                       padding: '0.05rem 0.35rem',
                       borderRadius: '4px',
-                      backgroundColor: '#0f172a',
-                      color: '#94a3b8',
-                      border: '1px solid #334155'
+                      backgroundColor: '#f7f9fc',
+                      color: '#627087',
+                      border: '1px solid #dfe7f1'
                     }}>
                       {event.actorRole}
                     </span>
                   )}
                   {event.deviceId && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', color: '#64748b', fontSize: '0.75rem', marginLeft: 'auto' }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.2rem', color: '#627087', fontSize: '0.75rem', marginLeft: 'auto' }}>
                       <Smartphone size={12} />
                       {event.deviceId}
                     </span>
@@ -328,7 +323,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
                 <p style={{
                   margin: '0.5rem 0 0 0',
                   fontSize: '0.85rem',
-                  color: '#94a3b8',
+                  color: '#627087',
                   lineHeight: 1.4
                 }}>
                   {event.description || config.defaultDesc}
@@ -342,7 +337,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: '#38bdf8',
+                        color: '#2d7df1',
                         fontSize: '0.75rem',
                         cursor: 'pointer',
                         display: 'flex',
@@ -359,13 +354,13 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
                       <pre style={{
                         marginTop: '0.4rem',
                         padding: '0.5rem',
-                        backgroundColor: '#0f172a',
+                        backgroundColor: '#f7f9fc',
                         borderRadius: '4px',
                         fontSize: '0.75rem',
-                        color: '#a5f3fc',
+                        color: '#2d7df1',
                         overflowX: 'auto',
                         whiteSpace: 'pre-wrap',
-                        border: '1px solid #334155'
+                        border: '1px solid #dfe7f1'
                       }}>
                         {typeof event.metadataJson === 'string'
                           ? event.metadataJson
@@ -381,100 +376,4 @@ export function InspectionTimeline({ inspectionId, initialEvents = [], inspectio
       </div>
     </div>
   );
-}
-
-// Gera uma linha do tempo realista para dados legados ou mockados com base no status da inspeção
-function generateFallbackTimeline(inspection) {
-  const status = (inspection.status || 'SCHEDULED').toUpperCase();
-  const techName = inspection.technicianName || 'Carlos Lima';
-  const supervisorName = 'Roberto Silva';
-
-  const baseTimeline = [
-    {
-      id: 'evt-1',
-      action: 'INSPECTION_CREATED',
-      actionLabel: 'Inspeção Criada',
-      description: `Agendamento cadastrado para o equipamento ${inspection.equipmentName || 'Ativo Industrial'}.`,
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T08:30:00Z` : '2026-09-25T08:30:00Z'
-    },
-    {
-      id: 'evt-2',
-      action: 'INSPECTION_ASSIGNED',
-      actionLabel: 'Técnico Atribuído',
-      description: `Ordem de serviço direcionada ao técnico ${techName}.`,
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T08:35:00Z` : '2026-09-25T08:35:00Z'
-    }
-  ];
-
-  if (status === 'IN_PROGRESS' || status === 'SUBMITTED' || status === 'APPROVED' || status === 'REJECTED') {
-    baseTimeline.push({
-      id: 'evt-3',
-      action: 'INSPECTION_STARTED',
-      actionLabel: 'Execução Iniciada em Campo',
-      description: `Técnico ${techName} realizou leitura de QR Code no local e iniciou o preenchimento.`,
-      actorName: techName,
-      actorRole: 'TECHNICIAN',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T09:15:00Z` : '2026-09-25T09:15:00Z'
-    });
-  }
-
-  if (status === 'SUBMITTED' || status === 'APPROVED' || status === 'REJECTED') {
-    baseTimeline.push({
-      id: 'evt-4',
-      action: 'INSPECTION_SUBMITTED',
-      actionLabel: 'Respostas Enviadas para Auditoria',
-      description: `Checklist concluído com ${inspection.itemsCount || 10} itens e enviado para validação técnica.`,
-      actorName: techName,
-      actorRole: 'TECHNICIAN',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T11:45:00Z` : '2026-09-25T11:45:00Z'
-    });
-
-    baseTimeline.push({
-      id: 'evt-5',
-      action: 'REVIEW_STARTED',
-      actionLabel: 'Revisão Iniciada pelo Supervisor',
-      description: 'Supervisor abriu a ordem de inspeção para análise das respostas e evidências fotográficas.',
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T14:00:00Z` : '2026-09-25T14:00:00Z'
-    });
-  }
-
-  if (status === 'APPROVED') {
-    baseTimeline.push({
-      id: 'evt-6',
-      action: 'INSPECTION_APPROVED',
-      actionLabel: 'Inspeção Aprovada',
-      description: 'Inspeção homologada com sucesso. Todos os itens em conformidade ou com tolerâncias aceitas.',
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T14:30:00Z` : '2026-09-25T14:30:00Z'
-    });
-  } else if (status === 'REJECTED') {
-    baseTimeline.push({
-      id: 'evt-6',
-      action: 'INSPECTION_REJECTED',
-      actionLabel: 'Inspeção Reprovada com Justificativa',
-      description: 'Inspeção reprovada. Constatada ausência de evidência fotográfica obrigatória no item de vibração.',
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T14:30:00Z` : '2026-09-25T14:30:00Z'
-    });
-  } else if (status === 'CANCELLED' || status === 'CANCELED') {
-    baseTimeline.push({
-      id: 'evt-7',
-      action: 'INSPECTION_CANCELED',
-      actionLabel: 'Inspeção Cancelada',
-      description: 'Cancelamento efetuado por alteração no planejamento de manutenção da planta.',
-      actorName: supervisorName,
-      actorRole: 'SUPERVISOR',
-      occurredAt: inspection.scheduledDate ? `${inspection.scheduledDate}T10:00:00Z` : '2026-09-25T10:00:00Z'
-    });
-  }
-
-  return baseTimeline;
 }

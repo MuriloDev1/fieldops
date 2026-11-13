@@ -1,7 +1,30 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { authService, authApi } from '../services/api';
+import { authService } from '../services/api';
 
 const AuthContext = createContext(null);
+
+// Modo demonstração: permite entrar com qualquer senha quando o backend recusa
+// ou está indisponível. Desative definindo VITE_ALLOW_DEMO_LOGIN=false no .env.
+const ALLOW_DEMO_LOGIN = import.meta.env.VITE_ALLOW_DEMO_LOGIN !== 'false';
+
+const DEMO_PROFILES = {
+  'supervisor@fieldops.com': { name: 'Supervisor FieldOps', role: 'SUPERVISOR' },
+  'tecnico@fieldops.com': { name: 'Técnico FieldOps', role: 'TECHNICIAN' },
+  'admin@fieldops.com': { name: 'Administrador FieldOps', role: 'ADMIN' },
+};
+
+const buildDemoSession = (email) => {
+  const normalized = (email || '').trim().toLowerCase();
+  const profile = DEMO_PROFILES[normalized] || {
+    name: normalized.split('@')[0] || 'Usuário',
+    role: 'SUPERVISOR',
+  };
+  return {
+    accessToken: `demo.${Date.now()}`,
+    refreshToken: `demo-refresh.${Date.now()}`,
+    user: { id: `demo-${normalized}`, email: normalized, status: 'ACTIVE', ...profile },
+  };
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => authService.getStoredUser());
@@ -9,6 +32,13 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Se houver algum token mockado antigo no localStorage, limpa para usar apenas o banco real
+    if (authService.getStoredAccessToken() === 'dev_bearer_token') {
+      authService.clearSession();
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+
     // Sincroniza estado caso os interceptores detectem expiração ou revogação
     const handleSessionExpired = () => {
       setUser(null);
@@ -34,27 +64,19 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         return true;
       }
+      return false;
     } catch (err) {
+      if (ALLOW_DEMO_LOGIN) {
+        const demo = buildDemoSession(email);
+        authService.setSession(demo);
+        setUser(demo.user);
+        setIsAuthenticated(true);
+        return true;
+      }
       // RN-007: Não logar senhas nem tokens
       const message = err?.response?.data?.message || err?.message || 'Falha na autenticação';
       setError(message);
-
-      // Fallback gracioso para modo de demonstração caso a API esteja offline
-      const fallbackUser = {
-        id: '90000000-0000-0000-0000-000000000002',
-        name: 'Supervisor Profile',
-        role: 'SUPERVISOR',
-        email: email || 'supervisor@fieldops.com',
-      };
-      authService.setSession({
-        accessToken: 'dev_bearer_token',
-        refreshToken: 'dev_refresh_token',
-        expiresIn: 86400,
-        user: fallbackUser,
-      });
-      setUser(fallbackUser);
-      setIsAuthenticated(true);
-      return true;
+      return false;
     }
   };
 

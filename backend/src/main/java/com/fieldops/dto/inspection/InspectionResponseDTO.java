@@ -299,7 +299,18 @@ public class InspectionResponseDTO {
                 .build();
     }
 
+    private static final com.fasterxml.jackson.databind.ObjectMapper OBJECT_MAPPER = new com.fasterxml.jackson.databind.ObjectMapper();
+
     private static String extractJsonField(String json, String fieldName) {
+        if (json == null || json.isBlank()) return null;
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = OBJECT_MAPPER.readTree(json);
+            if (node.hasNonNull(fieldName)) {
+                String val = node.get(fieldName).asText();
+                return val.isEmpty() ? null : val;
+            }
+        } catch (Exception ignored) {
+        }
         if (json == null || json.isBlank()) return null;
         Pattern p = Pattern.compile("\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*\"([^\"]*)\"");
         Matcher m = p.matcher(json);

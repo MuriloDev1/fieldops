@@ -282,9 +282,14 @@ CREATE INDEX IF NOT EXISTS idx_nc_inspection_id ON non_conformities(inspection_i
 CREATE INDEX IF NOT EXISTS idx_nc_severity ON non_conformities(severity);
 CREATE INDEX IF NOT EXISTS idx_nc_status ON non_conformities(status);
 
-ALTER TABLE evidences 
-    ADD CONSTRAINT fk_evidences_non_conformity 
-    FOREIGN KEY (non_conformity_id) REFERENCES non_conformities(id) ON DELETE SET NULL;
+DO $$ 
+BEGIN 
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_evidences_non_conformity') THEN 
+        ALTER TABLE evidences 
+            ADD CONSTRAINT fk_evidences_non_conformity 
+            FOREIGN KEY (non_conformity_id) REFERENCES non_conformities(id) ON DELETE SET NULL; 
+    END IF; 
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_evidences_nc_id ON evidences(non_conformity_id);
 

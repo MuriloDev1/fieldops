@@ -1,45 +1,21 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../core/context/AuthContext';
 
-import {
-  LayoutDashboard,
-  Building2,
-  MapPin,
-  Settings2,
-  ClipboardList,
-  Users,
-  ChartNoAxesCombined,
-  FileText,
-  Settings,
-  LogOut,
-  UserRound,
-  ListChecks,
-  AlertTriangle,
-  History
-} from 'lucide-react';
-
-const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/clients', label: 'Clientes', icon: Building2 },
-  { path: '/locations', label: 'Locais & Plantas', icon: MapPin },
-  { path: '/equipment', label: 'Equipamentos', icon: Settings2 },
-  { path: '/templates', label: 'Modelos Checklist', icon: ListChecks },
-  { path: '/operations', label: 'Operações', icon: ClipboardList },
-  { path: '/non-conformities', label: 'Não Conformidades', icon: AlertTriangle },
-  { path: '/history', label: 'Histórico & Auditoria', icon: History },
-  { path: '/team', label: 'Equipe de Campo', icon: Users },
-  { path: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
-  { path: '/reports', label: 'Relatórios', icon: FileText },
-  { path: '/settings', label: 'Configurações', icon: Settings },
-];
+import { LogOut, UserRound } from 'lucide-react';
+import { getNavItems, ROLE_LABELS, normalizeRole } from '../../core/permissions';
 
 export const Sidebar = ({ onNavigate }) => {
   const { user, logout } = useAuth();
+  const navItems = getNavItems(user?.role);
 
   return (
     <aside className="sidebar">
       <div className="brand-box">
-        <div className="brand-logo">OpsControl Pro</div>
+        <div className="brand-mark" aria-hidden="true">F</div>
+        <div className="brand-text">
+          <div className="brand-logo">OpsControl Pro</div>
+          <span className="brand-sub">FieldOps Admin</span>
+        </div>
       </div>
 
       <nav className="side-nav" aria-label="Menu lateral">
@@ -73,31 +49,22 @@ export const Sidebar = ({ onNavigate }) => {
           <UserRound size={20} />
         </div>
 
-        <div style={{ flex: 1 }}>
+        <div className="profile-meta">
           <div className="profile-name">
-            {user?.name || 'Supervisor Profile'}
+            {user?.name || 'Perfil do Supervisor'}
           </div>
 
           <div className="profile-role">
-            {user?.role || 'Regional Supervisor'}
+            {ROLE_LABELS[normalizeRole(user?.role)]}
           </div>
         </div>
 
         <button
           type="button"
+          className="logout-button"
           onClick={logout}
           title="Sair"
           aria-label="Sair"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: '#94a3b8',
-            cursor: 'pointer',
-            padding: '0.25rem',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
         >
           <LogOut size={19} strokeWidth={1.8} />
         </button>

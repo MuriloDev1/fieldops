@@ -1,9 +1,11 @@
 import { nonConformitiesApi, inspectionsApi } from '../core/services/api';
+import { useToast } from '../core/context/ToastContext';
 
 export const ReportsPage = () => {
+  const toast = useToast();
   const handleDownloadNCReport = async () => {
     try {
-      const ncs = await nonConformitiesApi.getAll().catch(() => []);
+      const ncs = await nonConformitiesApi.getAll();
       const lines = [
         'RELATÓRIO EXECUTIVO DE NÃO CONFORMIDADES - FIELDOPS',
         `Data de Emissão: ${new Date().toLocaleString('pt-BR')}`,
@@ -13,12 +15,10 @@ export const ReportsPage = () => {
           ? ncs.map(
               (nc, idx) =>
                 `${idx + 1}. [${nc.severity || 'HIGH'}] ${nc.title || nc.description} | Ativo: ${
-                  nc.equipment || nc.equipmentName || 'Geral'
+                  nc.equipment || nc.equipmentName || '-'
                 } | Status: ${nc.status}`
             )
-          : [
-              '1. [HIGH] Oscilação na pressão de descarga acima de 6.0 bar | Ativo: Bomba Centrífuga Principal | Status: OPEN',
-            ]),
+          : ['Nenhuma não conformidade registrada no banco de dados.']),
       ];
       const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -29,27 +29,27 @@ export const ReportsPage = () => {
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      alert('Erro ao gerar relatório: ' + err.message);
+      toast.error('Erro ao gerar relatório: ' + err.message);
     }
   };
 
   const handleDownloadInspectionsCsv = async () => {
     try {
-      const inspections = await inspectionsApi.getAll().catch(() => []);
+      const inspections = await inspectionsApi.getAll();
       const rows = [
         ['ID', 'Titulo', 'Cliente', 'Local', 'Equipamento', 'Tecnico', 'Status', 'Data Prevista'],
-        ...(Array.isArray(inspections) && inspections.length > 0
+        ...(Array.isArray(inspections)
           ? inspections.map((i) => [
               i.id,
               i.templateTitle || i.title,
               i.clientName,
               i.siteName,
-              i.equipmentName || 'Geral',
+              i.equipmentName || '-',
               i.technicianName || '-',
               i.status,
               i.scheduledDate || '',
             ])
-          : [['INS-8001', 'Inspeção Preventiva', 'Refinaria Alpha', 'Unidade de Extração 01', 'Bomba Centrífuga Principal', 'Carlos Lima', 'SUBMITTED', '2026-10-01']]),
+          : []),
       ];
       const csvContent = rows.map((r) => r.map((v) => `"${v || ''}"`).join(',')).join('\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -61,7 +61,7 @@ export const ReportsPage = () => {
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      alert('Erro ao exportar CSV: ' + err.message);
+      toast.error('Erro ao exportar CSV: ' + err.message);
     }
   };
 
@@ -75,11 +75,11 @@ export const ReportsPage = () => {
       <section className="panel" style={{ padding: '1.5rem' }}>
         <h2>Relatórios Disponíveis</h2>
         <ul style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#1e293b', borderRadius: '0.375rem' }}>
+          <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#ffffff', borderRadius: '0.375rem' }}>
             <span>Relatório Mensal de Não Conformidades (PDF)</span>
             <button type="button" className="pill-button" onClick={handleDownloadNCReport}>Download</button>
           </li>
-          <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#1e293b', borderRadius: '0.375rem' }}>
+          <li style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', backgroundColor: '#ffffff', borderRadius: '0.375rem' }}>
             <span>Histórico Semanal de Inspeções (CSV)</span>
             <button type="button" className="pill-button" onClick={handleDownloadInspectionsCsv}>Download</button>
           </li>

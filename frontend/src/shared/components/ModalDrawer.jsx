@@ -16,8 +16,8 @@ export const ModalDrawer = ({ isOpen, onClose, title, children }) => {
         width: '100%',
         maxWidth: '480px',
         height: '100%',
-        backgroundColor: '#1e293b',
-        borderLeft: '1px solid #334155',
+        backgroundColor: '#ffffff',
+        borderLeft: '1px solid #dfe7f1',
         boxShadow: '-10px 0 25px rgba(0,0,0,0.5)',
         display: 'flex',
         flexDirection: 'column',
@@ -25,12 +25,12 @@ export const ModalDrawer = ({ isOpen, onClose, title, children }) => {
       }}>
         <div style={{
           padding: '1.25rem 1.5rem',
-          borderBottom: '1px solid #334155',
+          borderBottom: '1px solid #dfe7f1',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#f8fafc', margin: 0 }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, color: '#1d2736', margin: 0 }}>
             {title}
           </h2>
           <button
@@ -39,7 +39,7 @@ export const ModalDrawer = ({ isOpen, onClose, title, children }) => {
             style={{
               background: 'transparent',
               border: 'none',
-              color: '#94a3b8',
+              color: '#627087',
               fontSize: '1.5rem',
               cursor: 'pointer',
               lineHeight: 1

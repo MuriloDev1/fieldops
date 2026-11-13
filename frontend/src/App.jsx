@@ -18,11 +18,26 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import MyInspectionsPage from './pages/MyInspectionsPage';
+import InspectionListPage from './pages/InspectionListPage';
+import InspectionWorkflowPage from './pages/InspectionWorkflowPage';
+import ServiceOrdersPage from './pages/ServiceOrdersPage';
+import ProfilePage from './pages/ProfilePage';
+import { ToastProvider } from './core/context/ToastContext';
+import { useAuth } from './core/context/AuthContext';
+import { getHomePath } from './core/permissions';
+
+// Redireciona a raiz para a página inicial do perfil logado.
+function HomeRedirect() {
+  const { user } = useAuth();
+  return <Navigate to={getHomePath(user?.role)} replace />;
+}
 
 function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
+        <ToastProvider>
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -35,7 +50,12 @@ function App() {
                 </AuthGuard>
               }
             >
-              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route index element={<HomeRedirect />} />
+              <Route path="my-inspections" element={<MyInspectionsPage />} />
+              <Route path="inspections" element={<InspectionListPage />} />
+              <Route path="inspection-flow" element={<InspectionWorkflowPage />} />
+              <Route path="service-orders" element={<ServiceOrdersPage />} />
+              <Route path="profile" element={<ProfilePage />} />
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="clients" element={<ClientsPage />} />
               <Route path="locations" element={<LocationsPage />} />
@@ -52,6 +72,7 @@ function App() {
             </Route>
           </Routes>
         </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

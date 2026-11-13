@@ -3,26 +3,15 @@ import Modal from '../components/Modal';
 import { StatCard } from '../shared/components/StatCard';
 import { DataTable } from '../shared/components/DataTable';
 import { StatusBadge } from '../shared/components/StatusBadge';
-import { dashboardApi, nonConformitiesApi, usersApi } from '../core/services/api';
-
-const quickItems = [
-  { label: 'Bomba Submersa 04', detail: 'Falha crítica reportada', status: 'danger' },
-  { label: 'Válvula de Pressão B', detail: 'Manutenção atrasada há 2 dias', status: 'warning' },
-  { label: 'Relatório Diário', detail: 'Pendente aprovação do supervisor', status: 'info' },
-];
+import { useToast } from '../core/context/ToastContext';
+import { isDemoSession } from '../core/demo';
+import { nonConformities as mockNcs, technicians as mockTechs, inspections as mockInspections, equipment as mockEquipment } from '../data/mockData';
+import { dashboardApi, nonConformitiesApi, usersApi, equipmentApi, inspectionsApi } from '../core/services/api';
 
 const quickMenuItems = [
   'Atualizar prioridades',
   'Enviar alerta de campo',
   'Gerar relatório rápido',
-];
-
-const defaultTechnicians = [
-  'Carlos Lima',
-  'Ana Souza',
-  'Mateus Silva',
-  'Iris Costa',
-  'Lucas Pereira',
 ];
 
 const columns = [
@@ -32,72 +21,103 @@ const columns = [
   { header: 'Status', key: 'status', render: (val) => <StatusBadge status={val} /> },
 ];
 
-const initialRows = [
-  { id: '1', local: 'Unidade de Extração Alpha', equipment: 'Bomba Submersa 04', date: '24 Out 2023, 08:30', status: 'Crítico', description: 'Falha crítica reportada na vedação mecânica' },
-  { id: '2', local: 'Refinaria Central', equipment: 'Válvula de Pressão B', date: '23 Out 2023, 14:15', status: 'Alta', description: 'Oscilação de pressão acima do limite nominal' },
-  { id: '3', local: 'Terminal Marítimo Sul', equipment: 'Correia Transportadora 2', date: '22 Out 2023, 09:45', status: 'Baixa', description: 'Desgaste superficial na borda lateral' },
-  { id: '4', local: 'Planta de Processamento', equipment: 'Compressor Principal', date: '21 Out 2023, 11:20', status: 'Alta', description: 'Temperatura elevada no estágio de compressão' },
-  { id: '5', local: 'Unidade de Extração Beta', equipment: 'Painel Elétrico Leste', date: '21 Out 2023, 16:00', status: 'Crítico', description: 'Aquecimento anormal nos barramentos' },
-];
+const DEMO_SUMMARY = {
+  completedInspections: '128',
+  nonConformityRate: '7.4%',
+  activeTechnicians: '12',
+  overdueInspections: '3',
+  weeklyProgress: [12, 18, 15, 22, 19, 8, 5],
+};
+
+const toSeverity = (priority) => (priority === 'Alta' ? 'Crítico' : priority === 'Média' ? 'Alta' : 'Baixa');
 
 export const DashboardPage = () => {
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [selectedRow, setSelectedRow] = useState(null);
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignedMessage, setAssignedMessage] = useState('');
-  const [rows, setRows] = useState(initialRows);
+  const [rows, setRows] = useState([]);
+  const [quickItems, setQuickItems] = useState([]);
   const [statusFilter, setStatusFilter] = useState('');
-  const [technicians, setTechnicians] = useState(defaultTechnicians);
+  const [technicians, setTechnicians] = useState([]);
   const [summary, setSummary] = useState({
-    completedInspections: '1,284',
-    nonConformityRate: '12.5%',
-    activeTechnicians: '42',
-    overdueInspections: '15',
-    weeklyProgress: [65, 95, 72, 125, 105, 155, 142],
+    completedInspections: '0',
+    nonConformityRate: '0%',
+    activeTechnicians: '0',
+    overdueInspections: '0',
+    weeklyProgress: [0, 0, 0, 0, 0, 0, 0],
   });
   const menuRef = useRef(null);
 
   useEffect(() => {
     const loadDashboard = async () => {
+      if (isDemoSession()) {
+        setSummary(DEMO_SUMMARY);
+        setRows(
+          mockNcs.map((nc) => ({
+            id: nc.id,
+            local: nc.equipment,
+            equipment: nc.equipment,
+            date: nc.date,
+            status: toSeverity(nc.priority),
+            description: nc.description,
+          }))
+        );
+        setQuickItems([
+          ...mockEquipment
+            .filter((e) => e.status === 'Alerta' || e.status === 'Em manutenção')
+            .slice(0, 2)
+            .map((e) => ({
+              label: e.name,
+              detail: `${e.status} (${e.location})`,
+              status: e.status === 'Alerta' ? 'danger' : 'warning',
+            })),
+          ...mockInspections
+            .filter((i) => i.status === 'Em andamento')
+            .slice(0, 1)
+            .map((i) => ({ label: i.name, detail: 'Pendente aprovação do supervisor', status: 'info' })),
+        ]);
+        setTechnicians(mockTechs.map((t) => t.name));
+        setLoading(false);
+        return;
+      }
+
       try {
-        const [summaryData, ncData, usersData] = await Promise.all([
-          dashboardApi.getSummary().catch(() => null),
-          nonConformitiesApi.getAll().catch(() => null),
-          usersApi.getAll().catch(() => null),
+        const [summaryData, ncData, usersData, eqData, inspData] = await Promise.all([
+          dashboardApi.getSummary(),
+          nonConformitiesApi.getAll(),
+          usersApi.getAll(),
+          equipmentApi.getAll(),
+          inspectionsApi.getAll(),
         ]);
 
         if (summaryData) {
-          setSummary((prev) => ({
-            ...prev,
-            completedInspections:
-              summaryData.completedInspections != null
-                ? String(summaryData.completedInspections)
-                : prev.completedInspections,
-            nonConformityRate:
-              summaryData.nonConformityRate != null
-                ? `${summaryData.nonConformityRate}%`
-                : prev.nonConformityRate,
-            activeTechnicians:
-              summaryData.activeTechnicians != null
-                ? String(summaryData.activeTechnicians)
-                : prev.activeTechnicians,
-            overdueInspections:
-              summaryData.overdueInspections != null
-                ? String(summaryData.overdueInspections)
-                : prev.overdueInspections,
-            weeklyProgress:
-              Array.isArray(summaryData.weeklyProgress) && summaryData.weeklyProgress.length === 7
-                ? summaryData.weeklyProgress
-                : prev.weeklyProgress,
-          }));
+          const ncRate =
+            summaryData.nonConformityRate ?? summaryData.nonConformanceRate ?? 0;
+
+          const parsedWeekly = Array.isArray(summaryData.weeklyProgress)
+            ? summaryData.weeklyProgress.map((item) =>
+                typeof item === 'number' ? item : Number(item?.total ?? item?.completed ?? 0)
+              )
+            : [0, 0, 0, 0, 0, 0, 0];
+
+          setSummary({
+            completedInspections: String(summaryData.completedInspections ?? 0),
+            nonConformityRate: `${ncRate}%`,
+            activeTechnicians: String(summaryData.activeTechnicians ?? 0),
+            overdueInspections: String(summaryData.overdueInspections ?? 0),
+            weeklyProgress: parsedWeekly.length === 7 ? parsedWeekly : [0, 0, 0, 0, 0, 0, 0],
+          });
         }
 
-        if (Array.isArray(ncData) && ncData.length > 0) {
+        if (Array.isArray(ncData)) {
           const mappedRows = ncData.map((nc) => ({
             id: nc.id,
-            local: nc.local || nc.siteName || 'Planta Principal',
-            equipment: nc.equipment || nc.equipmentName || 'Inspeção Geral',
+            local: nc.local || nc.siteName || '-',
+            equipment: nc.equipment || nc.equipmentName || '-',
             date: nc.date || (nc.createdAt ? new Date(nc.createdAt).toLocaleDateString('pt-BR') : '-'),
             status:
               nc.severity === 'CRITICAL'
@@ -109,23 +129,55 @@ export const DashboardPage = () => {
                 : 'Alta',
             description: nc.description || nc.title,
           }));
-          setRows([...mappedRows, ...initialRows]);
+          setRows(mappedRows);
         }
 
-        if (Array.isArray(usersData) && usersData.length > 0) {
+        const dynamicQuick = [];
+        if (Array.isArray(eqData)) {
+          eqData
+            .filter((e) => e.status === 'CRITICAL' || e.status === 'HIGH' || e.status === 'MAINTENANCE')
+            .slice(0, 2)
+            .forEach((e) => {
+              dynamicQuick.push({
+                label: e.name,
+                detail:
+                  e.status === 'CRITICAL'
+                    ? `Status crítico (${e.siteName || e.locationName || 'Campo'})`
+                    : `Atenção operacional (${e.siteName || e.locationName || 'Campo'})`,
+                status: e.status === 'CRITICAL' ? 'danger' : 'warning',
+              });
+            });
+        }
+        if (Array.isArray(inspData)) {
+          const pendingReview = inspData.find(
+            (i) => i.status === 'SUBMITTED' || i.status === 'UNDER_REVIEW'
+          );
+          if (pendingReview) {
+            dynamicQuick.push({
+              label: pendingReview.title || pendingReview.templateTitle || 'Revisão de Inspeção',
+              detail: 'Pendente aprovação do supervisor',
+              status: 'info',
+            });
+          }
+        }
+        setQuickItems(dynamicQuick);
+
+        if (Array.isArray(usersData)) {
           const techNames = usersData
             .filter((u) => u.role === 'TECHNICIAN' || u.role === 'SUPERVISOR')
             .map((u) => u.name);
-          if (techNames.length > 0) {
-            setTechnicians(techNames);
-          }
+          setTechnicians(techNames);
         }
       } catch (err) {
-        console.warn('Usando dados de fallback no Dashboard:', err);
+        console.error('Erro ao carregar dados do banco no Dashboard:', err);
+        toast.error('Não foi possível carregar os dados do dashboard.');
+      } finally {
+        setLoading(false);
       }
     };
 
     loadDashboard();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -146,13 +198,15 @@ export const DashboardPage = () => {
 
   const handleAssignTask = (technician) => {
     setAssignedMessage(`Tarefa atribuída a ${technician} com sucesso.`);
+    toast.success(`Tarefa atribuída a ${technician}.`);
     setAssignOpen(false);
     setMenuOpen(false);
   };
 
   const handleQuickMenuAction = (action) => {
     setMenuOpen(false);
-    setAssignedMessage(`${action} foi acionado com sucesso.`);
+    setAssignedMessage('');
+    toast.success(`${action} foi acionado com sucesso.`);
     setAssignOpen(false);
   };
 
@@ -176,6 +230,7 @@ export const DashboardPage = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success('Exportação concluída.');
   };
 
   const filteredRows = statusFilter
@@ -189,36 +244,11 @@ export const DashboardPage = () => {
         <p>Visão geral operacional e acompanhamento de campo.</p>
       </div>
 
-      {assignedMessage && (
-        <div
-          style={{
-            marginBottom: '1rem',
-            padding: '0.75rem 1rem',
-            backgroundColor: 'rgba(16, 185, 129, 0.15)',
-            border: '1px solid #10b981',
-            borderRadius: '0.5rem',
-            color: '#34d399',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <span>{assignedMessage}</span>
-          <button
-            type="button"
-            onClick={() => setAssignedMessage('')}
-            style={{ background: 'transparent', border: 'none', color: '#34d399', cursor: 'pointer', fontWeight: 700 }}
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
-      <div className="stats-grid">
+      <div className={`stats-grid ${loading ? 'is-loading' : ''}`} aria-busy={loading}>
         <StatCard
           title="Inspeções Concluídas"
           value={summary.completedInspections}
-          footerText="+5.2% vs mês anterior"
+          footerText="Total no período"
           type="positive"
           icon="✓"
         />
@@ -255,29 +285,42 @@ export const DashboardPage = () => {
           </div>
 
           <div className="chart" aria-label="Gráfico semanal">
-            <div className="y-axis">
-              <span>200</span>
-              <span>150</span>
-              <span>100</span>
-              <span>50</span>
-              <span>0</span>
-            </div>
-
-            <div className="chart-area">
-              <div className="grid-line" />
-              <div className="grid-line" />
-              <div className="grid-line" />
-              <div className="grid-line" />
-
-              <div className="bars">
-                {summary.weeklyProgress.map((value, index) => (
-                  <div key={index} className="bar-column">
-                    <div className="bar" style={{ height: `${Math.min((value / 200) * 100, 100)}%` }} />
-                    <span>{['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][index]}</span>
+            {(() => {
+              const maxVal = Math.max(...summary.weeklyProgress, 5);
+              return (
+                <>
+                  <div className="y-axis">
+                    <span>{maxVal}</span>
+                    <span>{Math.round(maxVal * 0.75)}</span>
+                    <span>{Math.round(maxVal * 0.5)}</span>
+                    <span>{Math.round(maxVal * 0.25)}</span>
+                    <span>0</span>
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  <div className="chart-area">
+                    <div className="grid-line" />
+                    <div className="grid-line" />
+                    <div className="grid-line" />
+                    <div className="grid-line" />
+
+                    <div className="bars">
+                      {summary.weeklyProgress.map((value, index) => (
+                        <div key={index} className="bar-column">
+                          <div
+                            className="bar"
+                            style={{ height: `${Math.min((value / maxVal) * 100, 100)}%` }}
+                            title={`${value} inspeções`}
+                          >
+                            <span className="bar-value">{value}</span>
+                          </div>
+                          <span>{['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'][index]}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </section>
 

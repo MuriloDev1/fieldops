@@ -1,41 +1,44 @@
 import { useState, useEffect } from 'react';
-import { initialCustomers, initialLocations } from '../core/data/mockData';
 import { sitesApi, clientsApi } from '../core/services/api';
 import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
+import { useToast } from '../core/context/ToastContext';
 
 export const LocationsPage = () => {
-  const [locations, setLocations] = useState(initialLocations);
-  const [customers, setCustomers] = useState(initialCustomers);
+  const toast = useToast();
+  const [locations, setLocations] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    customerId: initialCustomers[0]?.id || '',
+    customerId: '',
     city: '',
     state: '',
     address: '',
     supervisor: ''
   });
 
+  const [loading, setLoading] = useState(true);
+
   const loadData = async () => {
     try {
       const [sitesData, clientsData] = await Promise.all([
-        sitesApi.getAll().catch(() => null),
-        clientsApi.getAll().catch(() => null)
+        sitesApi.getAll(),
+        clientsApi.getAll()
       ]);
 
-      if (Array.isArray(sitesData) && sitesData.length > 0) {
-        setLocations(sitesData);
-      }
-      if (Array.isArray(clientsData) && clientsData.length > 0) {
+      setLocations(Array.isArray(sitesData) ? sitesData : []);
+      if (Array.isArray(clientsData)) {
         setCustomers(clientsData);
-        if (!formData.customerId && clientsData[0]) {
-          setFormData((prev) => ({ ...prev, customerId: clientsData[0].id }));
+        if (clientsData[0]) {
+          setFormData((prev) => ({ ...prev, customerId: prev.customerId || clientsData[0].id }));
         }
       }
     } catch (err) {
-      console.warn('Usando dados de fallback para locais:', err);
+      console.error('Erro ao carregar locais do banco:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -57,8 +60,6 @@ export const LocationsPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const customer = customers.find((c) => c.id === formData.customerId);
-    
     try {
       const created = await sitesApi.create({
         clientId: formData.customerId,
@@ -69,24 +70,11 @@ export const LocationsPage = () => {
         supervisor: formData.supervisor
       });
       setLocations((prev) => [created, ...prev]);
+      setFormData({ name: '', customerId: customers[0]?.id || '', city: '', state: '', address: '', supervisor: '' });
+      setIsDrawerOpen(false);
     } catch (err) {
-      console.warn('Erro ao salvar local na API, salvando localmente:', err);
-      const newLocation = {
-        id: `loc-${Date.now()}`,
-        customerId: formData.customerId,
-        customerName: customer ? customer.name : 'Cliente Indefinido',
-        name: formData.name,
-        city: formData.city,
-        state: formData.state,
-        address: formData.address,
-        supervisor: formData.supervisor || 'Não atribuído',
-        equipmentsCount: 0
-      };
-      setLocations((prev) => [newLocation, ...prev]);
+      toast.error('Erro ao salvar local no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
-
-    setFormData({ name: '', customerId: customers[0]?.id || '', city: '', state: '', address: '', supervisor: '' });
-    setIsDrawerOpen(false);
   };
 
   return (
@@ -107,7 +95,7 @@ export const LocationsPage = () => {
       </div>
 
       <div style={{ marginBottom: '1.25rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-        <label style={{ color: '#cbd5e1', fontSize: '0.875rem', fontWeight: 500 }}>
+        <label style={{ color: '#586779', fontSize: '0.875rem', fontWeight: 500 }}>
           Filtrar por Cliente:
         </label>
         <select
@@ -115,10 +103,10 @@ export const LocationsPage = () => {
           onChange={(e) => setSelectedCustomerId(e.target.value)}
           style={{
             padding: '0.5rem 1rem',
-            backgroundColor: '#1e293b',
-            border: '1px solid #334155',
+            backgroundColor: '#ffffff',
+            border: '1px solid #dfe7f1',
             borderRadius: '0.375rem',
-            color: '#ffffff',
+            color: '#1d2736',
             fontSize: '0.875rem'
           }}
         >
@@ -132,12 +120,13 @@ export const LocationsPage = () => {
       </div>
 
       <DataTable
+        loading={loading}
         title="Plantas Operacionais"
         columns={columns}
         data={filteredLocations}
         totalCount={filteredLocations.length}
         currentPage={1}
-        onRowAction={(row) => alert(`Planta: ${row.name}\nEndereço: ${row.address || row.addressLine}`)}
+        onRowAction={(row) => toast.info(`Planta: ${row.name} — Endereço: ${row.address || row.addressLine}`)}
       />
 
       <ModalDrawer
@@ -147,14 +136,14 @@ export const LocationsPage = () => {
       >
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Cliente Vinculado *
             </label>
             <select
               value={formData.customerId}
               onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
               required
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             >
               {customers.map((cust) => (
                 <option key={cust.id} value={cust.id}>{cust.name}</option>
@@ -163,7 +152,7 @@ export const LocationsPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>
               Nome da Planta / Unidade *
             </label>
             <input
@@ -172,54 +161,54 @@ export const LocationsPage = () => {
               placeholder="Ex: Refinaria Central - Galpão B"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <div style={{ flex: 2 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>Cidade *</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>Cidade *</label>
               <input
                 type="text"
                 required
                 placeholder="Ex: Macaé"
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
               />
             </div>
             <div style={{ flex: 1 }}>
-              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>UF *</label>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>UF *</label>
               <input
                 type="text"
                 required
                 placeholder="RJ"
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+                style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>Endereço Completo</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>Endereço Completo</label>
             <input
               type="text"
               placeholder="Rua, Número, Bairro, CEP"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#cbd5e1', fontSize: '0.875rem' }}>Supervisor de Campo</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#586779', fontSize: '0.875rem' }}>Supervisor de Campo</label>
             <input
               type="text"
               placeholder="Nome do supervisor responsável"
               value={formData.supervisor}
               onChange={(e) => setFormData({ ...formData, supervisor: e.target.value })}
-              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '0.375rem', color: '#fff' }}
+              style={{ width: '100%', padding: '0.75rem', backgroundColor: '#f7f9fc', border: '1px solid #dfe7f1', borderRadius: '0.375rem', color: '#1d2736' }}
             />
           </div>
 

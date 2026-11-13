@@ -1,142 +1,116 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../core/context/AuthContext';
+import { useToast } from '../core/context/ToastContext';
+
+const demoProfiles = [
+  { label: 'Supervisor', email: 'supervisor@fieldops.com' },
+  { label: 'Técnico', email: 'tecnico@fieldops.com' },
+  { label: 'Admin', email: 'admin@fieldops.com' },
+];
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('supervisor@fieldops.com');
   const [password, setPassword] = useState('123456');
   const [submitting, setSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const currentProfile = demoProfiles.find((profile) => profile.email === email);
+  const submitLabel = `Entrar como ${currentProfile ? currentProfile.label : 'Usuário'}`;
+
+  const toast = useToast();
+
+  // Sem destino prévio, a raiz redireciona para a página inicial do perfil.
+  const from = location.state?.from?.pathname || '/';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      const success = await login(email, password);
+      if (success) {
+        navigate(from, { replace: true });
+      }
     } finally {
       setSubmitting(false);
     }
   };
 
+  const selectProfile = (profileEmail) => {
+    setEmail(profileEmail);
+    setPassword('123456');
+  };
+
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      backgroundColor: '#0f172a',
-      color: '#f8fafc',
-      fontFamily: 'sans-serif',
-      padding: '1rem'
-    }}>
-      <div style={{
-        width: '100%',
-        maxWidth: '400px',
-        backgroundColor: '#1e293b',
-        padding: '2.5rem',
-        borderRadius: '0.75rem',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5)',
-        border: '1px solid #334155'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 'bold', color: '#60a5fa', marginBottom: '0.5rem' }}>
-            OpsControl Pro
-          </h1>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem' }}>
-            Plataforma Administrativa & Inspeções de Campo
-          </p>
+    <div className="login-shell">
+      <div className="login-card">
+        <div className="login-brand">
+          <div className="brand-mark large" aria-hidden="true">F</div>
+          <h1>OpsControl Pro</h1>
+          <p>Plataforma Administrativa & Inspeções de Campo</p>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1.25rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: '#cbd5e1' }}>
-              E-mail corporativo
-            </label>
+        <form className="login-form" onSubmit={handleSubmit}>
+          <div className="login-field">
+            <label htmlFor="login-email">E-mail corporativo</label>
             <input
+              id="login-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+              placeholder="nome@empresa.com"
               required
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #475569',
-                borderRadius: '0.375rem',
-                color: '#ffffff',
-                fontSize: '0.875rem'
-              }}
             />
           </div>
 
-          <div style={{ marginBottom: '1.75rem' }}>
-            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.5rem', color: '#cbd5e1' }}>
-              Senha
-            </label>
+          <div className="login-field">
+            <label htmlFor="login-password">Senha</label>
             <input
+              id="login-password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              placeholder="Digite sua senha"
               required
-              style={{
-                width: '100%',
-                padding: '0.75rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #475569',
-                borderRadius: '0.375rem',
-                color: '#ffffff',
-                fontSize: '0.875rem'
-              }}
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              backgroundColor: '#2563eb',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '0.375rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: '0.95rem',
-              transition: 'background-color 0.2s'
-            }}
-          >
-            {submitting ? 'Autenticando...' : 'Entrar como Supervisor'}
+          <div className="login-extra">
+            <button
+              type="button"
+              className="login-link"
+              onClick={() => toast.info('Para redefinir a senha, solicite ao administrador do sistema.')}
+            >
+              Esqueci minha senha
+            </button>
+          </div>
+
+          {error && (
+            <div className="login-error" role="alert">
+              {error}
+            </div>
+          )}
+
+          <button type="submit" className="login-submit" disabled={submitting}>
+            {submitting ? 'Autenticando...' : submitLabel}
           </button>
         </form>
 
-        <div style={{ marginTop: '1.25rem', display: 'flex', justifyContent: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            onClick={() => { setEmail('supervisor@fieldops.com'); setPassword('123456'); }}
-            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: '#0f172a', color: '#94a3b8', border: '1px solid #334155', borderRadius: '0.25rem', cursor: 'pointer' }}
-          >
-            Supervisor
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEmail('tecnico@fieldops.com'); setPassword('123456'); }}
-            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: '#0f172a', color: '#94a3b8', border: '1px solid #334155', borderRadius: '0.25rem', cursor: 'pointer' }}
-          >
-            Técnico
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEmail('admin@fieldops.com'); setPassword('123456'); }}
-            style={{ fontSize: '0.75rem', padding: '0.25rem 0.5rem', backgroundColor: '#0f172a', color: '#94a3b8', border: '1px solid #334155', borderRadius: '0.25rem', cursor: 'pointer' }}
-          >
-            Admin
-          </button>
+        <div className="login-profiles" aria-label="Perfis de acesso rápido">
+          {demoProfiles.map((profile) => (
+            <button
+              key={profile.email}
+              type="button"
+              className={`login-chip ${email === profile.email ? 'active' : ''}`}
+              onClick={() => selectProfile(profile.email)}
+            >
+              {profile.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>

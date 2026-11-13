@@ -61,6 +61,7 @@ public class InspectionTemplateService {
     public TemplateVersionResponseDTO getActiveVersion(UUID templateId) {
         InspectionTemplateVersion version = versionRepository
                 .findFirstByTemplateIdAndActiveForNewInspectionsTrueOrderByVersionNumberDesc(templateId)
+                .flatMap(v -> versionRepository.findByIdWithSectionsAndItems(v.getId()))
                 .orElseThrow(() -> new ResourceNotFoundException("VERSION_NOT_FOUND", "Nenhuma versão ativa encontrada para este modelo."));
         return TemplateVersionResponseDTO.fromEntity(version);
     }

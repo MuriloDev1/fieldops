@@ -6,92 +6,9 @@ import { InspectionTimeline } from '../shared/components/InspectionTimeline';
 import { inspectionsApi } from '../core/services/api';
 import { History, ShieldCheck, Search } from 'lucide-react';
 
-const fallbackInspections = [
-  {
-    id: 'INS-8001',
-    templateTitle: 'Checklist Preventivo de Bomba Hidráulica',
-    clientName: 'Petrobras S.A.',
-    siteName: 'Refinaria RPBC',
-    equipmentName: 'Bomba Centrífuga KSB 01',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-10-02',
-    priority: 'Alta',
-    status: 'IN_PROGRESS',
-    statusLabel: 'Em Andamento',
-    itemsCount: 10,
-    answeredCount: 4,
-    nonConformityCount: 0,
-    tone: 'info'
-  },
-  {
-    id: 'INS-8002',
-    templateTitle: 'Inspeção Elétrica de Subestação',
-    clientName: 'Vale S.A.',
-    siteName: 'Terminal Portuário de Tubarão',
-    equipmentName: 'Painel Elétrico CCM-02',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-10-05',
-    priority: 'Crítica',
-    status: 'SCHEDULED',
-    statusLabel: 'Agendada',
-    itemsCount: 15,
-    answeredCount: 0,
-    nonConformityCount: 0,
-    tone: 'warning'
-  },
-  {
-    id: 'INS-8003',
-    templateTitle: 'Checklist de Segurança e Válvulas',
-    clientName: 'Klabin',
-    siteName: 'Fábrica Monte Alegre',
-    equipmentName: 'Caldeira de Alta Pressão 03',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-09-28',
-    priority: 'Alta',
-    status: 'SUBMITTED',
-    statusLabel: 'Em Revisão',
-    itemsCount: 12,
-    answeredCount: 12,
-    nonConformityCount: 1,
-    tone: 'info'
-  },
-  {
-    id: 'INS-8004',
-    templateTitle: 'Inspeção de Compressores Industriais',
-    clientName: 'Petrobras S.A.',
-    siteName: 'Refinaria Central',
-    equipmentName: 'Válvula de Pressão B',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-09-26',
-    priority: 'Média',
-    status: 'APPROVED',
-    statusLabel: 'Aprovada',
-    itemsCount: 8,
-    answeredCount: 8,
-    nonConformityCount: 0,
-    tone: 'success'
-  },
-  {
-    id: 'INS-8005',
-    templateTitle: 'Inspeção Periódica de Parafuso',
-    clientName: 'Vale S.A.',
-    siteName: 'Planta de Processamento Carajás',
-    equipmentName: 'Compressor Principal',
-    technicianName: 'Carlos Lima',
-    scheduledDate: '2026-09-24',
-    priority: 'Alta',
-    status: 'REJECTED',
-    statusLabel: 'Reprovada',
-    itemsCount: 10,
-    answeredCount: 10,
-    nonConformityCount: 2,
-    tone: 'danger'
-  }
-];
-
 export function HistoryPage() {
-  const [inspectionsList, setInspectionsList] = useState(fallbackInspections);
-  const [selectedInspection, setSelectedInspection] = useState(fallbackInspections[0]);
+  const [inspectionsList, setInspectionsList] = useState([]);
+  const [selectedInspection, setSelectedInspection] = useState(null);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(false);
@@ -101,28 +18,28 @@ export function HistoryPage() {
       try {
         setLoading(true);
         const data = await inspectionsApi.getAll();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           const mapped = data.map((item) => ({
             id: item.id,
-            templateTitle: item.templateTitle || item.templateVersionTitle || item.title || 'Inspeção de Campo',
-            clientName: item.clientName || 'Cliente Industrial',
-            siteName: item.siteName || 'Planta Operacional',
-            equipmentName: item.equipmentName || 'Equipamento',
-            technicianName: item.technicianName || 'Carlos Lima',
-            scheduledDate: item.scheduledDate || (item.scheduledFor ? item.scheduledFor.substring(0, 10) : '2026-10-01'),
-            priority: item.priority || 'Média',
+            templateTitle: item.templateTitle || item.templateVersionTitle || item.title || '-',
+            clientName: item.clientName || '-',
+            siteName: item.siteName || '-',
+            equipmentName: item.equipmentName || '-',
+            technicianName: item.technicianName || '-',
+            scheduledDate: item.scheduledDate || (item.scheduledFor ? item.scheduledFor.substring(0, 10) : '-'),
+            priority: item.priority || '-',
             status: item.status,
             statusLabel: mapStatusLabel(item.status),
-            itemsCount: item.itemsCount ?? item.items?.length ?? 10,
+            itemsCount: item.itemsCount ?? item.items?.length ?? 0,
             answeredCount: item.answeredCount ?? 0,
             nonConformityCount: item.nonConformityCount ?? item.nonConformitiesCount ?? 0,
             tone: mapStatusTone(item.status)
           }));
           setInspectionsList(mapped);
-          setSelectedInspection(mapped[0]);
+          setSelectedInspection(mapped[0] || null);
         }
       } catch (err) {
-        console.warn('[HistoryPage] Usando lista padrão de demonstração:', err);
+        console.error('[HistoryPage] Erro ao carregar inspeções do banco:', err);
       } finally {
         setLoading(false);
       }
@@ -179,10 +96,10 @@ export function HistoryPage() {
       <div className="page-header" style={{ marginBottom: '1.5rem' }}>
         <div>
           <span className="eyebrow" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-            <ShieldCheck size={14} color="#38bdf8" /> Rastreabilidade & Governança (RN-086)
+            <ShieldCheck size={14} color="#2d7df1" /> Rastreabilidade & Governança (RN-086)
           </span>
           <h1 style={{ margin: '0.25rem 0 0.5rem 0' }}>Histórico do Ciclo de Vida das Inspeções</h1>
-          <p style={{ margin: 0, color: '#94a3b8', fontSize: '0.9rem' }}>
+          <p style={{ margin: 0, color: '#627087', fontSize: '0.9rem' }}>
             Consulte a linha do tempo completa de mudanças de estado com auditoria de quem, quando e ações executadas (Task #51).
           </p>
         </div>
@@ -218,31 +135,31 @@ export function HistoryPage() {
       }}>
         {/* Painel Esquerdo: Listagem de Inspeções */}
         <div style={{
-          backgroundColor: '#0f172a',
+          backgroundColor: '#f7f9fc',
           borderRadius: '12px',
-          border: '1px solid #334155',
+          border: '1px solid #dfe7f1',
           overflow: 'hidden'
         }}>
           <div style={{
             padding: '1rem 1.25rem',
-            borderBottom: '1px solid #334155',
+            borderBottom: '1px solid #dfe7f1',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            backgroundColor: '#1e293b'
+            backgroundColor: '#ffffff'
           }}>
-            <strong style={{ color: '#f8fafc', fontSize: '0.95rem' }}>
+            <strong style={{ color: '#1d2736', fontSize: '0.95rem' }}>
               Inspeções Registradas ({filtered.length})
             </strong>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.75rem', color: '#627087' }}>
               Selecione para ver a auditoria
             </span>
           </div>
 
           <div style={{ maxHeight: '650px', overflowY: 'auto' }}>
             {filtered.length === 0 ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
-                <Search size={28} style={{ margin: '0 auto 0.5rem auto', color: '#64748b' }} />
+              <div style={{ padding: '2rem', textAlign: 'center', color: '#627087' }}>
+                <Search size={28} style={{ margin: '0 auto 0.5rem auto', color: '#627087' }} />
                 <p style={{ margin: 0, fontSize: '0.9rem' }}>Nenhuma inspeção encontrada com os filtros aplicados.</p>
               </div>
             ) : (
@@ -254,25 +171,25 @@ export function HistoryPage() {
                     onClick={() => setSelectedInspection(item)}
                     style={{
                       padding: '1rem 1.25rem',
-                      borderBottom: '1px solid #1e293b',
+                      borderBottom: '1px solid #ffffff',
                       backgroundColor: isSelected ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
-                      borderLeft: isSelected ? '4px solid #38bdf8' : '4px solid transparent',
+                      borderLeft: isSelected ? '4px solid #2d7df1' : '4px solid transparent',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#38bdf8' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#2d7df1' }}>
                         {item.id}
                       </span>
                       <Badge tone={item.tone}>{item.statusLabel}</Badge>
                     </div>
 
-                    <h4 style={{ margin: '0 0 0.35rem 0', color: '#f8fafc', fontSize: '0.95rem' }}>
+                    <h4 style={{ margin: '0 0 0.35rem 0', color: '#1d2736', fontSize: '0.95rem' }}>
                       {item.templateTitle}
                     </h4>
 
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                    <div style={{ fontSize: '0.8rem', color: '#627087', lineHeight: 1.4 }}>
                       <div><strong>Ativo:</strong> {item.equipmentName}</div>
                       <div><strong>Cliente:</strong> {item.clientName} ({item.siteName})</div>
                       <div><strong>Técnico:</strong> {item.technicianName} • {item.scheduledDate}</div>
@@ -286,9 +203,9 @@ export function HistoryPage() {
 
         {/* Painel Direito: Linha do Tempo / Trilha de Auditoria */}
         <div style={{
-          backgroundColor: '#0f172a',
+          backgroundColor: '#f7f9fc',
           borderRadius: '12px',
-          border: '1px solid #334155',
+          border: '1px solid #dfe7f1',
           padding: '1.25rem',
           position: 'sticky',
           top: '1rem'
@@ -297,20 +214,20 @@ export function HistoryPage() {
             <div>
               {/* Header da Inspeção Selecionada */}
               <div style={{
-                backgroundColor: '#1e293b',
+                backgroundColor: '#ffffff',
                 padding: '1rem 1.25rem',
                 borderRadius: '8px',
-                border: '1px solid #334155',
+                border: '1px solid #dfe7f1',
                 marginBottom: '1.25rem'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>ID: {selectedInspection.id}</span>
+                  <span style={{ fontSize: '0.8rem', color: '#627087' }}>ID: {selectedInspection.id}</span>
                   <Badge tone={selectedInspection.tone}>{selectedInspection.statusLabel}</Badge>
                 </div>
-                <h3 style={{ margin: '0 0 0.4rem 0', color: '#fff', fontSize: '1.1rem' }}>
+                <h3 style={{ margin: '0 0 0.4rem 0', color: '#1d2736', fontSize: '1.1rem' }}>
                   {selectedInspection.templateTitle}
                 </h3>
-                <div style={{ fontSize: '0.85rem', color: '#cbd5e1', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                <div style={{ fontSize: '0.85rem', color: '#586779', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                   <span><strong>Equipamento:</strong> {selectedInspection.equipmentName}</span>
                   <span><strong>Cliente:</strong> {selectedInspection.clientName}</span>
                 </div>
@@ -324,9 +241,9 @@ export function HistoryPage() {
               />
             </div>
           ) : (
-            <div style={{ padding: '3rem', textAlign: 'center', color: '#94a3b8' }}>
-              <History size={36} style={{ margin: '0 auto 0.75rem auto', color: '#64748b' }} />
-              <h4 style={{ color: '#cbd5e1', margin: '0 0 0.5rem 0' }}>Selecione uma inspeção</h4>
+            <div style={{ padding: '3rem', textAlign: 'center', color: '#627087' }}>
+              <History size={36} style={{ margin: '0 auto 0.75rem auto', color: '#627087' }} />
+              <h4 style={{ color: '#586779', margin: '0 0 0.5rem 0' }}>Selecione uma inspeção</h4>
               <p style={{ margin: 0, fontSize: '0.85rem' }}>
                 Clique em qualquer item da lista à esquerda para carregar sua linha do tempo completa e os eventos de auditoria.
               </p>
