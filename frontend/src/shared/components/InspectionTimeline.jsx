@@ -100,7 +100,7 @@ function formatDate(isoString) {
   }
 }
 
-export function InspectionTimeline({ inspectionId, initialEvents = [], inspectionData = null }) {
+export function InspectionTimeline({ inspectionId, initialEvents = [] }) {
   const [events, setEvents] = useState(initialEvents);
   const [loading, setLoading] = useState(!initialEvents || initialEvents.length === 0);
   const [expandedIndex, setExpandedIndex] = useState(null);
