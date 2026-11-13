@@ -1,3 +1,5 @@
+import Button from './Button';
+
 export default function ErrorState({ onRetry, message = 'Não foi possível carregar os dados.' }) {
   return (
     <div className="error-state">
