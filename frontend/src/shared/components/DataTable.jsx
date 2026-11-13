@@ -9,10 +9,12 @@ export const DataTable = ({
   onPageChange,
   onFilterClick,
   onExportClick,
-  onRowAction
+  onRowAction,
+  loading = false,
+  emptyMessage = 'Nenhum registro encontrado.'
 }) => {
   return (
-    <section className="panel table-panel">
+    <section className="panel table-panel" aria-busy={loading}>
       <div className="panel-header table-header">
         <div>
           <h2>{title}</h2>
@@ -36,16 +38,22 @@ export const DataTable = ({
         <thead>
           <tr>
             {columns.map((col) => (
-              <th key={col.key || col.header}>{col.header}</th>
+              <th key={col.key || col.header} scope="col">{col.header}</th>
             ))}
-            {onRowAction && <th>Ação</th>}
+            {onRowAction && <th scope="col">Ação</th>}
           </tr>
         </thead>
         <tbody>
-          {data.length === 0 ? (
+          {loading ? (
             <tr>
-              <td colSpan={columns.length + (onRowAction ? 1 : 0)} style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
-                Nenhum registro encontrado.
+              <td colSpan={columns.length + (onRowAction ? 1 : 0)} className="table-message" aria-live="polite">
+                <span className="spinner" aria-hidden="true" /> Carregando dados...
+              </td>
+            </tr>
+          ) : data.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length + (onRowAction ? 1 : 0)} className="table-message">
+                {emptyMessage}
               </td>
             </tr>
           ) : (
