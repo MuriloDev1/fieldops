@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { clientsApi } from '../core/services/api';
 import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
+import { useToast } from '../core/context/ToastContext';
 
 export const ClientsPage = () => {
+  const toast = useToast();
   const [customers, setCustomers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -42,7 +44,7 @@ export const ClientsPage = () => {
       setFormData({ name: '', cnpj: '', email: '', phone: '' });
       setIsDrawerOpen(false);
     } catch (err) {
-      alert('Erro ao salvar cliente no banco de dados: ' + (err?.response?.data?.message || err.message));
+      toast.error('Erro ao salvar cliente no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -69,7 +71,7 @@ export const ClientsPage = () => {
         data={customers}
         totalCount={customers.length}
         currentPage={1}
-        onRowAction={(row) => alert(`Cliente: ${row.name}\nCNPJ: ${row.cnpj || row.document}`)}
+        onRowAction={(row) => toast.info(`Cliente: ${row.name} — CNPJ: ${row.cnpj || row.document}`)}
       />
 
       <ModalDrawer
