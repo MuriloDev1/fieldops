@@ -110,3 +110,18 @@ npm run preview
 
 1. **Fallback de Demonstração:** Caso a API backend não esteja em execução no momento da navegação, o frontend entra automaticamente em modo de resiliência com dados mockados sincronizados, permitindo a demonstração completa da interface e da linha do tempo.
 2. **Exportação de Relatórios:** A geração de relatórios completos em PDF requer integração com o serviço backend em execução; no modo estático, a visualização ocorre diretamente na tela do navegador.
+
+## Perfis de acesso e modo demonstração
+
+O menu e as rotas são filtrados pelo perfil do usuário logado (`src/core/permissions.js`):
+
+| Perfil | Acesso principal |
+|---|---|
+| Técnico | Minhas Inspeções, execução do checklist, Equipamentos, Não Conformidades, Histórico |
+| Supervisor | Dashboard, Inspeções, Clientes, Locais, Equipamentos, Modelos, Operações, Ordens de Serviço, Equipe, Analytics e Relatórios |
+| Administrador | Tudo do Supervisor + Configurações |
+| Cliente | Dashboard, Histórico, Analytics e Relatórios |
+
+Quando o backend recusa o login ou está indisponível, o front entra em **modo demonstração**
+(qualquer senha, perfil definido pelo e-mail) com dados de exemplo no Dashboard e na Analytics.
+Para desativar, defina `VITE_ALLOW_DEMO_LOGIN=false` no `.env`.
