@@ -26,6 +26,8 @@ export const EquipmentPage = () => {
     status: 'OK'
   });
 
+  const [loading, setLoading] = useState(true);
+
   const loadData = async () => {
     try {
       const [eqpData, cliData, locData] = await Promise.all([
@@ -51,6 +53,8 @@ export const EquipmentPage = () => {
       }
     } catch (err) {
       console.error('Erro ao carregar equipamentos do banco:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -214,6 +218,7 @@ export const EquipmentPage = () => {
       </div>
 
       <DataTable
+        loading={loading}
         title="Equipamentos Cadastrados"
         columns={columns}
         data={filteredEquipments}
