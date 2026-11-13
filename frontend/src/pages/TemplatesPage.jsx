@@ -4,8 +4,10 @@ import { ModalDrawer } from '../shared/components/ModalDrawer';
 import { StatusBadge } from '../shared/components/StatusBadge';
 import { templatesApi } from '../core/services/api';
 import { Plus, ArrowUpRight, Trash2 } from 'lucide-react';
+import { useToast } from '../core/context/ToastContext';
 
 export const TemplatesPage = () => {
+  const toast = useToast();
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [activeVersionDetails, setActiveVersionDetails] = useState(null);
@@ -119,9 +121,9 @@ export const TemplatesPage = () => {
           },
         ],
       });
-      alert('Modelo de checklist criado com sucesso!');
+      toast.success('Modelo de checklist criado com sucesso!');
     } catch (err) {
-      alert('Erro ao criar modelo: ' + (err.message || 'Verifique os dados'));
+      toast.error('Erro ao criar modelo: ' + (err.message || 'Verifique os dados'));
     }
   };
 
@@ -134,11 +136,11 @@ export const TemplatesPage = () => {
         title: selectedTemplate?.title,
         description: 'Revisão periódica de conformidade operacional',
       });
-      alert('Nova versão publicada com sucesso!');
+      toast.success('Nova versão publicada com sucesso!');
       loadTemplates();
       setSelectedTemplate(null);
     } catch (err) {
-      alert('Erro ao publicar versão: ' + err.message);
+      toast.error('Erro ao publicar versão: ' + err.message);
     }
   };
 
