@@ -4,8 +4,10 @@ import { DataTable } from '../shared/components/DataTable';
 import { ModalDrawer } from '../shared/components/ModalDrawer';
 import { StatusBadge } from '../shared/components/StatusBadge';
 import { QrCode } from 'lucide-react';
+import { useToast } from '../core/context/ToastContext';
 
 export const EquipmentPage = () => {
+  const toast = useToast();
   const [equipments, setEquipments] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -111,7 +113,7 @@ export const EquipmentPage = () => {
       setEquipments((prev) => prev.map((item) => (item.id === eqp.id ? updated : item)));
       setSelectedEquipment(updated);
     } catch (err) {
-      alert('Erro ao atualizar status no banco de dados: ' + (err?.response?.data?.message || err.message));
+      toast.error('Erro ao atualizar status no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
   };
 
@@ -141,7 +143,7 @@ export const EquipmentPage = () => {
         status: 'OK'
       });
     } catch (err) {
-      alert('Erro ao salvar equipamento no banco de dados: ' + (err?.response?.data?.message || err.message));
+      toast.error('Erro ao salvar equipamento no banco de dados: ' + (err?.response?.data?.message || err.message));
     }
   };
 
