@@ -1,6 +1,8 @@
 import { nonConformitiesApi, inspectionsApi } from '../core/services/api';
+import { useToast } from '../core/context/ToastContext';
 
 export const ReportsPage = () => {
+  const toast = useToast();
   const handleDownloadNCReport = async () => {
     try {
       const ncs = await nonConformitiesApi.getAll();
@@ -27,7 +29,7 @@ export const ReportsPage = () => {
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      alert('Erro ao gerar relatório: ' + err.message);
+      toast.error('Erro ao gerar relatório: ' + err.message);
     }
   };
 
@@ -59,7 +61,7 @@ export const ReportsPage = () => {
       link.click();
       document.body.removeChild(link);
     } catch (err) {
-      alert('Erro ao exportar CSV: ' + err.message);
+      toast.error('Erro ao exportar CSV: ' + err.message);
     }
   };
 
