@@ -15,10 +15,10 @@ import { InspectionTimeline } from '../shared/components/InspectionTimeline';
 import { Plus, CheckCircle2, XCircle, Play, Send } from 'lucide-react';
 
 const priorityTones = {
-  LOW: { label: 'Baixa', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)' },
-  MEDIUM: { label: 'Média', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' },
+  LOW: { label: 'Baixa', color: '#1d9a63', bg: 'rgba(16, 185, 129, 0.15)' },
+  MEDIUM: { label: 'Média', color: '#d79b14', bg: 'rgba(245, 158, 11, 0.15)' },
   HIGH: { label: 'Alta', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
-  CRITICAL: { label: 'Crítica', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)' },
+  CRITICAL: { label: 'Crítica', color: '#d94b4b', bg: 'rgba(239, 68, 68, 0.15)' },
 };
 
 const statusLabels = {
@@ -245,7 +245,7 @@ export const OperationsPage = () => {
       header: 'Código',
       key: 'id',
       render: (val) => (
-        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#38bdf8' }}>
+        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#2d7df1' }}>
           {val ? (val.length > 8 ? val.substring(0, 8) + '...' : val) : '-'}
         </span>
       ),
@@ -255,8 +255,8 @@ export const OperationsPage = () => {
       key: 'templateTitle',
       render: (val, row) => (
         <div>
-          <strong style={{ color: '#f8fafc', display: 'block' }}>{val || row.templateVersionTitle || row.title || 'Checklist Padrão'}</strong>
-          <small style={{ color: '#94a3b8' }}>{row.clientName} • {row.siteName}</small>
+          <strong style={{ color: '#1d2736', display: 'block' }}>{val || row.templateVersionTitle || row.title || 'Checklist Padrão'}</strong>
+          <small style={{ color: '#627087' }}>{row.clientName} • {row.siteName}</small>
         </div>
       ),
     },
@@ -267,7 +267,7 @@ export const OperationsPage = () => {
         <div>
           <span>{val || 'Inspeção de Área'}</span>
           {row.equipmentQrCode && (
-            <span style={{ display: 'block', fontSize: '0.75rem', color: '#64748b' }}>
+            <span style={{ display: 'block', fontSize: '0.75rem', color: '#627087' }}>
               QR: {row.equipmentQrCode}
             </span>
           )}
@@ -277,7 +277,7 @@ export const OperationsPage = () => {
     {
       header: 'Técnico Responsável',
       key: 'technicianName',
-      render: (val) => val || <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Não atribuído</span>,
+      render: (val) => val || <span style={{ color: '#627087', fontStyle: 'italic' }}>Não atribuído</span>,
     },
     {
       header: 'Data Prevista',
@@ -288,7 +288,7 @@ export const OperationsPage = () => {
       header: 'Prioridade',
       key: 'priority',
       render: (val) => {
-        const p = priorityTones[val] || { label: val || 'Média', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' };
+        const p = priorityTones[val] || { label: val || 'Média', color: '#627087', bg: 'rgba(148,163,184,0.1)' };
         return (
           <span
             style={{
@@ -335,7 +335,7 @@ export const OperationsPage = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
-            backgroundColor: '#0284c7',
+            backgroundColor: '#0d3f85',
             color: '#fff',
             border: 'none',
             borderRadius: '6px',
@@ -366,7 +366,7 @@ export const OperationsPage = () => {
       >
         <form onSubmit={handleCreateInspection} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Cliente *
             </label>
             <select
@@ -379,10 +379,10 @@ export const OperationsPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             >
               <option value="">Selecione o cliente...</option>
@@ -395,7 +395,7 @@ export const OperationsPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Local / Planta *
             </label>
             <select
@@ -408,10 +408,10 @@ export const OperationsPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             >
               <option value="">Selecione a planta...</option>
@@ -424,7 +424,7 @@ export const OperationsPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Equipamento Alvo (Opcional se for inspeção predial)
             </label>
             <select
@@ -433,10 +433,10 @@ export const OperationsPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             >
               <option value="">Nenhum (Inspeção geral da planta)</option>
@@ -449,7 +449,7 @@ export const OperationsPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Modelo de Checklist *
             </label>
             <select
@@ -458,10 +458,10 @@ export const OperationsPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             >
               {templates.map((t) => (
@@ -474,7 +474,7 @@ export const OperationsPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Técnico Responsável
             </label>
             <select
@@ -483,10 +483,10 @@ export const OperationsPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             >
               <option value="">Atribuir depois</option>
@@ -500,7 +500,7 @@ export const OperationsPage = () => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
                 Data Prevista *
               </label>
               <input
@@ -511,16 +511,16 @@ export const OperationsPage = () => {
                 style={{
                   width: '100%',
                   padding: '0.625rem',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid #334155',
+                  backgroundColor: '#f7f9fc',
+                  border: '1px solid #dfe7f1',
                   borderRadius: '6px',
-                  color: '#fff',
+                  color: '#1d2736',
                 }}
               />
             </div>
 
             <div>
-              <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
                 Prioridade
               </label>
               <select
@@ -529,10 +529,10 @@ export const OperationsPage = () => {
                 style={{
                   width: '100%',
                   padding: '0.625rem',
-                  backgroundColor: '#0f172a',
-                  border: '1px solid #334155',
+                  backgroundColor: '#f7f9fc',
+                  border: '1px solid #dfe7f1',
                   borderRadius: '6px',
-                  color: '#fff',
+                  color: '#1d2736',
                 }}
               >
                 <option value="LOW">Baixa</option>
@@ -544,7 +544,7 @@ export const OperationsPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#586779', marginBottom: '0.35rem' }}>
               Observações / Instruções para o Técnico
             </label>
             <textarea
@@ -555,10 +555,10 @@ export const OperationsPage = () => {
               style={{
                 width: '100%',
                 padding: '0.625rem',
-                backgroundColor: '#0f172a',
-                border: '1px solid #334155',
+                backgroundColor: '#f7f9fc',
+                border: '1px solid #dfe7f1',
                 borderRadius: '6px',
-                color: '#fff',
+                color: '#1d2736',
               }}
             />
           </div>
@@ -570,8 +570,8 @@ export const OperationsPage = () => {
               style={{
                 flex: 1,
                 padding: '0.625rem',
-                backgroundColor: '#334155',
-                color: '#fff',
+                backgroundColor: '#dfe7f1',
+                color: '#1d2736',
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
@@ -584,7 +584,7 @@ export const OperationsPage = () => {
               style={{
                 flex: 1,
                 padding: '0.625rem',
-                backgroundColor: '#0284c7',
+                backgroundColor: '#0d3f85',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '6px',
@@ -606,44 +606,44 @@ export const OperationsPage = () => {
       >
         {selectedInspection && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ backgroundColor: '#0f172a', padding: '1rem', borderRadius: '8px', border: '1px solid #334155' }}>
+            <div style={{ backgroundColor: '#f7f9fc', padding: '1rem', borderRadius: '8px', border: '1px solid #dfe7f1' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>ID: {selectedInspection.id}</span>
-                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#38bdf8' }}>
+                <span style={{ fontSize: '0.875rem', color: '#627087' }}>ID: {selectedInspection.id}</span>
+                <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#2d7df1' }}>
                   {statusLabels[selectedInspection.status] || selectedInspection.status}
                 </span>
               </div>
-              <h3 style={{ margin: '0 0 0.5rem 0', color: '#fff', fontSize: '1.1rem' }}>
+              <h3 style={{ margin: '0 0 0.5rem 0', color: '#1d2736', fontSize: '1.1rem' }}>
                 {selectedInspection.templateTitle || selectedInspection.templateVersionTitle || 'Checklist Operacional'}
               </h3>
-              <p style={{ margin: 0, color: '#cbd5e1', fontSize: '0.9rem' }}>
+              <p style={{ margin: 0, color: '#586779', fontSize: '0.9rem' }}>
                 {selectedInspection.clientName} • {selectedInspection.siteName}
               </p>
               {selectedInspection.equipmentName && (
-                <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                <p style={{ margin: '0.25rem 0 0 0', color: '#627087', fontSize: '0.85rem' }}>
                   Ativo: {selectedInspection.equipmentName}
                 </p>
               )}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px' }}>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>Progresso Itens</span>
-                <strong style={{ color: '#fff', fontSize: '1.1rem' }}>
+              <div style={{ backgroundColor: '#f7f9fc', padding: '0.75rem', borderRadius: '6px' }}>
+                <span style={{ display: 'block', fontSize: '0.75rem', color: '#627087' }}>Progresso Itens</span>
+                <strong style={{ color: '#1d2736', fontSize: '1.1rem' }}>
                   {selectedInspection.answeredCount || 0} / {selectedInspection.itemsCount || (selectedInspection.items?.length || 0)}
                 </strong>
               </div>
-              <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px' }}>
-                <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8' }}>Não Conformidades</span>
-                <strong style={{ color: selectedInspection.nonConformityCount > 0 ? '#ef4444' : '#10b981', fontSize: '1.1rem' }}>
+              <div style={{ backgroundColor: '#f7f9fc', padding: '0.75rem', borderRadius: '6px' }}>
+                <span style={{ display: 'block', fontSize: '0.75rem', color: '#627087' }}>Não Conformidades</span>
+                <strong style={{ color: selectedInspection.nonConformityCount > 0 ? '#d94b4b' : '#1d9a63', fontSize: '1.1rem' }}>
                   {selectedInspection.nonConformityCount || 0}
                 </strong>
               </div>
             </div>
 
             {(selectedInspection.status === 'SCHEDULED' || selectedInspection.status === 'ASSIGNED') && (
-              <div style={{ marginTop: '1rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
-                <p style={{ fontSize: '0.875rem', color: '#cbd5e1' }}>
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #dfe7f1', paddingTop: '1rem' }}>
+                <p style={{ fontSize: '0.875rem', color: '#586779' }}>
                   Esta inspeção está agendada e pronta para início em campo.
                 </p>
                 <button
@@ -652,7 +652,7 @@ export const OperationsPage = () => {
                   style={{
                     width: '100%',
                     padding: '0.75rem',
-                    backgroundColor: '#10b981',
+                    backgroundColor: '#1d9a63',
                     color: '#fff',
                     border: 'none',
                     borderRadius: '6px',
@@ -673,16 +673,16 @@ export const OperationsPage = () => {
             {(selectedInspection.status === 'IN_PROGRESS' || selectedInspection.status === 'REJECTED') &&
               Array.isArray(selectedInspection.items) &&
               selectedInspection.items.length > 0 && (
-                <div style={{ marginTop: '0.5rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
-                  <h4 style={{ margin: '0 0 0.75rem 0', color: '#38bdf8', fontSize: '0.95rem' }}>
+                <div style={{ marginTop: '0.5rem', borderTop: '1px solid #dfe7f1', paddingTop: '1rem' }}>
+                  <h4 style={{ margin: '0 0 0.75rem 0', color: '#2d7df1', fontSize: '0.95rem' }}>
                     Execução do Checklist Imutável
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '300px', overflowY: 'auto', paddingRight: '0.25rem' }}>
                     {selectedInspection.items.map((item) => {
                       const currentAns = checklistAnswers[item.id] || { compliant: true, observation: '' };
                       return (
-                        <div key={item.id} style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px', border: '1px solid #334155' }}>
-                          <div style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 500, marginBottom: '0.5rem' }}>
+                        <div key={item.id} style={{ backgroundColor: '#f7f9fc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #dfe7f1' }}>
+                          <div style={{ fontSize: '0.85rem', color: '#1d2736', fontWeight: 500, marginBottom: '0.5rem' }}>
                             {item.itemTitle || item.title || item.prompt || item.text}
                           </div>
                           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -701,9 +701,9 @@ export const OperationsPage = () => {
                                 fontWeight: 600,
                                 borderRadius: '4px',
                                 border: '1px solid',
-                                borderColor: currentAns.compliant ? '#10b981' : '#334155',
+                                borderColor: currentAns.compliant ? '#1d9a63' : '#dfe7f1',
                                 backgroundColor: currentAns.compliant ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-                                color: currentAns.compliant ? '#34d399' : '#94a3b8',
+                                color: currentAns.compliant ? '#1d9a63' : '#627087',
                                 cursor: 'pointer',
                               }}
                             >
@@ -724,9 +724,9 @@ export const OperationsPage = () => {
                                 fontWeight: 600,
                                 borderRadius: '4px',
                                 border: '1px solid',
-                                borderColor: !currentAns.compliant ? '#ef4444' : '#334155',
+                                borderColor: !currentAns.compliant ? '#d94b4b' : '#dfe7f1',
                                 backgroundColor: !currentAns.compliant ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
-                                color: !currentAns.compliant ? '#f87171' : '#94a3b8',
+                                color: !currentAns.compliant ? '#d94b4b' : '#627087',
                                 cursor: 'pointer',
                               }}
                             >
@@ -746,10 +746,10 @@ export const OperationsPage = () => {
                             style={{
                               width: '100%',
                               padding: '0.4rem 0.6rem',
-                              backgroundColor: '#1e293b',
-                              border: '1px solid #334155',
+                              backgroundColor: '#ffffff',
+                              border: '1px solid #dfe7f1',
                               borderRadius: '4px',
-                              color: '#fff',
+                              color: '#1d2736',
                               fontSize: '0.8rem',
                             }}
                           />
@@ -765,7 +765,7 @@ export const OperationsPage = () => {
                       width: '100%',
                       marginTop: '0.75rem',
                       padding: '0.75rem',
-                      backgroundColor: '#0284c7',
+                      backgroundColor: '#0d3f85',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '6px',
@@ -788,17 +788,17 @@ export const OperationsPage = () => {
               selectedInspection.status === 'UNDER_REVIEW' ||
               selectedInspection.status === 'APPROVED' ||
               selectedInspection.status === 'REJECTED') && (
-              <div style={{ marginTop: '0.5rem', borderTop: '1px solid #334155', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ marginTop: '0.5rem', borderTop: '1px solid #dfe7f1', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div>
-                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#38bdf8', fontSize: '0.95rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#2d7df1', fontSize: '0.95rem' }}>
                     Respostas do Checklist (Enviadas pelo Técnico: {selectedInspection.technicianName || selectedInspection.responsible?.name || 'Técnico'})
                   </h4>
                   {selectedInspection.notes && (
-                    <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px', border: '1px solid #334155', marginBottom: '0.75rem' }}>
-                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.25rem' }}>
+                    <div style={{ backgroundColor: '#f7f9fc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #dfe7f1', marginBottom: '0.75rem' }}>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#627087', marginBottom: '0.25rem' }}>
                         Observação / Ocorrência registrada pelo Técnico:
                       </span>
-                      <span style={{ color: '#e2e8f0', fontSize: '0.85rem' }}>{selectedInspection.notes}</span>
+                      <span style={{ color: '#1d2736', fontSize: '0.85rem' }}>{selectedInspection.notes}</span>
                     </div>
                   )}
 
@@ -811,14 +811,14 @@ export const OperationsPage = () => {
                           <div
                             key={ans.id || idx}
                             style={{
-                              backgroundColor: '#0f172a',
+                              backgroundColor: '#f7f9fc',
                               padding: '0.75rem',
                               borderRadius: '6px',
-                              border: `1px solid ${isNonConform ? 'rgba(239, 68, 68, 0.45)' : '#334155'}`,
+                              border: `1px solid ${isNonConform ? 'rgba(239, 68, 68, 0.45)' : '#dfe7f1'}`,
                             }}
                           >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-                              <span style={{ fontSize: '0.85rem', color: '#f8fafc', fontWeight: 500 }}>
+                              <span style={{ fontSize: '0.85rem', color: '#1d2736', fontWeight: 500 }}>
                                 {idx + 1}. {ans.question?.title || `Item ${idx + 1}`}
                               </span>
                               <span
@@ -829,26 +829,26 @@ export const OperationsPage = () => {
                                   fontWeight: 600,
                                   whiteSpace: 'nowrap',
                                   backgroundColor: isNonConform ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
-                                  color: isNonConform ? '#f87171' : '#34d399',
+                                  color: isNonConform ? '#d94b4b' : '#1d9a63',
                                 }}
                               >
                                 {valStr || 'Respondido'}
                               </span>
                             </div>
                             {ans.observation && (
-                              <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                              <div style={{ marginTop: '0.4rem', fontSize: '0.8rem', color: '#586779' }}>
                                 <strong>Obs:</strong> {ans.observation}
                               </div>
                             )}
                             {ans.photoUrl && (
                               <div style={{ marginTop: '0.5rem' }}>
-                                <span style={{ display: 'block', fontSize: '0.75rem', color: '#38bdf8', marginBottom: '0.25rem' }}>
+                                <span style={{ display: 'block', fontSize: '0.75rem', color: '#2d7df1', marginBottom: '0.25rem' }}>
                                   Evidência Fotográfica Anexada:
                                 </span>
                                 <img
                                   src={ans.photoUrl}
                                   alt="Evidência do item"
-                                  style={{ maxWidth: '100%', maxHeight: '160px', borderRadius: '6px', border: '1px solid #334155', objectFit: 'cover' }}
+                                  style={{ maxWidth: '100%', maxHeight: '160px', borderRadius: '6px', border: '1px solid #dfe7f1', objectFit: 'cover' }}
                                 />
                               </div>
                             )}
@@ -857,7 +857,7 @@ export const OperationsPage = () => {
                       })}
                     </div>
                   ) : (
-                    <p style={{ fontSize: '0.85rem', color: '#94a3b8', margin: 0 }}>
+                    <p style={{ fontSize: '0.85rem', color: '#627087', margin: 0 }}>
                       Nenhuma resposta detalhada registrada neste envio.
                     </p>
                   )}
@@ -866,11 +866,11 @@ export const OperationsPage = () => {
                 {/* Assinatura Digital do Técnico */}
                 {Array.isArray(selectedInspection.answers) &&
                   selectedInspection.answers.some((a) => a.signatureUrl) && (
-                    <div style={{ backgroundColor: '#0f172a', padding: '0.75rem', borderRadius: '6px', border: '1px solid #334155' }}>
-                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.4rem' }}>
+                    <div style={{ backgroundColor: '#f7f9fc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #dfe7f1' }}>
+                      <span style={{ display: 'block', fontSize: '0.75rem', color: '#627087', marginBottom: '0.4rem' }}>
                         Assinatura Digital do Técnico em Campo:
                       </span>
-                      <div style={{ backgroundColor: '#ffffff', padding: '0.5rem', borderRadius: '6px', textAlign: 'center' }}>
+                      <div style={{ backgroundColor: '#1d2736', padding: '0.5rem', borderRadius: '6px', textAlign: 'center' }}>
                         <img
                           src={selectedInspection.answers.find((a) => a.signatureUrl)?.signatureUrl}
                           alt="Assinatura do Técnico"
@@ -890,20 +890,20 @@ export const OperationsPage = () => {
                       border: `1px solid ${selectedInspection.status === 'APPROVED' ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'}`,
                     }}
                   >
-                    <strong style={{ display: 'block', fontSize: '0.85rem', color: selectedInspection.status === 'APPROVED' ? '#34d399' : '#f87171', marginBottom: '0.35rem' }}>
+                    <strong style={{ display: 'block', fontSize: '0.85rem', color: selectedInspection.status === 'APPROVED' ? '#1d9a63' : '#d94b4b', marginBottom: '0.35rem' }}>
                       Avaliação do Supervisor: {selectedInspection.status === 'APPROVED' ? 'APROVADA' : 'REPROVADA'}
                     </strong>
                     {selectedInspection.reviewer?.name && (
-                      <div style={{ fontSize: '0.8rem', color: '#cbd5e1' }}>
+                      <div style={{ fontSize: '0.8rem', color: '#586779' }}>
                         Responsável pela avaliação: <strong>{selectedInspection.reviewer.name}</strong>
                       </div>
                     )}
                     {selectedInspection.reviewedAt && (
-                      <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                      <div style={{ fontSize: '0.8rem', color: '#627087' }}>
                         Data da avaliação: {new Date(selectedInspection.reviewedAt).toLocaleString('pt-BR')}
                       </div>
                     )}
-                    <div style={{ fontSize: '0.85rem', color: '#f8fafc', marginTop: '0.35rem' }}>
+                    <div style={{ fontSize: '0.85rem', color: '#1d2736', marginTop: '0.35rem' }}>
                       <strong>Parecer:</strong> {selectedInspection.reviewObservation || 'Sem observações adicionais.'}
                     </div>
                   </div>
@@ -912,9 +912,9 @@ export const OperationsPage = () => {
             )}
 
             {(selectedInspection.status === 'SUBMITTED' || selectedInspection.status === 'UNDER_REVIEW') && (
-              <div style={{ marginTop: '1rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#fbbf24' }}>Avaliação de Auditoria (Exclusivo Supervisor)</h4>
-                <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #dfe7f1', paddingTop: '1rem' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#d79b14' }}>Avaliação de Auditoria (Exclusivo Supervisor)</h4>
+                <p style={{ fontSize: '0.85rem', color: '#627087', marginBottom: '0.75rem' }}>
                   A inspeção foi finalizada pelo técnico em campo e aguarda a avaliação do supervisor. Ao aprovar, o equipamento fica Ativo; ao reprovar, entra em Manutenção e exige justificativa.
                 </p>
 
@@ -926,10 +926,10 @@ export const OperationsPage = () => {
                   style={{
                     width: '100%',
                     padding: '0.625rem',
-                    backgroundColor: '#0f172a',
-                    border: '1px solid #334155',
+                    backgroundColor: '#f7f9fc',
+                    border: '1px solid #dfe7f1',
                     borderRadius: '6px',
-                    color: '#fff',
+                    color: '#1d2736',
                     marginBottom: '0.75rem',
                   }}
                 />
@@ -942,7 +942,7 @@ export const OperationsPage = () => {
                     style={{
                       flex: 1,
                       padding: '0.625rem',
-                      backgroundColor: '#ef4444',
+                      backgroundColor: '#d94b4b',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '6px',
@@ -964,7 +964,7 @@ export const OperationsPage = () => {
                     style={{
                       flex: 1,
                       padding: '0.625rem',
-                      backgroundColor: '#10b981',
+                      backgroundColor: '#1d9a63',
                       color: '#fff',
                       border: 'none',
                       borderRadius: '6px',
@@ -984,7 +984,7 @@ export const OperationsPage = () => {
             )}
 
             {/* Linha do Tempo e Trilha de Auditoria (Task #51 e RN-086) */}
-            <div style={{ marginTop: '1.25rem', borderTop: '1px solid #334155', paddingTop: '1.25rem' }}>
+            <div style={{ marginTop: '1.25rem', borderTop: '1px solid #dfe7f1', paddingTop: '1.25rem' }}>
               <InspectionTimeline
                 key={selectedInspection.id}
                 inspectionId={selectedInspection.id}
