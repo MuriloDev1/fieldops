@@ -5,17 +5,12 @@ import { StatusBadge } from '../shared/components/StatusBadge';
 import { usersApi } from '../core/services/api';
 import { UserPlus } from 'lucide-react';
 import { useToast } from '../core/context/ToastContext';
+import { USER_STATUS_LABELS as statusLabels } from '../core/utils/statusMaps';
 
 const roleLabels = {
   ADMIN: 'Administrador',
   SUPERVISOR: 'Supervisor Regional',
   TECHNICIAN: 'Técnico de Campo',
-};
-
-const statusLabels = {
-  ACTIVE: 'OK',
-  INACTIVE: 'Desativado',
-  BLOCKED: 'Crítico',
 };
 
 export const TeamManagementPage = () => {
