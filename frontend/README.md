@@ -125,3 +125,13 @@ O menu e as rotas são filtrados pelo perfil do usuário logado (`src/core/permi
 Quando o backend recusa o login ou está indisponível, o front entra em **modo demonstração**
 (qualquer senha, perfil definido pelo e-mail) com dados de exemplo no Dashboard e na Analytics.
 Para desativar, defina `VITE_ALLOW_DEMO_LOGIN=false` no `.env`.
+
+### 5. Testes Unitários (Node Test Runner)
+Para validar os utilitários puros (`src/core/utils/*`) e regras de acesso (`src/core/roleAccess.js`) sem dependências externas:
+```bash
+npm test
+```
+
+### Variáveis de Ambiente Suportadas (`frontend/.env.example`)
+- `VITE_API_URL`: URL base da API REST (ex.: `http://localhost:8080/api/v1` ou `/api/v1` atrás do proxy Nginx).
+- `VITE_ALLOW_DEMO_LOGIN`: controla o fallback automático para sessão de demonstração quando o backend estiver inacessível.
