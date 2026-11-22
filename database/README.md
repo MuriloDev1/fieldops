@@ -288,3 +288,8 @@ Isso permite responder perguntas como:
 5. Definir autenticacao e autorizacao por papel.
 6. Planejar modo offline se a equipe trabalha sem internet em campo.
 
+## 11. Sincronia com Docker Compose e Flyway
+
+O `docker-compose.yml` inicializa o PostgreSQL usando `database/schema.sql` e `database/seed.sql`, enquanto o backend Spring Boot executa as migrações Flyway (`backend/src/main/resources/db/migration/V1__initial_schema.sql` e `V2__seed_data.sql`) com `baseline-version: 1`.
+Sempre que alterar tabelas ou dados iniciais em `database/`, mantenha os arquivos equivalentes do Flyway sincronizados e valide com `node --test scripts/__tests__/repoConsistency.test.mjs`.
+
