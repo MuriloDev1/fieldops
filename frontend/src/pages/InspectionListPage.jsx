@@ -6,13 +6,13 @@ import Input from '../components/Input';
 import Select from '../components/Select';
 import EmptyState from '../components/EmptyState';
 import { useToast } from '../core/context/ToastContext';
+import { normalizeText } from '../core/utils/text';
 import { inspections } from '../data/mockData';
 
 const statusTone = (status) =>
   status === 'Não conforme' ? 'danger' : status === 'Em andamento' ? 'info' : status === 'Pendente' ? 'warning' : status === 'Cancelado' ? 'slate' : 'success';
 
 const statusFilters = ['Conforme', 'Pendente', 'Em andamento', 'Não conforme', 'Concluído', 'Cancelado'];
-const normalize = (text) => String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export default function InspectionListPage() {
   const navigate = useNavigate();
@@ -21,9 +21,9 @@ export default function InspectionListPage() {
   const [status, setStatus] = useState('');
 
   const filtered = inspections.filter((item) => {
-    const term = normalize(search);
+    const term = normalizeText(search);
     const matchesText =
-      !term || [item.id, item.name, item.equipment, item.technician].some((value) => normalize(value).includes(term));
+      !term || [item.id, item.name, item.equipment, item.technician].some((value) => normalizeText(value).includes(term));
     return matchesText && (!status || item.status === status);
   });
 
