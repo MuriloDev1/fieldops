@@ -5,14 +5,9 @@ import { useAuth } from '../../core/context/AuthContext';
 import { useToast } from '../../core/context/ToastContext';
 import { getNavItems, PROFILE_ITEM, ROLE_LABELS, normalizeRole } from '../../core/permissions';
 import { isDemoSession } from '../../core/demo';
+import { normalizeText } from '../../core/utils/text';
 import { nonConformitiesApi } from '../../core/services/api';
 import { nonConformities as mockNonConformities, inspections as mockInspections } from '../../data/mockData';
-
-const normalize = (text) =>
-  String(text || '')
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase();
 
 /** Fecha o menu ao clicar fora ou pressionar Esc. */
 const useDismiss = (ref, open, onClose) => {
@@ -76,9 +71,9 @@ export const Topbar = ({ onOpenMobileMenu }) => {
   const navItems = useMemo(() => [...getNavItems(user?.role), PROFILE_ITEM], [user?.role]);
 
   const results = useMemo(() => {
-    const term = normalize(query.trim());
+    const term = normalizeText(query.trim());
     if (!term) return [];
-    return navItems.filter((item) => normalize(item.label).includes(term)).slice(0, 6);
+    return navItems.filter((item) => normalizeText(item.label).includes(term)).slice(0, 6);
   }, [query, navItems]);
 
   useEffect(() => {
