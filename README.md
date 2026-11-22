@@ -363,6 +363,18 @@ Todos os artefatos formais exigidos na disciplina de **Gestão de Projetos** min
 
 ---
 
+## 🧪 Verificação Estática e Testes Unitários
+
+Para validar a consistência do repositório (scripts shell, JSONs, paridade entre `database/` e migrations Flyway) e rodar a suíte de testes unitários do módulo core do frontend:
+
+```bash
+bash scripts/check_repo.sh
+node --test scripts/__tests__/repoConsistency.test.mjs
+npm --prefix frontend test
+```
+
+---
+
 *Projeto desenvolvido no âmbito do SENAI como referência prática de Engenharia de Software e Gestão Integrada de Projetos.*
 
 
