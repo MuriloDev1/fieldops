@@ -14,25 +14,7 @@ import {
 import { InspectionTimeline } from '../shared/components/InspectionTimeline';
 import { Plus, CheckCircle2, XCircle, Play, Send } from 'lucide-react';
 import { useToast } from '../core/context/ToastContext';
-
-const priorityTones = {
-  LOW: { label: 'Baixa', color: '#1d9a63', bg: 'rgba(16, 185, 129, 0.15)' },
-  MEDIUM: { label: 'Média', color: '#d79b14', bg: 'rgba(245, 158, 11, 0.15)' },
-  HIGH: { label: 'Alta', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
-  CRITICAL: { label: 'Crítica', color: '#d94b4b', bg: 'rgba(239, 68, 68, 0.15)' },
-};
-
-const statusLabels = {
-  ASSIGNED: 'Atribuída',
-  SCHEDULED: 'Agendada',
-  IN_PROGRESS: 'Em Andamento',
-  SUBMITTED: 'Em Revisão',
-  UNDER_REVIEW: 'Em Revisão',
-  APPROVED: 'Aprovada',
-  REJECTED: 'Reprovada',
-  CANCELED: 'Cancelada',
-  CANCELLED: 'Cancelada',
-};
+import { INSPECTION_STATUS_LABELS, getPriorityConfig } from '../core/utils/statusMaps';
 
 export const OperationsPage = () => {
   const toast = useToast();
@@ -290,7 +272,7 @@ export const OperationsPage = () => {
       header: 'Prioridade',
       key: 'priority',
       render: (val) => {
-        const p = priorityTones[val] || { label: val || 'Média', color: '#627087', bg: 'rgba(148,163,184,0.1)' };
+        const p = getPriorityConfig(val);
         return (
           <span
             style={{
@@ -613,7 +595,7 @@ export const OperationsPage = () => {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <span style={{ fontSize: '0.875rem', color: '#627087' }}>ID: {selectedInspection.id}</span>
                 <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#2d7df1' }}>
-                  {statusLabels[selectedInspection.status] || selectedInspection.status}
+                  {INSPECTION_STATUS_LABELS[selectedInspection.status] || selectedInspection.status}
                 </span>
               </div>
               <h3 style={{ margin: '0 0 0.5rem 0', color: '#1d2736', fontSize: '1.1rem' }}>
