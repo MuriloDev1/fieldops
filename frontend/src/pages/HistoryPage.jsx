@@ -4,6 +4,7 @@ import Input from '../components/Input';
 import Select from '../components/Select';
 import { InspectionTimeline } from '../shared/components/InspectionTimeline';
 import { inspectionsApi } from '../core/services/api';
+import { getInspectionStatusLabel, getInspectionStatusTone } from '../core/utils/statusMaps';
 import { History, ShieldCheck, Search } from 'lucide-react';
 
 export function HistoryPage() {
@@ -29,11 +30,11 @@ export function HistoryPage() {
             scheduledDate: item.scheduledDate || (item.scheduledFor ? item.scheduledFor.substring(0, 10) : '-'),
             priority: item.priority || '-',
             status: item.status,
-            statusLabel: mapStatusLabel(item.status),
+            statusLabel: getInspectionStatusLabel(item.status),
             itemsCount: item.itemsCount ?? item.items?.length ?? 0,
             answeredCount: item.answeredCount ?? 0,
             nonConformityCount: item.nonConformityCount ?? item.nonConformitiesCount ?? 0,
-            tone: mapStatusTone(item.status)
+            tone: getInspectionStatusTone(item.status)
           }));
           setInspectionsList(mapped);
           setSelectedInspection(mapped[0] || null);
@@ -47,34 +48,6 @@ export function HistoryPage() {
 
     loadInspections();
   }, []);
-
-  function mapStatusLabel(status) {
-    switch (status) {
-      case 'ASSIGNED':
-      case 'SCHEDULED': return 'Agendada';
-      case 'IN_PROGRESS': return 'Em Andamento';
-      case 'SUBMITTED':
-      case 'UNDER_REVIEW': return 'Em Revisão';
-      case 'APPROVED': return 'Aprovada';
-      case 'REJECTED': return 'Reprovada';
-      case 'CANCELED':
-      case 'CANCELLED': return 'Cancelada';
-      default: return status || 'Pendente';
-    }
-  }
-
-  function mapStatusTone(status) {
-    switch (status) {
-      case 'APPROVED': return 'success';
-      case 'REJECTED': return 'danger';
-      case 'ASSIGNED':
-      case 'SCHEDULED': return 'warning';
-      case 'IN_PROGRESS':
-      case 'SUBMITTED':
-      case 'UNDER_REVIEW': return 'info';
-      default: return 'slate';
-    }
-  }
 
   const filtered = useMemo(() => {
     return inspectionsList.filter((item) => {
