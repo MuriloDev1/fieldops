@@ -4,20 +4,7 @@ import { ModalDrawer } from '../shared/components/ModalDrawer';
 import { StatusBadge } from '../shared/components/StatusBadge';
 import { nonConformitiesApi } from '../core/services/api';
 import { useToast } from '../core/context/ToastContext';
-
-const severityConfig = {
-  LOW: { label: 'Baixa', color: '#1d9a63', bg: 'rgba(16, 185, 129, 0.15)' },
-  MEDIUM: { label: 'Média', color: '#d79b14', bg: 'rgba(245, 158, 11, 0.15)' },
-  HIGH: { label: 'Alta', color: '#f97316', bg: 'rgba(249, 115, 22, 0.15)' },
-  CRITICAL: { label: 'Crítica', color: '#d94b4b', bg: 'rgba(239, 68, 68, 0.15)' },
-};
-
-const statusConfig = {
-  OPEN: { label: 'Aberta', badge: 'Crítico' },
-  IN_PROGRESS: { label: 'Em Análise', badge: 'Atrasado' },
-  RESOLVED: { label: 'Resolvida', badge: 'OK' },
-  CANCELLED: { label: 'Cancelada', badge: 'Desativado' },
-};
+import { NON_CONFORMITY_SEVERITY as severityConfig, NON_CONFORMITY_STATUS as statusConfig } from '../core/utils/statusMaps';
 
 export const NonConformitiesPage = () => {
   const toast = useToast();
