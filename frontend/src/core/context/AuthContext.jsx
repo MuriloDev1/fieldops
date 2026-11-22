@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from '../services/api';
+import { shouldFallbackToDemo } from '../utils/authFallback';
 
 const AuthContext = createContext(null);
 
@@ -66,7 +67,7 @@ export const AuthProvider = ({ children }) => {
       }
       return false;
     } catch (err) {
-      if (ALLOW_DEMO_LOGIN) {
+      if (shouldFallbackToDemo(ALLOW_DEMO_LOGIN, err)) {
         const demo = buildDemoSession(email);
         authService.setSession(demo);
         setUser(demo.user);
