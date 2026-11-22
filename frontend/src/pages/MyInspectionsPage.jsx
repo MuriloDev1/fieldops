@@ -6,6 +6,7 @@ import Input from '../components/Input';
 import Select from '../components/Select';
 import EmptyState from '../components/EmptyState';
 import { useAuth } from '../core/context/AuthContext';
+import { normalizeText } from '../core/utils/text';
 import { inspections } from '../data/mockData';
 
 const statusTone = (status) =>
@@ -19,8 +20,6 @@ const statusFilters = [
   { value: 'Concluído', label: 'Concluídas' },
 ];
 
-const normalize = (text) => String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
 export default function MyInspectionsPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -31,13 +30,13 @@ export default function MyInspectionsPage() {
 
   // Técnicos veem apenas as próprias inspeções; sem correspondência, exibe a lista completa de demonstração.
   const mine = useMemo(() => {
-    const own = inspections.filter((item) => firstName && normalize(item.technician).startsWith(normalize(firstName)));
+    const own = inspections.filter((item) => firstName && normalizeText(item.technician).startsWith(normalizeText(firstName)));
     return own.length > 0 ? own : inspections;
   }, [firstName]);
 
   const filtered = mine.filter((item) => {
-    const term = normalize(search);
-    const matchesText = !term || [item.id, item.name, item.equipment].some((value) => normalize(value).includes(term));
+    const term = normalizeText(search);
+    const matchesText = !term || [item.id, item.name, item.equipment].some((value) => normalizeText(value).includes(term));
     return matchesText && (!status || item.status === status);
   });
 
