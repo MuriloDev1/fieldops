@@ -3,21 +3,20 @@ import Badge from '../components/Badge';
 import Input from '../components/Input';
 import Select from '../components/Select';
 import EmptyState from '../components/EmptyState';
+import { normalizeText } from '../core/utils/text';
 import { serviceOrders } from '../data/mockData';
 
 const statusTone = (status) =>
   status === 'Aberta' ? 'warning' : status === 'Em andamento' ? 'info' : status === 'Concluída' ? 'success' : 'slate';
-
-const normalize = (text) => String(text || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 export default function ServiceOrdersPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
 
   const filtered = serviceOrders.filter((order) => {
-    const term = normalize(search);
+    const term = normalizeText(search);
     const matchesText =
-      !term || [order.id, order.description, order.equipment, order.responsible].some((value) => normalize(value).includes(term));
+      !term || [order.id, order.description, order.equipment, order.responsible].some((value) => normalizeText(value).includes(term));
     return matchesText && (!status || order.status === status);
   });
 
