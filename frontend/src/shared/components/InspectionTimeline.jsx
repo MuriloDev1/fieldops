@@ -15,6 +15,7 @@ import {
   ChevronUp
 } from 'lucide-react';
 import { inspectionsApi } from '../../core/services/api';
+import { formatDateTimePtBr } from '../../core/utils/formatters';
 
 const EVENT_CONFIG = {
   INSPECTION_CREATED: {
@@ -82,23 +83,6 @@ const EVENT_CONFIG = {
     border: 'rgba(148, 163, 184, 0.4)'
   }
 };
-
-function formatDate(isoString) {
-  if (!isoString) return 'Data não registrada';
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return isoString;
-    return d.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  } catch {
-    return isoString;
-  }
-}
 
 export function InspectionTimeline({ inspectionId, initialEvents = [] }) {
   const [events, setEvents] = useState(initialEvents);
@@ -282,7 +266,7 @@ export function InspectionTimeline({ inspectionId, initialEvents = [] }) {
 
                   <span style={{ fontSize: '0.75rem', color: '#627087', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
                     <Clock size={12} />
-                    {formatDate(event.occurredAt)}
+                    {formatDateTimePtBr(event.occurredAt)}
                   </span>
                 </div>
 
