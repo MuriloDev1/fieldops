@@ -95,6 +95,8 @@ export const OperationsPage = () => {
   const [selectedInspection, setSelectedInspection] = useState(null);
   const [checklistAnswers, setChecklistAnswers] = useState({});
   const [reviewReason, setReviewReason] = useState('');
+  const [cancelReason, setCancelReason] = useState('');
+  const [showCancelBox, setShowCancelBox] = useState(false);
   const [isReviewing, setIsReviewing] = useState(false);
 
   // Form State
@@ -164,16 +166,24 @@ export const OperationsPage = () => {
   const handleOpenInspection = async (row) => {
     setSelectedInspection(row);
     setReviewReason('');
+    setCancelReason('');
+    setShowCancelBox(false);
     try {
       const detail = await inspectionsApi.getById(row.id);
       if (detail) {
         setSelectedInspection(detail);
         const initialAnswers = {};
+        const respMap = {};
+        (detail.responses || []).forEach((r) => {
+          respMap[r.inspectionItemId] = r;
+        });
         (detail.items || []).forEach((item) => {
+          const existingResp = respMap[item.id];
+          const isNonConforming = existingResp?.conformity === 'NON_CONFORMING' || existingResp?.valueBoolean === false;
           initialAnswers[item.id] = {
-            compliant: item.compliant !== null && item.compliant !== undefined ? item.compliant : true,
-            observation: item.observation || '',
-            answerJson: item.answerJson || 'CONFORM',
+            compliant: !isNonConforming,
+            observation: existingResp?.observation || item.observation || '',
+            answerJson: isNonConforming ? 'NON_CONFORM' : 'CONFORM',
           };
         });
         setChecklistAnswers(initialAnswers);
@@ -234,21 +244,67 @@ export const OperationsPage = () => {
     try {
       setIsReviewing(true);
       const items = selectedInspection?.items || [];
+      for (const item of items) {
+        const ans = checklistAnswers[item.id] || { compliant: true, observation: '' };
+        if (!ans.compliant && (!ans.observation || !ans.observation.trim())) {
+          alert(`O item "${item.itemTitle || item.title || item.prompt}" foi marcado como Não Conforme e exige observação técnica (RN-038).`);
+          setIsReviewing(false);
+          return;
+        }
+      }
+
       const answersPayload = items.map((item) => {
         const ans = checklistAnswers[item.id] || { compliant: true, observation: '' };
         return {
-          snapshotItemId: item.id,
-          answerJson: ans.compliant ? 'CONFORM' : 'NON_CONFORM',
-          compliant: ans.compliant,
+          inspectionItemId: item.id,
+          valueText: ans.compliant ? 'Sim' : 'Não',
+          valueBoolean: ans.compliant,
+          conformity: ans.compliant ? 'CONFORMING' : 'NON_CONFORMING',
           observation: ans.observation || '',
+          answeredAtDevice: new Date().toISOString(),
         };
       });
-      const updated = await inspectionsApi.submit(id, answersPayload);
+      const updated = await inspectionsApi.submit(id, { answers: answersPayload });
       setInspections((prev) => prev.map((item) => (item.id === id ? updated : item)));
       setSelectedInspection(updated);
       alert('Checklist enviado para revisão do supervisor!');
     } catch (err) {
-      alert('Erro ao submeter checklist: ' + err.message);
+      alert('Erro ao submeter checklist: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setIsReviewing(false);
+    }
+  };
+
+  const handleBeginReview = async (id) => {
+    try {
+      setIsReviewing(true);
+      const updated = await reviewsApi.beginReview(id);
+      if (updated) {
+        setSelectedInspection((prev) => ({ ...prev, ...updated, status: 'UNDER_REVIEW' }));
+        setInspections((prev) => prev.map((item) => (item.id === id ? { ...item, status: 'UNDER_REVIEW' } : item)));
+      }
+    } catch (err) {
+      alert('Erro ao iniciar revisão: ' + (err?.response?.data?.message || err.message));
+    } finally {
+      setIsReviewing(false);
+    }
+  };
+
+  const handleCancelInspection = async (id) => {
+    if (!cancelReason || !cancelReason.trim()) {
+      alert('A justificativa é obrigatória para cancelar uma inspeção (RN-029).');
+      return;
+    }
+    try {
+      setIsReviewing(true);
+      const updated = await inspectionsApi.cancel(id, cancelReason.trim());
+      setInspections((prev) => prev.map((item) => (item.id === id ? updated : item)));
+      setSelectedInspection(updated);
+      setShowCancelBox(false);
+      setCancelReason('');
+      alert('Inspeção cancelada com registro de auditoria.');
+    } catch (err) {
+      alert('Erro ao cancelar inspeção: ' + (err?.response?.data?.message || err.message));
     } finally {
       setIsReviewing(false);
     }
@@ -829,11 +885,111 @@ export const OperationsPage = () => {
                 </div>
               )}
 
+            {(selectedInspection.status === 'SUBMITTED' ||
+              selectedInspection.status === 'UNDER_REVIEW' ||
+              selectedInspection.status === 'APPROVED' ||
+              selectedInspection.status === 'REJECTED') &&
+              (Array.isArray(selectedInspection.answers) || Array.isArray(selectedInspection.responses)) && (
+                <div style={{ marginTop: '0.5rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
+                  <h4 style={{ margin: '0 0 0.75rem 0', color: '#38bdf8', fontSize: '0.95rem' }}>
+                    Respostas e Evidências de Campo (Seção 14.11)
+                  </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '280px', overflowY: 'auto' }}>
+                    {(selectedInspection.answers && selectedInspection.answers.length > 0
+                      ? selectedInspection.answers
+                      : (selectedInspection.responses || []).map((r, idx) => {
+                          const snap = (selectedInspection.items || []).find((it) => it.id === r.inspectionItemId);
+                          let parsedJson = {};
+                          try {
+                            parsedJson = r.valueJson ? JSON.parse(r.valueJson) : {};
+                          } catch {}
+                          return {
+                            id: r.id || idx,
+                            question: { title: snap?.itemTitle || snap?.title || `Item #${idx + 1}` },
+                            value: r.valueText || (r.conformity === 'NON_CONFORMING' ? 'Não Conforme' : 'Conforme'),
+                            observation: r.observation,
+                            photoUrl: parsedJson.photoUrl,
+                            signatureUrl: parsedJson.signatureUrl,
+                          };
+                        })
+                    ).map((ans, idx) => {
+                      const isNonConf =
+                        String(ans.value || '').toLowerCase().includes('não') ||
+                        String(ans.value || '').toLowerCase().includes('nao') ||
+                        String(ans.value || '').toLowerCase().includes('ruim');
+                      return (
+                        <div
+                          key={ans.id || idx}
+                          style={{
+                            backgroundColor: '#0f172a',
+                            padding: '0.75rem',
+                            borderRadius: '6px',
+                            border: `1px solid ${isNonConf ? 'rgba(239,68,68,0.45)' : '#334155'}`,
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                            <strong style={{ color: '#f8fafc', fontSize: '0.84rem' }}>
+                              {idx + 1}. {ans.question?.title || `Item #${idx + 1}`}
+                            </strong>
+                            <span
+                              style={{
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                color: isNonConf ? '#f87171' : '#34d399',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {ans.value}
+                            </span>
+                          </div>
+                          {ans.observation && (
+                            <p style={{ margin: '0.25rem 0', fontSize: '0.8rem', color: '#cbd5e1' }}>
+                              Obs.: {ans.observation}
+                            </p>
+                          )}
+                          {ans.photoUrl && (
+                            <div style={{ marginTop: '0.4rem' }}>
+                              <span style={{ display: 'block', fontSize: '0.73rem', color: '#38bdf8', marginBottom: '0.25rem' }}>
+                                📷 Evidência Fotográfica Vinculada:
+                              </span>
+                              <img
+                                src={ans.photoUrl}
+                                alt="Evidência de campo"
+                                style={{
+                                  maxWidth: '180px',
+                                  maxHeight: '120px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #334155',
+                                  objectFit: 'cover',
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
             {(selectedInspection.status === 'SUBMITTED' || selectedInspection.status === 'UNDER_REVIEW') && (
               <div style={{ marginTop: '1rem', borderTop: '1px solid #334155', paddingTop: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#fbbf24' }}>Revisão de Auditoria (Supervisor)</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <h4 style={{ margin: 0, color: '#fbbf24' }}>Revisão de Auditoria (Supervisor)</h4>
+                  {selectedInspection.status === 'SUBMITTED' && (
+                    <button
+                      type="button"
+                      disabled={isReviewing}
+                      onClick={() => handleBeginReview(selectedInspection.id)}
+                      className="toolbar-button"
+                      style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                    >
+                      Iniciar Revisão Formal
+                    </button>
+                  )}
+                </div>
                 <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '0.75rem' }}>
-                  A inspeção foi finalizada pelo técnico e aguarda parecer formal. Se reprovada, a justificativa é obrigatória.
+                  A inspeção foi finalizada pelo técnico e aguarda parecer formal. Se reprovada, a justificativa é obrigatória (RN-080).
                 </p>
 
                 <textarea
@@ -900,6 +1056,89 @@ export const OperationsPage = () => {
                 </div>
               </div>
             )}
+
+            {selectedInspection.status !== 'APPROVED' &&
+              selectedInspection.status !== 'CANCELED' &&
+              selectedInspection.status !== 'CANCELLED' && (
+                <div style={{ marginTop: '0.75rem', borderTop: '1px solid #334155', paddingTop: '0.85rem' }}>
+                  {!showCancelBox ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowCancelBox(true)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        backgroundColor: 'transparent',
+                        color: '#f87171',
+                        border: '1px solid rgba(239, 68, 68, 0.45)',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Cancelar Inspeção com Justificativa (RN-029)
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#f87171', fontWeight: 600 }}>
+                        Motivo do Cancelamento Obrigatório (RN-029) *
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={cancelReason}
+                        onChange={(e) => setCancelReason(e.target.value)}
+                        placeholder="Informe o motivo administrativo ou operacional do cancelamento..."
+                        style={{
+                          width: '100%',
+                          padding: '0.5rem',
+                          backgroundColor: '#0f172a',
+                          border: '1px solid #ef4444',
+                          borderRadius: '6px',
+                          color: '#fff',
+                          fontSize: '0.82rem',
+                        }}
+                      />
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowCancelBox(false)}
+                          style={{
+                            flex: 1,
+                            padding: '0.45rem',
+                            backgroundColor: '#334155',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '5px',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Voltar
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isReviewing}
+                          onClick={() => handleCancelInspection(selectedInspection.id)}
+                          style={{
+                            flex: 1,
+                            padding: '0.45rem',
+                            backgroundColor: '#ef4444',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '5px',
+                            fontSize: '0.8rem',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Confirmar Cancelamento
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* Linha do Tempo e Trilha de Auditoria (Task #51 e RN-086) */}
             <div style={{ marginTop: '1.25rem', borderTop: '1px solid #334155', paddingTop: '1.25rem' }}>

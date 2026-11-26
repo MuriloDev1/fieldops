@@ -43,20 +43,47 @@ export const TemplatesPage = () => {
   const [loading, setLoading] = useState(false);
 
   // New Template Form State
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    sections: [
+  const defaultInitialSection = () => ({
+    title: 'Inspeção Visual e Segurança',
+    description: 'Verificações iniciais obrigatórias do ativo',
+    orderIndex: 0,
+    items: [
       {
-        title: 'Inspeção Visual e Segurança',
+        text: 'Equipamento limpo e desobstruído?',
+        responseType: 'CONFORM_NON_CONFORM',
+        required: true,
+        observationRequiredOnFailure: true,
+        evidenceRequiredOnFailure: false,
+        optionsJson: '[]',
         orderIndex: 0,
-        items: [
-          { text: 'Equipamento limpo e desobstruído?', responseType: 'CONFORM_NON_CONFORM', required: true, orderIndex: 0 },
-          { text: 'Presença de ruídos ou vibrações anormais?', responseType: 'CONFORM_NON_CONFORM', required: true, orderIndex: 1 },
-        ],
+      },
+      {
+        text: 'Presença de ruídos, vazamentos ou vibrações anormais?',
+        responseType: 'CONFORM_NON_CONFORM',
+        required: true,
+        observationRequiredOnFailure: true,
+        evidenceRequiredOnFailure: true,
+        optionsJson: '[]',
+        orderIndex: 1,
       },
     ],
   });
+
+  const [formData, setFormData] = useState({
+    title: '',
+    category: 'Mecânica / Hidráulica',
+    description: '',
+    sections: [defaultInitialSection()],
+  });
+
+  const responseTypeLabels = {
+    CONFORM_NON_CONFORM: 'Conforme / Não Conforme',
+    BOOLEAN: 'Sim / Não (Booleano)',
+    SINGLE_CHOICE: 'Seleção Única (Bom / Regular / Ruim)',
+    NUMBER: 'Medição Numérica',
+    TEXT_SHORT: 'Texto / Observação',
+    PHOTO: 'Captura de Foto Obrigatória',
+  };
 
   const loadTemplates = async () => {
     setLoading(true);
@@ -87,71 +114,130 @@ export const TemplatesPage = () => {
     }
   };
 
-  const handleAddItem = () => {
-    setFormData((prev) => {
-      const sec = prev.sections[0];
-      const nextItems = [
-        ...sec.items,
+  const handleAddSection = () => {
+    setFormData((prev) => ({
+      ...prev,
+      sections: [
+        ...prev.sections,
         {
-          text: '',
-          responseType: 'CONFORM_NON_CONFORM',
-          required: true,
-          orderIndex: sec.items.length,
+          title: `Seção Técnica ${prev.sections.length + 1}`,
+          description: '',
+          orderIndex: prev.sections.length,
+          items: [
+            {
+              text: '',
+              responseType: 'CONFORM_NON_CONFORM',
+              required: true,
+              observationRequiredOnFailure: true,
+              evidenceRequiredOnFailure: false,
+              optionsJson: '[]',
+              orderIndex: 0,
+            },
+          ],
         },
-      ];
+      ],
+    }));
+  };
+
+  const handleRemoveSection = (secIdx) => {
+    setFormData((prev) => {
+      if (prev.sections.length <= 1) return prev;
       return {
         ...prev,
-        sections: [{ ...sec, items: nextItems }],
+        sections: prev.sections
+          .filter((_, i) => i !== secIdx)
+          .map((s, i) => ({ ...s, orderIndex: i })),
       };
     });
   };
 
-  const handleRemoveItem = (idx) => {
-    setFormData((prev) => {
-      const sec = prev.sections[0];
-      if (sec.items.length <= 1) return prev;
-      const nextItems = sec.items
-        .filter((_, i) => i !== idx)
-        .map((it, i) => ({ ...it, orderIndex: i }));
-      return {
-        ...prev,
-        sections: [{ ...sec, items: nextItems }],
-      };
-    });
+  const handleSectionTitleChange = (secIdx, val) => {
+    setFormData((prev) => ({
+      ...prev,
+      sections: prev.sections.map((s, i) => (i === secIdx ? { ...s, title: val } : s)),
+    }));
   };
 
-  const handleItemTextChange = (idx, val) => {
-    setFormData((prev) => {
-      const sec = prev.sections[0];
-      const nextItems = sec.items.map((it, i) => (i === idx ? { ...it, text: val } : it));
-      return {
-        ...prev,
-        sections: [{ ...sec, items: nextItems }],
-      };
-    });
+  const handleAddItem = (secIdx = 0) => {
+    setFormData((prev) => ({
+      ...prev,
+      sections: prev.sections.map((sec, sIdx) => {
+        if (sIdx !== secIdx) return sec;
+        return {
+          ...sec,
+          items: [
+            ...sec.items,
+            {
+              text: '',
+              responseType: 'CONFORM_NON_CONFORM',
+              required: true,
+              observationRequiredOnFailure: true,
+              evidenceRequiredOnFailure: false,
+              optionsJson: '[]',
+              orderIndex: sec.items.length,
+            },
+          ],
+        };
+      }),
+    }));
+  };
+
+  const handleRemoveItem = (secIdx, itemIdx) => {
+    setFormData((prev) => ({
+      ...prev,
+      sections: prev.sections.map((sec, sIdx) => {
+        if (sIdx !== secIdx || sec.items.length <= 1) return sec;
+        return {
+          ...sec,
+          items: sec.items
+            .filter((_, i) => i !== itemIdx)
+            .map((it, i) => ({ ...it, orderIndex: i })),
+        };
+      }),
+    }));
+  };
+
+  const handleItemFieldChange = (secIdx, itemIdx, field, val) => {
+    setFormData((prev) => ({
+      ...prev,
+      sections: prev.sections.map((sec, sIdx) => {
+        if (sIdx !== secIdx) return sec;
+        return {
+          ...sec,
+          items: sec.items.map((it, iIdx) => {
+            if (iIdx !== itemIdx) return it;
+            const updated = { ...it, [field]: val };
+            if (field === 'responseType' && val === 'SINGLE_CHOICE' && (!it.optionsJson || it.optionsJson === '[]')) {
+              updated.optionsJson = '["Bom","Regular","Ruim","N/A"]';
+            }
+            return updated;
+          }),
+        };
+      }),
+    }));
   };
 
   const handleCreateTemplate = async (e) => {
     e.preventDefault();
+    const hasEmptyItems = formData.sections.some(
+      (sec) => !sec.title.trim() || sec.items.length === 0 || sec.items.some((it) => !it.text.trim() || !it.responseType)
+    );
+    if (hasEmptyItems) {
+      alert('Preencha o título de todas as seções e o texto/tipo de todos os itens antes de publicar (RN-015 / RN-016).');
+      return;
+    }
+
     try {
       const created = await templatesApi.create(formData);
       setTemplates((prev) => [created, ...prev]);
       setIsNewDrawerOpen(false);
       setFormData({
         title: '',
+        category: 'Mecânica / Hidráulica',
         description: '',
-        sections: [
-          {
-            title: 'Inspeção Visual e Segurança',
-            orderIndex: 0,
-            items: [
-              { text: 'Equipamento limpo e desobstruído?', responseType: 'CONFORM_NON_CONFORM', required: true, orderIndex: 0 },
-              { text: 'Presença de ruídos ou vibrações anormais?', responseType: 'CONFORM_NON_CONFORM', required: true, orderIndex: 1 },
-            ],
-          },
-        ],
+        sections: [defaultInitialSection()],
       });
-      alert('Modelo de checklist criado com sucesso!');
+      alert('Modelo de checklist criado e versão v1.0 publicada com sucesso!');
     } catch (err) {
       alert('Erro ao criar modelo: ' + (err.message || 'Verifique os dados'));
     }
@@ -359,10 +445,34 @@ export const TemplatesPage = () => {
 
           <div>
             <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
+              Categoria Técnica *
+            </label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value }))}
+              style={{
+                width: '100%',
+                padding: '0.625rem',
+                backgroundColor: '#0f172a',
+                border: '1px solid #334155',
+                borderRadius: '6px',
+                color: '#fff',
+              }}
+            >
+              <option value="Mecânica / Hidráulica">Mecânica / Hidráulica</option>
+              <option value="Elétrica / Subestação">Elétrica / Subestação</option>
+              <option value="Segurança / NR-13">Segurança / NR-13</option>
+              <option value="Instrumentação & Automação">Instrumentação & Automação</option>
+              <option value="Geral">Geral</option>
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '0.875rem', color: '#cbd5e1', marginBottom: '0.35rem' }}>
               Descrição Operacional *
             </label>
             <textarea
-              rows={3}
+              rows={2}
               required
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
@@ -379,54 +489,179 @@ export const TemplatesPage = () => {
           </div>
 
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-              <label style={{ fontSize: '0.875rem', color: '#cbd5e1', fontWeight: 500 }}>
-                Perguntas do Checklist ({formData.sections[0].items.length})
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+              <label style={{ fontSize: '0.9rem', color: '#38bdf8', fontWeight: 600 }}>
+                Seções e Itens do Checklist ({formData.sections.length} seção(ões))
               </label>
               <button
                 type="button"
-                onClick={handleAddItem}
+                onClick={handleAddSection}
                 className="toolbar-button"
-                style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                style={{ padding: '0.3rem 0.65rem', fontSize: '0.75rem' }}
               >
-                + Adicionar Item
+                + Nova Seção
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {formData.sections[0].items.map((item, idx) => (
-                <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                  <input
-                    type="text"
-                    required
-                    value={item.text}
-                    onChange={(e) => handleItemTextChange(idx, e.target.value)}
-                    placeholder={`Pergunta #${idx + 1}`}
-                    style={{
-                      flex: 1,
-                      padding: '0.5rem 0.625rem',
-                      backgroundColor: '#0f172a',
-                      border: '1px solid #334155',
-                      borderRadius: '6px',
-                      color: '#fff',
-                      fontSize: '0.85rem',
-                    }}
-                  />
-                  {formData.sections[0].items.length > 1 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {formData.sections.map((sec, secIdx) => (
+                <div
+                  key={secIdx}
+                  style={{
+                    backgroundColor: '#0f172a',
+                    border: '1px solid #334155',
+                    borderRadius: '8px',
+                    padding: '0.85rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      required
+                      value={sec.title}
+                      onChange={(e) => handleSectionTitleChange(secIdx, e.target.value)}
+                      placeholder={`Título da Seção #${secIdx + 1}`}
+                      style={{
+                        flex: 1,
+                        padding: '0.45rem 0.625rem',
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #334155',
+                        borderRadius: '6px',
+                        color: '#38bdf8',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                      }}
+                    />
                     <button
                       type="button"
-                      onClick={() => handleRemoveItem(idx)}
-                      style={{
-                        background: 'transparent',
-                        border: 'none',
-                        color: '#ef4444',
-                        cursor: 'pointer',
-                        padding: '0.25rem',
-                      }}
+                      onClick={() => handleAddItem(secIdx)}
+                      className="toolbar-button"
+                      style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
                     >
-                      <Trash2 size={16} />
+                      + Item
                     </button>
-                  )}
+                    {formData.sections.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSection(secIdx)}
+                        title="Remover seção"
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: '#ef4444',
+                          cursor: 'pointer',
+                          padding: '0.25rem',
+                        }}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                    {sec.items.map((item, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#1e293b',
+                          border: '1px solid #334155',
+                          borderRadius: '6px',
+                          padding: '0.65rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <span style={{ color: '#94a3b8', fontSize: '0.75rem', fontWeight: 700 }}>
+                            #{idx + 1}
+                          </span>
+                          <input
+                            type="text"
+                            required
+                            value={item.text}
+                            onChange={(e) => handleItemFieldChange(secIdx, idx, 'text', e.target.value)}
+                            placeholder={`Pergunta ou item de verificação #${idx + 1}`}
+                            style={{
+                              flex: 1,
+                              padding: '0.45rem 0.6rem',
+                              backgroundColor: '#0f172a',
+                              border: '1px solid #334155',
+                              borderRadius: '5px',
+                              color: '#fff',
+                              fontSize: '0.83rem',
+                            }}
+                          />
+                          {sec.items.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveItem(secIdx, idx)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                padding: '0.2rem',
+                              }}
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                          <select
+                            value={item.responseType}
+                            onChange={(e) => handleItemFieldChange(secIdx, idx, 'responseType', e.target.value)}
+                            style={{
+                              padding: '0.35rem 0.5rem',
+                              backgroundColor: '#0f172a',
+                              border: '1px solid #334155',
+                              borderRadius: '5px',
+                              color: '#cbd5e1',
+                              fontSize: '0.78rem',
+                            }}
+                          >
+                            {Object.entries(responseTypeLabels).map(([val, label]) => (
+                              <option key={val} value={val}>
+                                {label}
+                              </option>
+                            ))}
+                          </select>
+
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: '#cbd5e1', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(item.required)}
+                              onChange={(e) => handleItemFieldChange(secIdx, idx, 'required', e.target.checked)}
+                            />
+                            Obrigatório
+                          </label>
+
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: '#fbbf24', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(item.observationRequiredOnFailure)}
+                              onChange={(e) => handleItemFieldChange(secIdx, idx, 'observationRequiredOnFailure', e.target.checked)}
+                            />
+                            Exigir obs. na falha (RN-038)
+                          </label>
+
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: '#f87171', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(item.evidenceRequiredOnFailure)}
+                              onChange={(e) => handleItemFieldChange(secIdx, idx, 'evidenceRequiredOnFailure', e.target.checked)}
+                            />
+                            Crítico: exigir foto (RN-039)
+                          </label>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>

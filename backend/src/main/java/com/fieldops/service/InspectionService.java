@@ -38,6 +38,7 @@ public class InspectionService {
     private final NonConformityRepository nonConformityRepository;
     private final InspectionReviewRepository reviewRepository;
     private final AuditEventRepository auditEventRepository;
+    private final EvidenceRepository evidenceRepository;
 
     @Transactional(readOnly = true)
     public List<AuditEventResponseDTO> getInspectionHistory(UUID inspectionId) {
@@ -316,21 +317,55 @@ public class InspectionService {
 
     @Transactional
     public InspectionResponseDTO start(UUID inspectionId, OffsetDateTime deviceTime) {
+        return startWithValidation(inspectionId, deviceTime, null, null, null);
+    }
+
+    @Transactional
+    public InspectionResponseDTO startWithValidation(
+            UUID inspectionId,
+            OffsetDateTime deviceTime,
+            String qrCode,
+            String latitude,
+            String longitude) {
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("INSPECTION_NOT_FOUND", "Inspeção não encontrada."));
 
-        if (inspection.getStatus() == InspectionStatus.CANCELED) {
-            throw new BusinessException("INVALID_STATE", "Inspeção cancelada não pode ser iniciada.");
+        if (inspection.getStatus() == InspectionStatus.CANCELED || inspection.getStatus() == InspectionStatus.APPROVED) {
+            throw new BusinessException("INVALID_STATE", "Inspeção cancelada ou já aprovada não pode ser iniciada (RN-032 / RN-082).");
+        }
+
+        // RN-025 & RN-064: Validação de QR Code quando informado no check-in
+        if (qrCode != null && !qrCode.isBlank() && inspection.getEquipment() != null && inspection.getEquipment().getQrCode() != null) {
+            String expectedQr = inspection.getEquipment().getQrCode().trim();
+            if (!expectedQr.equalsIgnoreCase(qrCode.trim())) {
+                throw new BusinessException(
+                        "QR_CODE_MISMATCH",
+                        "O QR Code lido (" + qrCode + ") diverge do equipamento agendado (" + expectedQr + ") (RN-025 / RN-064)."
+                );
+            }
         }
 
         inspection.setStatus(InspectionStatus.IN_PROGRESS);
         inspection.setStartedAtServer(OffsetDateTime.now());
         if (deviceTime != null) {
             inspection.setStartedAtDevice(deviceTime);
+        } else if (inspection.getStartedAtDevice() == null) {
+            inspection.setStartedAtDevice(OffsetDateTime.now());
         }
 
         Inspection updated = inspectionRepository.save(inspection);
-        recordAuditEvent(updated, updated.getTechnician(), "INSPECTION_STARTED", "{\"details\":\"Execução em campo iniciada\"}");
+        String gpsInfo = (latitude != null && longitude != null)
+                ? String.format(",\"latitude\":\"%s\",\"longitude\":\"%s\"", latitude.replace("\"", ""), longitude.replace("\"", ""))
+                : "";
+        String qrInfo = (qrCode != null && !qrCode.isBlank())
+                ? String.format(",\"qrCode\":\"%s\"", qrCode.replace("\"", ""))
+                : "";
+        recordAuditEvent(
+                updated,
+                updated.getTechnician(),
+                "INSPECTION_STARTED",
+                "{\"details\":\"Execução em campo iniciada\"" + qrInfo + gpsInfo + "}"
+        );
         return getById(updated.getId());
     }
 
@@ -345,6 +380,10 @@ public class InspectionService {
             String signatureUrl) {
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("INSPECTION_NOT_FOUND", "Inspeção não encontrada."));
+
+        if (inspection.getStatus() == InspectionStatus.APPROVED || inspection.getStatus() == InspectionStatus.CANCELED) {
+            throw new BusinessException("INSPECTION_LOCKED", "Inspeção aprovada ou cancelada está protegida contra alterações (RN-082 / RN-089).");
+        }
 
         InspectionItemSnapshot item = null;
         if (questionId != null) {
@@ -395,6 +434,24 @@ public class InspectionService {
 
         InspectionResponse savedResp = responseRepository.save(resp);
 
+        // RN-045: Persistir metadados da evidência fotográfica quando vinculada à resposta
+        if (photoUrl != null && !photoUrl.isBlank()) {
+            Evidence evidence = Evidence.builder()
+                    .inspection(inspection)
+                    .response(savedResp)
+                    .type("PHOTO")
+                    .storageKey(photoUrl.length() > 240 ? photoUrl.substring(0, 240) : photoUrl)
+                    .originalFileName("evidence-" + targetItem.getItemCode() + ".jpg")
+                    .mimeType("image/jpeg")
+                    .description(observation)
+                    .capturedAtDevice(OffsetDateTime.now())
+                    .serverReceivedAt(OffsetDateTime.now())
+                    .uploadedAt(OffsetDateTime.now())
+                    .createdBy(actor)
+                    .build();
+            evidenceRepository.save(evidence);
+        }
+
         if (resp.getConformity() == ConformityStatus.NON_CONFORMING) {
             boolean exists = nonConformityRepository.findByInspectionIdOrderByCreatedAtDesc(inspectionId).stream()
                     .anyMatch(nc -> nc.getInspectionItem() != null && nc.getInspectionItem().getId().equals(targetItem.getId()));
@@ -421,6 +478,10 @@ public class InspectionService {
     public InspectionResponseDTO completeMobileInspection(UUID inspectionId, UUID userId, String observation) {
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("INSPECTION_NOT_FOUND", "Inspeção não encontrada."));
+
+        if (inspection.getStatus() == InspectionStatus.APPROVED || inspection.getStatus() == InspectionStatus.CANCELED) {
+            throw new BusinessException("INSPECTION_LOCKED", "Inspeção aprovada ou cancelada não pode ser concluída novamente (RN-082 / RN-089).");
+        }
 
         User actor = (userId != null ? userRepository.findById(userId).orElse(null) : null);
         if (actor == null) {
@@ -519,8 +580,12 @@ public class InspectionService {
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("INSPECTION_NOT_FOUND", "Inspeção não encontrada."));
 
+        if (inspection.getStatus() == InspectionStatus.APPROVED) {
+            throw new BusinessException("CANNOT_CANCEL_APPROVED", "Uma inspeção aprovada não pode ser cancelada pelo fluxo comum (RN-030 / RN-082).");
+        }
+
         if (reason == null || reason.isBlank()) {
-            throw new BusinessException("REASON_REQUIRED", "O motivo do cancelamento é obrigatório.");
+            throw new BusinessException("REASON_REQUIRED", "O motivo do cancelamento é obrigatório (RN-029).");
         }
 
         User actor = user != null ? user : inspection.getSupervisor();

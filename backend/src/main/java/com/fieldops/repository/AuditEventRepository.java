@@ -13,4 +13,6 @@ public interface AuditEventRepository extends JpaRepository<AuditEvent, UUID> {
     List<AuditEvent> findByInspectionIdOrderByOccurredAtAsc(UUID inspectionId);
 
     List<AuditEvent> findByEntityTypeAndEntityIdOrderByOccurredAtAsc(String entityType, UUID entityId);
+
+    boolean existsByRequestId(String requestId);
 }

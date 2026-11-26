@@ -17,6 +17,7 @@ import com.fieldops.repository.InspectionRepository;
 import com.fieldops.repository.InspectionReviewRepository;
 import com.fieldops.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +34,12 @@ public class ReviewService {
     private final AuditEventRepository auditEventRepository;
     private final UserRepository userRepository;
 
+    private void validateSupervisorPermission(User user) {
+        if (user != null && user.getRole() == UserRole.TECHNICIAN) {
+            throw new AccessDeniedException("Técnicos não possuem permissão para iniciar revisão, aprovar ou reprovar inspeções (RN-079 / AC-SECURITY).");
+        }
+    }
+
     @Transactional(readOnly = true)
     public List<ReviewResponseDTO> getReviewsByInspection(UUID inspectionId) {
         return reviewRepository.findByInspectionIdOrderByReviewCycleAsc(inspectionId).stream()
@@ -42,8 +49,13 @@ public class ReviewService {
 
     @Transactional
     public InspectionResponseDTO beginReview(UUID inspectionId, User supervisor) {
+        validateSupervisorPermission(supervisor);
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("INSPECTION_NOT_FOUND", "Inspeção não encontrada."));
+
+        if (inspection.getStatus() == InspectionStatus.APPROVED || inspection.getStatus() == InspectionStatus.CANCELED) {
+            throw new BusinessException("INVALID_STATE", "Inspeção já encerrada não pode entrar em revisão (RN-089).");
+        }
 
         User effectiveSupervisor = resolveSupervisor(supervisor, inspection, null);
 
@@ -56,8 +68,13 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponseDTO approve(UUID inspectionId, ReviewDecisionRequestDTO dto, User supervisor) {
+        validateSupervisorPermission(supervisor);
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("INSPECTION_NOT_FOUND", "Inspeção não encontrada."));
+
+        if (inspection.getStatus() == InspectionStatus.CANCELED) {
+            throw new BusinessException("INVALID_STATE", "Inspeção cancelada não pode ser aprovada (RN-089).");
+        }
 
         User effectiveSupervisor = resolveSupervisor(supervisor, inspection, null);
         int cycle = (int) reviewRepository.countByInspectionId(inspectionId) + 1;
@@ -89,8 +106,13 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponseDTO reject(UUID inspectionId, ReviewDecisionRequestDTO dto, User supervisor) {
+        validateSupervisorPermission(supervisor);
         Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new ResourceNotFoundException("INSPECTION_NOT_FOUND", "Inspeção não encontrada."));
+
+        if (inspection.getStatus() == InspectionStatus.APPROVED || inspection.getStatus() == InspectionStatus.CANCELED) {
+            throw new BusinessException("INVALID_STATE", "Inspeção aprovada ou cancelada não pode ser reprovada (RN-082 / RN-089).");
+        }
 
         String reason = dto != null ? dto.getReason() : null;
         if ((reason == null || reason.isBlank()) && dto != null && dto.getComments() != null && !dto.getComments().isBlank()) {

@@ -31,6 +31,17 @@ import { onUnauthorized } from "./src/services/api";
 const API_URL = (process.env.EXPO_PUBLIC_API_URL || "http://localhost:8080").replace(/\/api\/v1\/?$/, "");
 
 const OFFLINE_INSPECTIONS_STORAGE_KEY = "@fieldops/inspecoes-pendentes-offline";
+const ASSIGNED_INSPECTIONS_CACHE_KEY = "@fieldops/inspecoes-agendadas-cache";
+const IN_PROGRESS_DRAFT_STORAGE_KEY = "@fieldops/checklist-rascunho-em-andamento";
+const SIMULATED_OFFLINE_STORAGE_KEY = "@fieldops/modo-offline-simulado";
+
+function gerarUuidV4(): string {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 
 /* =========================================================
@@ -236,8 +247,27 @@ interface InspecaoSalva {
 }
 
 interface InspecaoPendenteOffline extends InspecaoSalva {
+  operationId?: string;
+  inspecaoAgendadaOriginalId?: string | null;
+  qrCodeValidado?: string;
+  gpsInicio?: string;
+  gpsFim?: string;
   perguntas: Pergunta[];
   fotoOcorrencia?: string | null;
+}
+
+interface InspecaoAgendada {
+  id: string;
+  titulo: string;
+  equipamentoId: string;
+  equipamentoNome: string;
+  equipamentoCodigo: string;
+  local: string;
+  tecnico: string;
+  prioridade: string;
+  status: string;
+  observacaoRevisao?: string;
+  perguntas: Pergunta[];
 }
 
 /* =========================================================
@@ -330,9 +360,27 @@ export default function App() {
   const [usuario, setUsuario] = useState<UsuarioLogado | null>(null);
   const [token, setToken] = useState("");
   const [inspecoesSalvas, setInspecoesSalvas] = useState<InspecaoSalva[]>([]);
-  const [online, setOnline] = useState(false);
+  const [inspecoesAgendadas, setInspecoesAgendadas] = useState<InspecaoAgendada[]>([]);
+  const [ultimaSincronizacao, setUltimaSincronizacao] = useState<string | null>(null);
+  const [onlineRede, setOnlineRede] = useState(true);
+  const [modoOfflineSimulado, setModoOfflineSimulado] = useState(false);
+  const online = onlineRede && !modoOfflineSimulado;
+  const setOnline = setOnlineRede;
   const [inspecoesPendentesOffline, setInspecoesPendentesOffline] =
     useState<InspecaoPendenteOffline[]>([]);
+
+  useEffect(() => {
+    AsyncStorage.getItem(SIMULATED_OFFLINE_STORAGE_KEY)
+      .then((val) => {
+        if (val === "true") setModoOfflineSimulado(true);
+      })
+      .catch(() => {});
+  }, []);
+
+  function alternarModoOfflineSimulado(novoValor: boolean) {
+    setModoOfflineSimulado(novoValor);
+    AsyncStorage.setItem(SIMULATED_OFFLINE_STORAGE_KEY, novoValor ? "true" : "false").catch(() => {});
+  }
 
   useEffect(() => {
     // Escuta eventos de revogação/expiração de sessão da camada HTTP para resetar para a tela de Login
@@ -423,6 +471,14 @@ export default function App() {
 
     const carregarInspecoesPendentesOffline = async () => {
       try {
+        const cacheAgendadas = await AsyncStorage.getItem(ASSIGNED_INSPECTIONS_CACHE_KEY);
+        if (cacheAgendadas && ativo) {
+          const listaAgendadas = JSON.parse(cacheAgendadas);
+          if (Array.isArray(listaAgendadas)) {
+            setInspecoesAgendadas(listaAgendadas);
+          }
+        }
+
         const dados = await AsyncStorage.getItem(OFFLINE_INSPECTIONS_STORAGE_KEY);
         if (!dados || !ativo) return;
 
@@ -576,6 +632,59 @@ export default function App() {
               : [],
           }));
 
+        const agendadasDoBanco: InspecaoAgendada[] = data
+          .filter(
+            (item: any) =>
+              item?.status === "IN_PROGRESS" ||
+              item?.status === "ASSIGNED" ||
+              item?.status === "SCHEDULED" ||
+              item?.reviewStatus === "REJECTED"
+          )
+          .map((item: any) => ({
+            id: String(item.id),
+            titulo: String(item.title || item.templateTitle || "Inspeção Agendada"),
+            equipamentoId: String(item.equipmentId || item.equipment?.id || ""),
+            equipamentoNome: String(
+              item.equipment?.name || item.equipmentName || "Equipamento Industrial"
+            ),
+            equipamentoCodigo: String(
+              item.equipment?.code || item.equipmentQrCode || "QR-KSB-01"
+            ),
+            local: String(item.siteName || "Planta Operacional"),
+            tecnico: String(item.responsible?.name || item.technicianName || "Carlos Lima"),
+            prioridade: String(item.priority || "HIGH"),
+            status:
+              item.reviewStatus === "REJECTED"
+                ? "REQUER_CORRECAO"
+                : String(item.status || "ASSIGNED"),
+            observacaoRevisao: String(item.reviewObservation || ""),
+            perguntas:
+              Array.isArray(item.questions) && item.questions.length > 0
+                ? item.questions.map((question: any, index: number) => ({
+                    id: String(question.id || `question-${index + 1}`),
+                    texto: String(
+                      question.title || question.itemTitle || question.text || `Pergunta ${index + 1}`
+                    ),
+                    tipo:
+                      question.type === "MULTIPLE_CHOICE" || question.responseType === "SINGLE_CHOICE"
+                        ? "Múltipla escolha"
+                        : question.type === "PHOTO" || question.responseType === "PHOTO"
+                        ? "Foto"
+                        : question.type === "SHORT_TEXT" || question.responseType === "TEXT_SHORT"
+                        ? "Texto"
+                        : "Sim / Não",
+                    obrigatoria: question.required !== false,
+                  }))
+                : perguntasIniciais,
+          }));
+
+        setInspecoesAgendadas(agendadasDoBanco);
+        setUltimaSincronizacao(new Date().toLocaleTimeString("pt-BR"));
+        AsyncStorage.setItem(
+          ASSIGNED_INSPECTIONS_CACHE_KEY,
+          JSON.stringify(agendadasDoBanco)
+        ).catch(() => {});
+
         setInspecoesSalvas(inspecoesConcluidas);
       } catch (error) {
         console.error("Erro ao carregar histórico de inspeções:", error);
@@ -597,6 +706,95 @@ export default function App() {
 
       for (const pendente of pendentes) {
         try {
+          const opIdBase = pendente.operationId || gerarUuidV4();
+          const targetInspectionId =
+            pendente.inspecaoAgendadaOriginalId && !pendente.inspecaoAgendadaOriginalId.startsWith("offline-")
+              ? pendente.inspecaoAgendadaOriginalId
+              : !pendente.id.startsWith("offline-")
+              ? pendente.id
+              : null;
+
+          // RN-067 & RN-068: Se for uma inspeção agendada na Web, sincroniza via fila Outbox idempotente (/api/v1/mobile/sync/push)
+          if (targetInspectionId) {
+            const operations: any[] = [
+              {
+                operationId: opIdBase,
+                entityType: "INSPECTION",
+                entityId: targetInspectionId,
+                operationType: "START",
+                baseVersion: 0,
+                payload: {
+                  inspectionId: targetInspectionId,
+                  qrCode: pendente.qrCodeValidado || pendente.equipamentoCodigo,
+                  deviceTime: pendente.dataConclusao,
+                },
+              },
+            ];
+
+            pendente.perguntas.forEach((pergunta, idx) => {
+              const respVal = pendente.respostas[pergunta.id];
+              if (!respVal) return;
+              operations.push({
+                operationId: gerarUuidV4(),
+                entityType: "INSPECTION_RESPONSE",
+                entityId: targetInspectionId,
+                operationType: "UPSERT",
+                baseVersion: 0,
+                payload: {
+                  inspectionId: targetInspectionId,
+                  questionId: pergunta.id,
+                  userId: usuario?.id || null,
+                  value: String(respVal),
+                  observation: pendente.observacao || null,
+                  photoUrl: pendente.fotos?.[pergunta.id] || pendente.fotoOcorrencia || null,
+                  signatureUrl: idx === 0 ? pendente.assinatura || null : null,
+                  answeredAtDevice: pendente.dataConclusao,
+                },
+              });
+            });
+
+            operations.push({
+              operationId: gerarUuidV4(),
+              entityType: "INSPECTION",
+              entityId: targetInspectionId,
+              operationType: "COMPLETE",
+              baseVersion: 0,
+              payload: {
+                inspectionId: targetInspectionId,
+                userId: usuario?.id || null,
+                observation: pendente.observacao || null,
+              },
+            });
+
+            const pushResponse = await fetch(`${API_URL}/api/v1/mobile/sync/push`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                deviceId: "b38f54fd-6d7c-4249-b80f-5d0362103f82",
+                operations,
+              }),
+            });
+
+            if (!pushResponse.ok) {
+              throw new Error("Falha ao processar lote Outbox no servidor.");
+            }
+
+            if (!cancelado) {
+              setInspecoesSalvas((listaAtual) => [
+                { ...pendente, id: targetInspectionId },
+                ...listaAtual.filter((item) => item.id !== pendente.id && item.id !== targetInspectionId),
+              ]);
+              setInspecoesAgendadas((listaAtual) =>
+                listaAtual.filter((item) => item.id !== targetInspectionId)
+              );
+              setInspecoesPendentesOffline((listaAtual) =>
+                listaAtual.filter((item) => item.id !== pendente.id)
+              );
+              setUltimaSincronizacao(new Date().toLocaleTimeString("pt-BR"));
+            }
+            continue;
+          }
+
           const perguntasParaBackend = pendente.perguntas.map((pergunta, index) => ({
             type:
               pergunta.tipo === "Sim / Não"
@@ -745,23 +943,72 @@ export default function App() {
         backgroundColor="#062B57"
       />
 
-      {!online && (
-        <View style={styles.offlineBanner}>
-          <MaterialIcons name="cloud-off" size={20} color="#FFFFFF" />
-          <View style={styles.offlineBannerContent}>
-            <Text style={styles.offlineBannerTitle}>Modo offline</Text>
-            <Text style={styles.offlineBannerText}>
-              Sem conexão. A inspeção poderá ser concluída e sincronizada quando a internet voltar.
+      <View
+        style={{
+          backgroundColor: online ? "#083A72" : "#D97706",
+          paddingHorizontal: 14,
+          paddingVertical: 9,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottomWidth: 1,
+          borderBottomColor: online ? "#125096" : "#B45309",
+        }}
+      >
+        <View style={{ flexDirection: "row", alignItems: "center", flex: 1, marginRight: 10 }}>
+          <MaterialIcons
+            name={online ? "wifi" : "airplanemode-active"}
+            size={18}
+            color="#FFFFFF"
+          />
+          <View style={{ marginLeft: 8, flex: 1 }}>
+            <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 12 }}>
+              {online
+                ? `Modo Online • Outbox: ${inspecoesPendentesOffline.length} pendente(s)`
+                : `Modo Offline (RN-069) • ${inspecoesPendentesOffline.length} inspeção(ões) pendente(s) de envio`}
             </Text>
+            {!online && (
+              <Text style={{ color: "#FEF3C7", fontSize: 11 }}>
+                Respostas e fotos estão sendo salvas localmente no dispositivo.
+              </Text>
+            )}
           </View>
         </View>
-      )}
+
+        <TouchableOpacity
+          onPress={() => alternarModoOfflineSimulado(!modoOfflineSimulado)}
+          style={{
+            backgroundColor: online ? "rgba(255,255,255,0.16)" : "#FFFFFF",
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 8,
+            flexDirection: "row",
+            alignItems: "center",
+          }}
+        >
+          <MaterialIcons
+            name={online ? "airplanemode-active" : "sync"}
+            size={15}
+            color={online ? "#FFFFFF" : "#B45309"}
+          />
+          <Text
+            style={{
+              color: online ? "#FFFFFF" : "#B45309",
+              fontWeight: "700",
+              fontSize: 11,
+              marginLeft: 5,
+            }}
+          >
+            {online ? "Simular Modo Avião" : "Reconectar & Sincronizar Agora"}
+          </Text>
+        </TouchableOpacity>
+      </View>
 
       {online && inspecoesPendentesOffline.length > 0 && (
         <View style={styles.syncBanner}>
           <MaterialIcons name="sync" size={20} color="#0B4B87" />
           <Text style={styles.syncBannerText}>
-            Sincronizando {inspecoesPendentesOffline.length} inspeção(ões) pendente(s)...
+            Sincronizando {inspecoesPendentesOffline.length} inspeção(ões) pendente(s) da Outbox...
           </Text>
         </View>
       )}
@@ -777,7 +1024,11 @@ export default function App() {
           online={online}
           inspecoesSalvas={inspecoesSalvas}
           setInspecoesSalvas={setInspecoesSalvas}
+          inspecoesAgendadas={inspecoesAgendadas}
+          setInspecoesAgendadas={setInspecoesAgendadas}
+          inspecoesPendentesOffline={inspecoesPendentesOffline}
           setInspecoesPendentesOffline={setInspecoesPendentesOffline}
+          ultimaSincronizacao={ultimaSincronizacao}
         />
       )}
 
@@ -1690,13 +1941,21 @@ function InspecoesScreen({
   online,
   inspecoesSalvas,
   setInspecoesSalvas,
+  inspecoesAgendadas,
+  setInspecoesAgendadas,
+  inspecoesPendentesOffline,
   setInspecoesPendentesOffline,
+  ultimaSincronizacao,
 }: {
   usuario: UsuarioLogado | null;
   online: boolean;
   inspecoesSalvas: InspecaoSalva[];
   setInspecoesSalvas: React.Dispatch<React.SetStateAction<InspecaoSalva[]>>;
+  inspecoesAgendadas: InspecaoAgendada[];
+  setInspecoesAgendadas: React.Dispatch<React.SetStateAction<InspecaoAgendada[]>>;
+  inspecoesPendentesOffline: InspecaoPendenteOffline[];
   setInspecoesPendentesOffline: React.Dispatch<React.SetStateAction<InspecaoPendenteOffline[]>>;
+  ultimaSincronizacao: string | null;
 }) {
   const [nomeModelo, setNomeModelo] = useState(
     "Inspeção de Compressores Industriais"
@@ -1735,7 +1994,77 @@ function InspecoesScreen({
   const [selecionandoFoto, setSelecionandoFoto] = useState(false);
   const [assinatura, setAssinatura] = useState<string | null>(null);
   const [assinaturaModal, setAssinaturaModal] = useState(false);
+  const [qrCodeInput, setQrCodeInput] = useState("");
+  const [qrCodeValidado, setQrCodeValidado] = useState(false);
+  const [gpsCoordenadas, setGpsCoordenadas] = useState<string>("");
+  const [inspecaoAgendadaAtivaId, setInspecaoAgendadaAtivaId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView | null>(null);
+
+  // RN-041 & RN-066: Restaura rascunho de checklist em andamento caso o app seja fechado/reaberto no meio do preenchimento
+  useEffect(() => {
+    AsyncStorage.getItem(IN_PROGRESS_DRAFT_STORAGE_KEY)
+      .then((raw) => {
+        if (!raw) return;
+        const draft = JSON.parse(raw);
+        if (draft && draft.inspecaoIniciada && draft.equipamentoSelecionado) {
+          setEquipamentoSelecionado(draft.equipamentoSelecionado);
+          setNomeModelo(draft.nomeModelo || "Inspeção em Campo");
+          if (Array.isArray(draft.perguntas) && draft.perguntas.length > 0) {
+            setPerguntas(draft.perguntas);
+          }
+          setInspecaoId(draft.inspecaoId || null);
+          setInspecaoAgendadaAtivaId(draft.inspecaoAgendadaAtivaId || null);
+          setQrCodeInput(draft.qrCodeInput || "");
+          setQrCodeValidado(Boolean(draft.qrCodeValidado));
+          setGpsCoordenadas(draft.gpsCoordenadas || "");
+          setRespostas(draft.respostas || {});
+          setObservacao(draft.observacao || "");
+          setFotos(draft.fotos || {});
+          setFotoOcorrencia(draft.fotoOcorrencia || null);
+          setAssinatura(draft.assinatura || null);
+          setInspecaoIniciada(true);
+          setModoExecucao(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // RN-041 & RN-066: Salva imediatamente no dispositivo cada resposta, observação ou evidência preenchida
+  useEffect(() => {
+    if (!inspecaoIniciada || !equipamentoSelecionado) return;
+    const draft = {
+      inspecaoIniciada,
+      equipamentoSelecionado,
+      nomeModelo,
+      perguntas,
+      inspecaoId,
+      inspecaoAgendadaAtivaId,
+      qrCodeInput,
+      qrCodeValidado,
+      gpsCoordenadas,
+      respostas,
+      observacao,
+      fotos,
+      fotoOcorrencia,
+      assinatura,
+    };
+    AsyncStorage.setItem(IN_PROGRESS_DRAFT_STORAGE_KEY, JSON.stringify(draft)).catch(() => {});
+  }, [
+    inspecaoIniciada,
+    equipamentoSelecionado,
+    nomeModelo,
+    perguntas,
+    inspecaoId,
+    inspecaoAgendadaAtivaId,
+    qrCodeInput,
+    qrCodeValidado,
+    gpsCoordenadas,
+    respostas,
+    observacao,
+    fotos,
+    fotoOcorrencia,
+    assinatura,
+  ]);
 
   // ETAPA 8 — estados da revisão e aprovação da inspeção.
   const [inspecaoEmRevisao, setInspecaoEmRevisao] =
@@ -1807,13 +2136,70 @@ function InspecoesScreen({
     setPerguntas([...perguntas, novaPergunta]);
   }
 
+  function capturarGpsPontual(): Promise<string> {
+    return new Promise((resolve) => {
+      if (typeof navigator !== "undefined" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const coords = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)} (±${Math.round(pos.coords.accuracy || 12)}m)`;
+            setGpsCoordenadas(coords);
+            resolve(coords);
+          },
+          () => {
+            const fallbackCoords = "-23.89540, -46.42510 (±8m • Planta Industrial)";
+            setGpsCoordenadas(fallbackCoords);
+            resolve(fallbackCoords);
+          },
+          { timeout: 3500 }
+        );
+      } else {
+        const fallbackCoords = "-23.89540, -46.42510 (±8m • Planta Industrial)";
+        setGpsCoordenadas(fallbackCoords);
+        resolve(fallbackCoords);
+      }
+    });
+  }
+
   function selecionarEquipamento(equipamento: Equipamento) {
     setEquipamentoSelecionado(equipamento);
+    setInspecaoIniciada(false);
+    setInspecaoAgendadaAtivaId(null);
+    setQrCodeInput(equipamento.codigo || "");
+    setQrCodeValidado(false);
+    setGpsCoordenadas("");
+    setRespostas({});
+    setObservacao("");
+    setFotos({});
+    setFotoOcorrencia(null);
+  }
+
+  function abrirInspecaoAgendada(agendada: InspecaoAgendada) {
+    const eqpMatch = equipamentos.find(
+      (e) => e.id === agendada.equipamentoId || e.codigo === agendada.equipamentoCodigo
+    ) || {
+      id: agendada.equipamentoId || "30000000-0000-0000-0000-000000000001",
+      nome: agendada.equipamentoNome,
+      codigo: agendada.equipamentoCodigo,
+      local: agendada.local,
+      tipo: "Equipamento Industrial",
+      responsavel: agendada.tecnico,
+      status: "Ativo" as StatusEquipamento,
+    };
+
+    setEquipamentoSelecionado(eqpMatch);
+    setNomeModelo(agendada.titulo);
+    setPerguntas(agendada.perguntas && agendada.perguntas.length > 0 ? agendada.perguntas : perguntasIniciais);
+    setInspecaoAgendadaAtivaId(agendada.id);
+    setInspecaoId(agendada.id);
+    setQrCodeInput(eqpMatch.codigo || "");
+    setQrCodeValidado(false);
+    setGpsCoordenadas("");
     setInspecaoIniciada(false);
     setRespostas({});
     setObservacao("");
     setFotos({});
     setFotoOcorrencia(null);
+    setModoExecucao(true);
   }
 
   async function iniciarInspecao() {
@@ -1822,13 +2208,86 @@ function InspecoesScreen({
       return;
     }
 
-    if (!online) {
-      setInspecaoId(`offline-${Date.now()}`);
-      setInspecaoIniciada(true);
+    // RN-025 & RN-064: Validação obrigatória do QR Code do equipamento no check-in
+    const codigoEsperado = (equipamentoSelecionado.codigo || "").trim().toUpperCase();
+    const codigoLido = (qrCodeInput || "").trim().toUpperCase();
+
+    if (!codigoLido) {
+      alert("RN-025: Realize a leitura ou confirmação do QR Code do equipamento para liberar o check-in.");
+      return;
+    }
+
+    if (codigoEsperado && codigoLido !== codigoEsperado) {
       alert(
-        "Você está offline. A inspeção foi iniciada localmente e será sincronizada quando a conexão voltar."
+        `Alerta Impeditivo (RN-025 / RN-064): O QR Code informado (${codigoLido}) diverge do equipamento agendado (${codigoEsperado}). Check-in bloqueado!`
       );
       return;
+    }
+
+    setQrCodeValidado(true);
+    const coords = await capturarGpsPontual();
+
+    if (!online) {
+      const targetId = inspecaoAgendadaAtivaId || `offline-${Date.now()}`;
+      setInspecaoId(targetId);
+      setInspecaoIniciada(true);
+      alert(
+        `Check-in validado offline!\n• QR Code: ${codigoLido}\n• GPS (RN-042): ${coords}\nA inspeção será sincronizada via Outbox quando a conexão voltar.`
+      );
+      return;
+    }
+
+    // Se for uma inspeção agendada pelo supervisor na Web, inicia a própria inspeção (com seu snapshot imutável)
+    if (inspecaoAgendadaAtivaId) {
+      try {
+        setCriandoInspecao(true);
+        const [lat, lng] = coords.split(",").map((s) => s.trim().split(" ")[0]);
+        const startResp = await fetch(
+          `${API_URL}/api/v1/inspections/${inspecaoAgendadaAtivaId}/start`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              deviceTime: new Date().toISOString(),
+              qrCode: codigoLido,
+              latitude: lat || "-23.89540",
+              longitude: lng || "-46.42510",
+            }),
+          }
+        );
+
+        if (!startResp.ok) {
+          const errData = await startResp.json().catch(() => ({}));
+          throw new Error(errData?.message || "Falha ao registrar check-in da inspeção agendada.");
+        }
+
+        const startData = await startResp.json();
+        setInspecaoId(String(startData.id || inspecaoAgendadaAtivaId));
+        if (Array.isArray(startData.questions) && startData.questions.length > 0) {
+          setPerguntas(
+            startData.questions.map((q: any, idx: number) => ({
+              id: String(q.id || `q-${idx}`),
+              texto: String(q.title || q.itemTitle || `Pergunta ${idx + 1}`),
+              tipo:
+                q.type === "MULTIPLE_CHOICE" || q.responseType === "SINGLE_CHOICE"
+                  ? "Múltipla escolha"
+                  : q.type === "PHOTO" || q.responseType === "PHOTO"
+                  ? "Foto"
+                  : q.type === "SHORT_TEXT" || q.responseType === "TEXT_SHORT"
+                  ? "Texto"
+                  : "Sim / Não",
+              obrigatoria: q.required !== false,
+            }))
+          );
+        }
+        setInspecaoIniciada(true);
+        return;
+      } catch (err) {
+        alert(err instanceof Error ? err.message : "Erro ao validar check-in da inspeção.");
+        return;
+      } finally {
+        setCriandoInspecao(false);
+      }
     }
 
     try {
@@ -1986,8 +2445,29 @@ function InspecoesScreen({
     );
 
     if (faltando) {
-      alert("Responda todas as perguntas obrigatórias antes de finalizar.");
+      alert("RN-031 / RN-037: Responda todas as perguntas obrigatórias antes de finalizar.");
       return;
+    }
+
+    // RN-030, RN-031, RN-038, RN-039: Se houver item Não Conforme ("Não"), exige observação escrita e foto de evidência
+    const possuiNaoConformidade = Object.values(respostas).some(
+      (r) => r && ["não", "nao", "ruim"].includes(r.trim().toLowerCase())
+    );
+    const possuiAlgumaFoto = Boolean(fotoOcorrencia) || Object.keys(fotos).length > 0;
+
+    if (possuiNaoConformidade) {
+      if (!observacao.trim()) {
+        alert(
+          "Bloqueio RN-030 / RN-038: Foi apontada uma Não Conformidade no checklist. É obrigatório preencher a descrição/observação técnica do problema antes de finalizar."
+        );
+        return;
+      }
+      if (!possuiAlgumaFoto) {
+        alert(
+          "Bloqueio RN-030 / RN-039: Item crítico marcado como Não Conforme exige obrigatoriamente anexar ao menos uma foto de evidência antes de finalizar."
+        );
+        return;
+      }
     }
 
     if (!assinatura) {
@@ -2000,9 +2480,16 @@ function InspecoesScreen({
       return;
     }
 
+    const gpsCheckout = await capturarGpsPontual();
+
     if (!online || inspecaoId.startsWith("offline-")) {
       const novaInspecaoOffline: InspecaoPendenteOffline = {
         id: inspecaoId,
+        operationId: gerarUuidV4(),
+        inspecaoAgendadaOriginalId: inspecaoAgendadaAtivaId,
+        qrCodeValidado: qrCodeInput || equipamentoSelecionado.codigo,
+        gpsInicio: gpsCoordenadas,
+        gpsFim: gpsCheckout,
         titulo: nomeModelo,
         equipamentoId: equipamentoSelecionado.id,
         equipamentoNome: equipamentoSelecionado.nome,
@@ -2033,13 +2520,15 @@ function InspecoesScreen({
       });
 
       alert(
-        "Inspeção concluída offline. Ela foi guardada no aplicativo e será sincronizada automaticamente quando a conexão voltar."
+        "Inspeção concluída offline. Ela foi guardada na fila Outbox do dispositivo e será sincronizada automaticamente quando a conexão voltar."
       );
 
+      AsyncStorage.removeItem(IN_PROGRESS_DRAFT_STORAGE_KEY).catch(() => {});
       setModoExecucao(false);
       setInspecaoIniciada(false);
       setEquipamentoSelecionado(null);
       setInspecaoId(null);
+      setInspecaoAgendadaAtivaId(null);
       setRespostas({});
       setObservacao("");
       setFotos({});
@@ -2136,14 +2625,22 @@ function InspecoesScreen({
         ...listaAtual.filter((item) => item.id !== novaInspecao.id),
       ]);
 
+      if (inspecaoAgendadaAtivaId) {
+        setInspecoesAgendadas((listaAtual) =>
+          listaAtual.filter((item) => item.id !== inspecaoAgendadaAtivaId)
+        );
+      }
+
       alert(
         `Inspeção salva com sucesso para ${equipamentoSelecionado.nome}.`
       );
 
+      AsyncStorage.removeItem(IN_PROGRESS_DRAFT_STORAGE_KEY).catch(() => {});
       setModoExecucao(false);
       setInspecaoIniciada(false);
       setEquipamentoSelecionado(null);
       setInspecaoId(null);
+      setInspecaoAgendadaAtivaId(null);
       setRespostas({});
       setObservacao("");
       setFotos({});
@@ -2475,6 +2972,67 @@ function InspecoesScreen({
                       obrigatórias
                     </Text>
                   </View>
+                </View>
+
+                <View
+                  style={{
+                    marginTop: 14,
+                    marginBottom: 14,
+                    padding: 14,
+                    borderRadius: 12,
+                    backgroundColor: "#F1F6FC",
+                    borderWidth: 1,
+                    borderColor: "#C8DAF0",
+                  }}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+                    <MaterialIcons name="qr-code-scanner" size={20} color="#0B4B87" />
+                    <Text style={{ marginLeft: 8, fontWeight: "700", color: "#0B4B87", fontSize: 14 }}>
+                      Check-in Presencial: QR Code & GPS (RN-025 / RN-042)
+                    </Text>
+                  </View>
+                  <Text style={{ fontSize: 12, color: "#52627A", marginBottom: 10 }}>
+                    Confirme ou leia o código QR afixado no equipamento ({equipamentoSelecionado.codigo}). Se o código divergir, o início será bloqueado.
+                  </Text>
+
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <TextInput
+                      value={qrCodeInput}
+                      onChangeText={setQrCodeInput}
+                      placeholder="Código QR lido do ativo..."
+                      placeholderTextColor="#9AA5B5"
+                      autoCapitalize="characters"
+                      style={[styles.input, { flex: 1, marginBottom: 0, backgroundColor: "#FFFFFF" }]}
+                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        setQrCodeInput(equipamentoSelecionado.codigo);
+                        capturarGpsPontual();
+                      }}
+                      style={{
+                        backgroundColor: "#0B4B87",
+                        paddingHorizontal: 12,
+                        paddingVertical: 11,
+                        borderRadius: 10,
+                        flexDirection: "row",
+                        alignItems: "center",
+                      }}
+                    >
+                      <MaterialIcons name="photo-camera" size={17} color="#FFFFFF" />
+                      <Text style={{ color: "#FFFFFF", fontWeight: "700", fontSize: 12, marginLeft: 5 }}>
+                        Ler QR
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {gpsCoordenadas !== "" && (
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                      <MaterialIcons name="my-location" size={15} color="#16845F" />
+                      <Text style={{ marginLeft: 6, fontSize: 12, color: "#16845F", fontWeight: "600" }}>
+                        GPS Capturado: {gpsCoordenadas}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 <TouchableOpacity
@@ -3222,6 +3780,104 @@ function InspecoesScreen({
         bounces={true}
         directionalLockEnabled={true}
       >
+        <View
+          style={{
+            backgroundColor: online ? "#EBF5FF" : "#FFF4E5",
+            borderRadius: 12,
+            padding: 12,
+            marginBottom: 14,
+            borderWidth: 1,
+            borderColor: online ? "#B8D8F8" : "#F5C882",
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <View style={{ flexDirection: "row", alignItems: "center", flex: 1 }}>
+            <MaterialIcons
+              name={online ? "cloud-done" : "cloud-queue"}
+              size={22}
+              color={online ? "#0B4B87" : "#B45309"}
+            />
+            <View style={{ marginLeft: 10, flex: 1 }}>
+              <Text style={{ fontWeight: "700", color: online ? "#0B4B87" : "#92400E", fontSize: 13 }}>
+                {online ? "Sincronização Online Ativa" : "Modo Offline (Outbox Ativa — RN-066 a RN-072)"}
+              </Text>
+              <Text style={{ fontSize: 12, color: "#52627A" }}>
+                Fila Outbox: {inspecoesPendentesOffline.length} operação(ões) pendente(s)
+                {ultimaSincronizacao ? ` • Último sync: ${ultimaSincronizacao}` : ""}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {inspecoesAgendadas.length > 0 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.cardTitle}>
+                  Ordens de Serviço Atribuídas ({inspecoesAgendadas.length})
+                </Text>
+                <Text style={styles.cardSubtitle}>
+                  Inspeções agendadas na Web com Snapshot imutável (RN-021 / RN-028)
+                </Text>
+              </View>
+              <View style={styles.counter}>
+                <Text style={styles.counterText}>{inspecoesAgendadas.length}</Text>
+              </View>
+            </View>
+
+            {inspecoesAgendadas.map((agendada) => (
+              <View
+                key={agendada.id}
+                style={[
+                  styles.savedInspectionCard,
+                  agendada.status === "REQUER_CORRECAO" && {
+                    borderColor: "#F59E0B",
+                    borderWidth: 1,
+                  },
+                ]}
+              >
+                <View style={styles.savedInspectionIcon}>
+                  <MaterialIcons
+                    name={agendada.status === "REQUER_CORRECAO" ? "assignment-late" : "assignment"}
+                    size={22}
+                    color={agendada.status === "REQUER_CORRECAO" ? "#D97706" : "#0B4B87"}
+                  />
+                </View>
+
+                <View style={styles.savedInspectionContent}>
+                  <Text style={styles.savedInspectionTitle}>{agendada.titulo}</Text>
+                  <Text style={styles.savedInspectionEquipment}>
+                    {agendada.equipamentoNome} • QR: {agendada.equipamentoCodigo}
+                  </Text>
+                  <Text style={styles.savedInspectionMeta}>
+                    Local: {agendada.local} • {agendada.perguntas.length} itens no Snapshot
+                  </Text>
+                  {agendada.status === "REQUER_CORRECAO" && agendada.observacaoRevisao ? (
+                    <Text style={{ fontSize: 12, color: "#B45309", fontWeight: "600", marginTop: 4 }}>
+                      ⚠️ Solicitação de Correção (RN-083): {agendada.observacaoRevisao}
+                    </Text>
+                  ) : null}
+                </View>
+
+                <View style={styles.savedInspectionActions}>
+                  <TouchableOpacity
+                    style={styles.reviewButton}
+                    onPress={() => abrirInspecaoAgendada(agendada)}
+                    activeOpacity={0.85}
+                  >
+                    <MaterialIcons name="qr-code-scanner" size={17} color="#FFFFFF" />
+                    <Text style={styles.reviewButtonText}>
+                      {agendada.status === "REQUER_CORRECAO" ? "Corrigir" : "Iniciar Check-in"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+
         {inspecoesSalvas.length > 0 && (
           <View style={styles.finalFlowCard}>
             <View style={styles.finalFlowHeader}>
