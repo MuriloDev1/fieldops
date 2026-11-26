@@ -68,18 +68,32 @@ public class InspectionController {
     }
 
     @PostMapping("/inspections/{id}/start")
-    @Operation(summary = "Inicia a execução da inspeção em campo")
+    @Operation(summary = "Inicia a execução da inspeção em campo com validação de QR Code e GPS (RN-025, RN-034, RN-042)")
     public ResponseEntity<InspectionResponseDTO> start(
             @PathVariable UUID id,
-            @RequestBody(required = false) Map<String, String> body) {
+            @RequestBody(required = false) Map<String, Object> body) {
         OffsetDateTime deviceTime = null;
-        if (body != null && body.containsKey("deviceTime")) {
-            try {
-                deviceTime = OffsetDateTime.parse(body.get("deviceTime"));
-            } catch (Exception ignored) {
+        String qrCode = null;
+        String latitude = null;
+        String longitude = null;
+        if (body != null) {
+            if (body.get("deviceTime") != null) {
+                try {
+                    deviceTime = OffsetDateTime.parse(String.valueOf(body.get("deviceTime")));
+                } catch (Exception ignored) {
+                }
+            }
+            if (body.get("qrCode") != null) {
+                qrCode = String.valueOf(body.get("qrCode")).trim();
+            }
+            if (body.get("latitude") != null) {
+                latitude = String.valueOf(body.get("latitude"));
+            }
+            if (body.get("longitude") != null) {
+                longitude = String.valueOf(body.get("longitude"));
             }
         }
-        return ResponseEntity.ok(inspectionService.start(id, deviceTime));
+        return ResponseEntity.ok(inspectionService.startWithValidation(id, deviceTime, qrCode, latitude, longitude));
     }
 
     @PostMapping("/inspections/{id}/submit")

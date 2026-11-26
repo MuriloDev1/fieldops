@@ -11,7 +11,7 @@ import axios, {
   type AxiosResponse,
   type InternalAxiosRequestConfig,
 } from 'axios';
-import { authService, AUTH_STORAGE_KEYS, API_BASE_URL } from './authService';
+import { authService, AUTH_STORAGE_KEYS, API_BASE_URL } from './authService.ts';
 import type {
   ApiErrorResponse,
   LoginRequest,

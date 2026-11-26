@@ -19,22 +19,32 @@ import {
 } from 'lucide-react';
 
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/clients', label: 'Clientes', icon: Building2 },
-  { path: '/locations', label: 'Locais & Plantas', icon: MapPin },
-  { path: '/equipment', label: 'Equipamentos', icon: Settings2 },
-  { path: '/templates', label: 'Modelos Checklist', icon: ListChecks },
-  { path: '/operations', label: 'Operações', icon: ClipboardList },
-  { path: '/non-conformities', label: 'Não Conformidades', icon: AlertTriangle },
-  { path: '/history', label: 'Histórico & Auditoria', icon: History },
-  { path: '/team', label: 'Equipe de Campo', icon: Users },
-  { path: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined },
-  { path: '/reports', label: 'Relatórios', icon: FileText },
-  { path: '/settings', label: 'Configurações', icon: Settings },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'SUPERVISOR', 'TECHNICIAN'] },
+  { path: '/clients', label: 'Clientes', icon: Building2, roles: ['ADMIN', 'SUPERVISOR'] },
+  { path: '/locations', label: 'Locais & Plantas', icon: MapPin, roles: ['ADMIN', 'SUPERVISOR'] },
+  { path: '/equipment', label: 'Equipamentos', icon: Settings2, roles: ['ADMIN', 'SUPERVISOR', 'TECHNICIAN'] },
+  { path: '/templates', label: 'Modelos Checklist', icon: ListChecks, roles: ['ADMIN', 'SUPERVISOR'] },
+  { path: '/operations', label: 'Operações', icon: ClipboardList, roles: ['ADMIN', 'SUPERVISOR', 'TECHNICIAN'] },
+  { path: '/non-conformities', label: 'Não Conformidades', icon: AlertTriangle, roles: ['ADMIN', 'SUPERVISOR', 'TECHNICIAN'] },
+  { path: '/history', label: 'Histórico & Auditoria', icon: History, roles: ['ADMIN', 'SUPERVISOR', 'TECHNICIAN'] },
+  { path: '/team', label: 'Equipe & Usuários', icon: Users, roles: ['ADMIN', 'SUPERVISOR'] },
+  { path: '/analytics', label: 'Analytics', icon: ChartNoAxesCombined, roles: ['ADMIN', 'SUPERVISOR'] },
+  { path: '/reports', label: 'Relatórios', icon: FileText, roles: ['ADMIN', 'SUPERVISOR'] },
+  { path: '/settings', label: 'Configurações', icon: Settings, roles: ['ADMIN', 'SUPERVISOR', 'TECHNICIAN'] },
 ];
+
+const roleDisplayLabels = {
+  ADMIN: 'Administrador Geral',
+  SUPERVISOR: 'Supervisor Operacional',
+  TECHNICIAN: 'Técnico de Campo',
+};
 
 export const Sidebar = ({ onNavigate }) => {
   const { user, logout } = useAuth();
+  const currentRole = (user?.role || 'SUPERVISOR').toUpperCase();
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || item.roles.includes(currentRole)
+  );
 
   return (
     <aside className="sidebar">
@@ -43,7 +53,7 @@ export const Sidebar = ({ onNavigate }) => {
       </div>
 
       <nav className="side-nav" aria-label="Menu lateral">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const Icon = item.icon;
 
           return (
@@ -75,11 +85,11 @@ export const Sidebar = ({ onNavigate }) => {
 
         <div style={{ flex: 1 }}>
           <div className="profile-name">
-            {user?.name || 'Supervisor Profile'}
+            {user?.name || 'Roberto Silva'}
           </div>
 
           <div className="profile-role">
-            {user?.role || 'Regional Supervisor'}
+            {roleDisplayLabels[currentRole] || user?.role || 'Supervisor Operacional'}
           </div>
         </div>
 

@@ -1,5 +1,6 @@
 package com.fieldops.security;
 
+import com.fieldops.domain.enums.UserStatus;
 import com.fieldops.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -35,14 +36,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             UUID userId = tokenProvider.getUserIdFromToken(token);
 
             userRepository.findById(userId).ifPresent(user -> {
-                SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        user,
-                        null,
-                        Collections.singletonList(authority)
-                );
-                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                // RN-001 & RN-008: Apenas usuários ativos mantêm sessão autenticada válida
+                if (user.getStatus() == UserStatus.ACTIVE) {
+                    SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            user,
+                            null,
+                            Collections.singletonList(authority)
+                    );
+                    authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             });
         }
 

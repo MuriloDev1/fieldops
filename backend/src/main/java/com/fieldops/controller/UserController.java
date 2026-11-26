@@ -1,5 +1,7 @@
 package com.fieldops.controller;
 
+import com.fieldops.domain.entity.User;
+import com.fieldops.domain.enums.UserRole;
 import com.fieldops.domain.enums.UserStatus;
 import com.fieldops.dto.auth.CreateUserDTO;
 import com.fieldops.dto.auth.UserResponseDTO;
@@ -10,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +30,10 @@ public class UserController {
 
     @GetMapping
     @Operation(summary = "Lista todos os usuários cadastrados")
-    public ResponseEntity<List<UserResponseDTO>> listAll() {
+    public ResponseEntity<List<UserResponseDTO>> listAll(@AuthenticationPrincipal User currentUser) {
+        if (currentUser != null && currentUser.getRole() == UserRole.TECHNICIAN) {
+            throw new AccessDeniedException("Técnicos não possuem permissão para listar cadastros administrativos de usuários (AC-USERS / RN-003).");
+        }
         return ResponseEntity.ok(userService.listAll());
     }
 
@@ -38,7 +45,12 @@ public class UserController {
 
     @PostMapping
     @Operation(summary = "Cadastra um novo usuário / colaborador")
-    public ResponseEntity<UserResponseDTO> create(@Valid @RequestBody CreateUserDTO dto) {
+    public ResponseEntity<UserResponseDTO> create(
+            @Valid @RequestBody CreateUserDTO dto,
+            @AuthenticationPrincipal User currentUser) {
+        if (currentUser != null && currentUser.getRole() != UserRole.ADMIN) {
+            throw new AccessDeniedException("Apenas administradores podem cadastrar novos usuários (AC-USERS / RN-006).");
+        }
         UserResponseDTO created = userService.create(dto);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -47,7 +59,11 @@ public class UserController {
     @Operation(summary = "Altera o status do usuário (ACTIVE, INACTIVE, BLOCKED)")
     public ResponseEntity<UserResponseDTO> updateStatus(
             @PathVariable UUID id,
-            @RequestBody Map<String, String> body) {
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal User currentUser) {
+        if (currentUser != null && currentUser.getRole() != UserRole.ADMIN) {
+            throw new AccessDeniedException("Apenas administradores podem alterar o status de usuários (AC-USERS / RN-006).");
+        }
         String statusStr = body.get("status");
         UserStatus status = UserStatus.valueOf(statusStr.toUpperCase());
         return ResponseEntity.ok(userService.updateStatus(id, status));

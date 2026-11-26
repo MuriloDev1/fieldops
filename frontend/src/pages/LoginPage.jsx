@@ -6,7 +6,7 @@ export const LoginPage = () => {
   const [email, setEmail] = useState('supervisor@fieldops.com');
   const [password, setPassword] = useState('123456');
   const [submitting, setSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, error } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -16,8 +16,10 @@ export const LoginPage = () => {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      const ok = await login(email, password);
+      if (ok) {
+        navigate(from, { replace: true });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -94,6 +96,20 @@ export const LoginPage = () => {
               }}
             />
           </div>
+
+          {error && (
+            <div style={{
+              marginBottom: '1.25rem',
+              padding: '0.75rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.15)',
+              border: '1px solid #ef4444',
+              borderRadius: '0.375rem',
+              color: '#f87171',
+              fontSize: '0.85rem'
+            }}>
+              {error}
+            </div>
+          )}
 
           <button
             type="submit"
