@@ -1,295 +1,67 @@
-# FieldOps - Documentacao do Banco de Dados
+# FieldOps — Documentação do Banco de Dados (PostgreSQL 16)
 
-## 1. Analise do repositorio atual
+Este diretório centraliza a definição relacional oficial da plataforma **FieldOps**, em total conformidade com a [Seção 10 — Modelo de Dados](../docs/arquitetura/10_modelo_de_dados.md), a [Seção 12 — API REST](../docs/arquitetura/12_api_rest.md) e as regras de negócio [RN-001 a RN-090](../docs/produto/09_regras_de_negocio.md).
 
-O repositorio clonado contem um app Expo/React Native em `fieldops-mobile`. A aplicacao ainda nao possui backend, banco de dados, camada de API ou persistencia local. O arquivo principal e `fieldops-mobile/App.tsx`, onde ficam:
+---
 
-- Navegacao por estado local entre quatro telas: `dashboard`, `inspecoes`, `equipamentos` e `perfil`.
-- Dados mockados de equipamentos em `equipamentosIniciais`.
-- Dados mockados de perguntas de modelo de inspecao em `perguntasIniciais`.
-- Dashboard com indicadores, andamento semanal, acoes rapidas e nao conformidades mockadas.
-- Tela de construtor de modelo de inspecao, com nome do modelo e lista de perguntas.
-- Tela de equipamentos, com busca, filtros visuais e modal de detalhes.
-- Tela de perfil com informacoes fixas de supervisor.
+## 1. Arquivos deste Diretório
 
-O banco precisa substituir esses mocks e suportar o crescimento natural da aplicacao: multiplos usuarios, locais operacionais, equipamentos, modelos de inspecao, execucoes em campo, respostas, nao conformidades, tarefas e indicadores.
+| Arquivo | Finalidade |
+| :--- | :--- |
+| [`schema.sql`](./schema.sql) | Script DDL completo com as **15 tabelas relacionais**, constraints, chaves estrangeiras e índices de performance do PostgreSQL 16. Espelhado em `backend/src/main/resources/db/migration/V1__initial_schema.sql`. |
+| [`seed.sql`](./seed.sql) | Carga inicial reproduzível (usuários com hash BCrypt, clientes industriais, plantas, 7 equipamentos com QR Code, modelo publicado, 5 inspeções em todos os estágios do ciclo de vida, snapshots, respostas, não conformidades, revisões e eventos de auditoria). Espelhado em `backend/src/main/resources/db/migration/V2__seed_data.sql`. |
+| [`erd.mmd`](./erd.mmd) | Diagrama Entidade-Relacionamento (DER) em sintaxe Mermaid. |
+| [`dashboard-queries.sql`](./dashboard-queries.sql) | Consultas analíticas SQL para agregação de KPIs e relatórios operacionais. |
 
-## 2. Objetivo do banco
+---
 
-O banco deve permitir que a equipe operacional:
+## 2. Catálogo das 15 Tabelas Relacionais (`schema.sql`)
 
-- Cadastre usuarios e seus papeis.
-- Cadastre locais/unidades operacionais.
-- Cadastre equipamentos por local, tipo, codigo e responsavel.
-- Crie modelos de inspecao reutilizaveis.
-- Configure perguntas e opcoes de resposta por modelo.
-- Atribua inspecoes a tecnicos.
-- Registre execucoes de inspecao em campo.
-- Armazene respostas por pergunta, inclusive texto, numero, booleano, escolha e foto.
-- Registre nao conformidades geradas a partir das respostas ou criadas manualmente.
-- Acompanhe tarefas/acoes corretivas.
-- Alimentar o dashboard com metricas confiaveis.
+O modelo relacional é normalizado em 3ª Forma Normal (3FN), utilizando chaves primárias `UUID` (`gen_random_uuid()`), colunas `JSONB` para estruturas dinâmicas e controle de concorrência otimista (`version`):
 
-## 3. Banco recomendado
+### A. Identidade e Estrutura Organizacional
+1. **`users`** — Usuários autorizados (`ADMIN`, `SUPERVISOR`, `TECHNICIAN`, `CLIENT_VIEWER`), com `email` único, `password_hash` BCrypt e `status` (`ACTIVE`, `INACTIVE`, `BLOCKED`).
+2. **`clients`** — Empresas contratantes atendidas pela operação (ex.: Petrobras S.A., Vale Indústrias, Klabin Papel e Celulose).
+3. **`inspection_sites`** — Plantas, refinarias ou unidades operacionais vinculadas a um cliente (`client_id` com `ON DELETE RESTRICT`), incluindo endereço, coordenadas GPS e contato local.
+4. **`equipment`** — Ativos físicos inspecionáveis vinculados a um local (`site_id`), contendo patrimônio (`asset_number`), número de série, fabricante, modelo, tipo, status e etiqueta única **`qr_code`** (`UNIQUE`).
 
-Recomendacao: PostgreSQL.
+### B. Modelos de Inspeção e Versionamento Imutável
+5. **`inspection_templates`** — Identidade lógica do modelo de checklist (`title`, `category`, `status`, `current_version`).
+6. **`inspection_template_versions`** — Publicações imutáveis numeradas sequencialmente por modelo (`UNIQUE (template_id, version_number)`).
+7. **`template_sections`** — Agrupamento ordenado de perguntas dentro de uma versão publicada (`display_order`).
+8. **`template_items`** — Perguntas e verificações de cada seção, definindo `response_type` (`CONFORMITY`, `BOOLEAN`, `NUMBER`, `TEXT_SHORT`, `TEXT_LONG`, `SINGLE_CHOICE`, `DATE`, `PHOTO`), obrigatoriedade (`required`), regras condicionais (`observation_required_on_failure`, `evidence_required_on_failure`) e opções em `options_json` (`JSONB`).
 
-Motivos:
+### C. Execução da Inspeção, Snapshots e Respostas
+9. **`inspections`** — Execução agendada/realizada de uma versão de checklist, vinculando `template_version_id`, `client_id`, `site_id`, `equipment_id`, `technician_id` e `supervisor_id`. Controla a máquina de estados (`DRAFT`, `ASSIGNED`, `IN_PROGRESS`, `SUBMITTED`, `UNDER_REVIEW`, `APPROVED`, `REJECTED`, `CANCELED`) e o **duplo carimbo de data/hora** (`started_at_device` vs. `started_at_server`; `completed_at_device` vs. `submitted_at_server`, `RN-074`).
+10. **`inspection_item_snapshots`** — Cópia imutável (`RN-021`) das seções, perguntas, tipos e regras no momento da criação da inspeção, garantindo que evoluções futuras no modelo não desfigurem laudos históricos.
+11. **`inspection_responses`** — Resposta atual do técnico para cada item do snapshot (`UNIQUE(inspection_item_id)`), suportando valores tipados (`value_text`, `value_number`, `value_boolean`, `value_date`), payload `value_json` (`JSONB` com `photoUrl` Base64 e `signatureUrl` SVG), `observation` e `conformity` (`CONFORMING`, `NON_CONFORMING`, `NOT_APPLICABLE`).
 
-- Modelo relacional combina bem com cadastros, inspecoes, respostas e historico.
-- Constraints ajudam a manter codigos unicos, status validos e integridade entre entidades.
-- JSONB permite armazenar metadados flexiveis de respostas sem perder estrutura relacional.
-- Bom suporte para relatorios, agregacoes e dashboards.
-- Pode ser usado por um backend Node/NestJS, Express, Spring Boot, Django ou Supabase.
+### D. Evidências, Não Conformidades, Revisão e Auditoria
+12. **`evidences`** — Metadados de fotografias e arquivos comprobatórios vinculados à inspeção, resposta ou não conformidade (`storage_key`, `mime_type`, `size_bytes`, coordenadas GPS e timestamps).
+13. **`non_conformities`** — Desvios e falhas técnicas registradas em campo, vinculadas à inspeção, ao item do snapshot e à resposta geradora, com `severity` (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`) e `status` (`OPEN`, `IN_PROGRESS`, `RESOLVED`, `CANCELLED`).
+14. **`inspection_reviews`** — Histórico de rodadas de revisão técnica realizadas pelo supervisor (`decision`: `APPROVED` ou `REJECTED`, `reason`, `comments`, `review_cycle`).
+15. **`audit_events`** — Trilha imutável de auditoria (`RN-086`) registrando cada mudança de estado e ação crítica (`INSPECTION_CREATED`, `INSPECTION_ASSIGNED`, `INSPECTION_STARTED`, `INSPECTION_SUBMITTED`, `REVIEW_STARTED`, `INSPECTION_APPROVED`, `INSPECTION_REJECTED`), alimentando a linha do tempo em `GET /api/v1/inspections/{id}/history`.
 
-Para o app mobile, o fluxo ideal e:
+---
 
-- PostgreSQL no backend como fonte oficial.
-- API REST ou GraphQL entre mobile e backend.
-- Persistencia local opcional no mobile para modo offline, sincronizando depois.
+## 3. Regras de Integridade e Índices Principais
 
-## 4. Entidades principais
+- **Unicidade garantida no SGBD:** `users(email)`, `equipment(qr_code)`, `inspection_template_versions(template_id, version_number)` e `inspection_responses(inspection_item_id)`.
+- **Proteção contra exclusão física (`RN-013`, `RN-088`):** `ON DELETE RESTRICT` nas referências históricas críticas (`clients`, `inspection_sites`).
+- **Índices compostos de alta performance:**
+  - `idx_inspections_tech_status (technician_id, status)` e `idx_inspections_super_status (supervisor_id, status)`
+  - `idx_inspections_status_sched (status, scheduled_for)`
+  - `idx_snapshots_order (inspection_id, section_order, item_order)`
+  - `idx_audit_entity (entity_type, entity_id)` e `idx_audit_inspection (inspection_id)`
 
-### organizations
+---
 
-Representa a empresa/cliente. Mesmo que o MVP tenha uma unica empresa, essa tabela evita retrabalho se houver multiempresa no futuro.
+## 4. Sincronia com Docker Compose e Flyway
 
-### users
+O `docker-compose.yml` inicializa o container PostgreSQL 16 montando `database/schema.sql` e `database/seed.sql` em `/docker-entrypoint-initdb.d/`, enquanto o backend Spring Boot executa as migrações Flyway (`backend/src/main/resources/db/migration/V1__initial_schema.sql` e `V2__seed_data.sql`).
 
-Representa supervisores, tecnicos e administradores. Hoje a tela de perfil mostra um supervisor fixo; no banco isso vira usuario autenticado.
+Sempre que alterar tabelas ou dados iniciais em `database/`, mantenha os arquivos equivalentes do Flyway sincronizados e valide com o teste automatizado de consistência:
 
-### sites
-
-Representa locais/unidades operacionais, como "Refinaria Central", "Unidade Alpha" e "Unidade Beta".
-
-### equipment_types
-
-Classifica equipamentos: compressor, gerador, bomba, valvula, painel etc.
-
-### equipment
-
-Representa os equipamentos exibidos na tela de equipamentos. Substitui o mock `Equipamento`.
-
-### inspection_templates
-
-Representa modelos de inspecao criados no construtor. Exemplo atual: "Inspecao de Compressores Industriais".
-
-### inspection_template_questions
-
-Representa perguntas de um modelo. Substitui o mock `Pergunta`.
-
-### inspection_question_options
-
-Representa opcoes para perguntas de multipla escolha.
-
-### inspection_assignments
-
-Representa uma inspecao planejada/atribuida para um equipamento, tecnico e prazo.
-
-### inspection_runs
-
-Representa a execucao real da inspecao em campo. Permite historico e evita sobrescrever dados antigos.
-
-### inspection_answers
-
-Representa as respostas dadas em uma execucao.
-
-### attachments
-
-Representa fotos e arquivos anexados a respostas, equipamentos, nao conformidades ou tarefas.
-
-### non_conformities
-
-Representa problemas identificados em inspecoes. Alimenta a area de "Nao Conformidades" do dashboard.
-
-### corrective_actions
-
-Representa tarefas/acoes corretivas ou operacionais. Alimenta "Acoes Rapidas" e controle de pendencias.
-
-### equipment_status_history
-
-Mantem historico de mudancas de status do equipamento.
-
-### audit_logs
-
-Registra alteracoes importantes para rastreabilidade.
-
-## 5. Diagrama ER
-
-Arquivo Mermaid separado: [erd.mmd](erd.mmd).
-
-Resumo dos relacionamentos:
-
-- Uma organizacao possui usuarios, locais, tipos de equipamento e modelos de inspecao.
-- Um local possui muitos equipamentos.
-- Um equipamento pertence a um tipo e pode ter um usuario responsavel.
-- Um modelo de inspecao possui muitas perguntas.
-- Uma pergunta pode possuir varias opcoes.
-- Uma atribuicao conecta modelo, equipamento e tecnico.
-- Uma execucao nasce de uma atribuicao.
-- Uma execucao possui varias respostas.
-- Uma resposta pode gerar uma nao conformidade.
-- Uma nao conformidade pode possuir varias acoes corretivas.
-- Anexos podem se ligar a respostas, nao conformidades, equipamentos ou acoes.
-
-## 6. Status e enums propostos
-
-### user_role
-
-- `admin`
-- `supervisor`
-- `technician`
-
-### equipment_status
-
-- `active`
-- `maintenance`
-- `inactive`
-
-Equivalencia com o app atual:
-
-- `Ativo` -> `active`
-- `Manutencao` -> `maintenance`
-- `Inativo` -> `inactive`
-
-### question_type
-
-- `boolean`
-- `single_choice`
-- `multi_choice`
-- `text`
-- `number`
-- `photo`
-
-Equivalencia com o app atual:
-
-- `Sim / Nao` -> `boolean`
-- `Multipla escolha` -> `single_choice` ou `multi_choice`
-- `Texto` -> `text`
-- `Foto` -> `photo`
-
-### assignment_status
-
-- `scheduled`
-- `in_progress`
-- `completed`
-- `late`
-- `cancelled`
-
-### run_status
-
-- `draft`
-- `submitted`
-- `approved`
-- `rejected`
-
-### severity
-
-- `low`
-- `medium`
-- `high`
-- `critical`
-
-Equivalencia com o app atual:
-
-- `Baixa` -> `low`
-- `Alta` -> `high`
-- `Critico` -> `critical`
-
-### non_conformity_status
-
-- `open`
-- `in_progress`
-- `resolved`
-- `cancelled`
-
-### corrective_action_status
-
-- `open`
-- `in_progress`
-- `done`
-- `cancelled`
-
-## 7. Mapeamento das telas para o banco
-
-### Dashboard
-
-Dados derivados de:
-
-- `inspection_runs` para inspecoes concluidas.
-- `non_conformities` para taxa de nao conformidade.
-- `inspection_assignments` e `users` para tecnicos em campo.
-- `inspection_assignments` para inspecoes atrasadas.
-- `corrective_actions` e `non_conformities` para acoes rapidas.
-
-### Inspecoes
-
-Dados gravados em:
-
-- `inspection_templates`
-- `inspection_template_questions`
-- `inspection_question_options`
-
-Quando o usuario clica em "Salvar Modelo", o app deve criar/atualizar o modelo e suas perguntas.
-
-### Equipamentos
-
-Dados lidos e gravados em:
-
-- `equipment`
-- `equipment_types`
-- `sites`
-- `users`
-- `equipment_status_history`
-
-Busca deve consultar nome, codigo e local, como o app ja faz no estado local.
-
-### Perfil
-
-Dados lidos de:
-
-- `users`
-- `organizations`
-
-Configuracoes futuras podem ir para `user_preferences`.
-
-## 8. Estrategia de historico
-
-Nao e recomendado gravar somente o estado atual quando o dado representa operacao de campo. O banco proposto separa:
-
-- Estado atual: `equipment.status`, `non_conformities.status`, `corrective_actions.status`.
-- Historico: `equipment_status_history`, `inspection_runs`, `inspection_answers`, `audit_logs`.
-
-Isso permite responder perguntas como:
-
-- Quantas inspecoes foram feitas no mes?
-- Qual tecnico executou cada inspecao?
-- Qual equipamento gerou mais nao conformidades?
-- Quanto tempo uma nao conformidade ficou aberta?
-- Quem alterou o status de um equipamento?
-
-## 9. Regras de integridade importantes
-
-- `equipment.code` deve ser unico por organizacao.
-- Perguntas devem ter ordem unica dentro do modelo.
-- Opcoes devem ter ordem unica dentro da pergunta.
-- Uma execucao deve pertencer a uma atribuicao.
-- Uma resposta deve pertencer a uma execucao e a uma pergunta do modelo usado.
-- Nao conformidades podem existir sem resposta vinculada, para permitir abertura manual.
-- Usuarios inativos nao devem receber novas atribuicoes.
-- Modelos publicados nao devem ser editados destrutivamente; o ideal e versionar ou duplicar.
-
-## 10. Proximos passos tecnicos
-
-1. Criar um backend para expor API para o app mobile.
-2. Aplicar o SQL de [schema.sql](schema.sql) em um PostgreSQL.
-3. Criar seeds com os equipamentos e perguntas hoje mockados em `App.tsx`.
-4. Substituir os arrays locais por chamadas de API.
-5. Definir autenticacao e autorizacao por papel.
-6. Planejar modo offline se a equipe trabalha sem internet em campo.
-
-## 11. Sincronia com Docker Compose e Flyway
-
-O `docker-compose.yml` inicializa o PostgreSQL usando `database/schema.sql` e `database/seed.sql`, enquanto o backend Spring Boot executa as migrações Flyway (`backend/src/main/resources/db/migration/V1__initial_schema.sql` e `V2__seed_data.sql`) com `baseline-version: 1`.
-Sempre que alterar tabelas ou dados iniciais em `database/`, mantenha os arquivos equivalentes do Flyway sincronizados e valide com `node --test scripts/__tests__/repoConsistency.test.mjs`.
-
+```bash
+node --test scripts/__tests__/repoConsistency.test.mjs
+```

@@ -53,7 +53,7 @@ O ecossistema FieldOps adota uma arquitetura distribuída e descentralizada, con
           │ HTTPS / JSON
 ┌─────────┴───────────────────────────────┐
 │       Interface Administrativa Web      │
-│          (React / Angular / TS)         │
+│          (React 19 / Vite 8 / TS)       │
 │  - Gestão de Clientes, Locais e Ativos  │
 │  - Construtor de Modelos Versionados    │
 │  - Painel de Revisão (InspectionReview) │
@@ -123,9 +123,9 @@ O fluxo operacional do FieldOps é modelado para assegurar total rastreabilidade
 | --- | --- | --- |
 | **Mobile** | **Expo / React Native** | Desenvolvimento móvel cross-platform (Android priorizado) |
 | **Mobile State/DB** | **SQLite & SecureStore** | Persistência local offline e armazenamento seguro de tokens |
-| **Web Admin** | **React / Angular + TS** | Interface administrativa web responsiva e reativa |
-| **API Backend** | **Java 17+ / Spring Boot 3+** | Framework backend para APIs REST, Spring Security (JWT), JPA/Hibernate |
-| **Banco Principal** | **PostgreSQL 15+** | Relacional central com suporte a JSONB e restrições de integridade |
+| **Web Admin** | **React 19 / Vite 8 + TS** | Interface administrativa web responsiva e reativa |
+| **API Backend** | **Java 21 LTS / Spring Boot 3.3** | Framework backend para APIs REST, Spring Security (JWT), JPA/Hibernate |
+| **Banco Principal** | **PostgreSQL 16** | Relacional central com suporte a JSONB e restrições de integridade |
 | **Armazenamento** | **Object Storage (S3 / MinIO)** | Armazenamento dedicado para fotos e mídias das evidências |
 | **DevOps & Infra** | **Docker & Docker Compose** | Padronização e orquestração dos ambientes de desenvolvimento |
 
@@ -135,66 +135,79 @@ O fluxo operacional do FieldOps é modelado para assegurar total rastreabilidade
 
 ```text
 fieldops/
-├── docs/                             # Base de conhecimento técnica modular em Markdown
-│   ├── gestao/                       # TAP, EAP e relatórios de acompanhamento do projeto
-│   ├── 01_visao_geral.md             # Visão geral do produto e componentes
-│   ├── 02_objetivos.md               # Objetivos de negócio, técnicos e acadêmicos
-│   ├── 03_problema.md                # Análise detalhada de dores e oportunidade
-│   ├── 04_personas.md                # Perfis de uso (Carlos, Marina, Ana, Roberto)
-│   ├── 05_perfis_de_usuario.md       # Matriz de permissões por perfil (ADMIN, SUPERVISOR, TECHNICIAN)
-│   ├── 06_casos_de_uso.md            # Casos de uso de UC-01 a UC-20
-│   ├── 07_fluxo_geral.md             # Estados de negócio e sincronização
-│   ├── 08_funcionalidades.md         # Escopo detalhado (P0, P1, P2)
-│   ├── 09_regras_de_negocio.md       # Regras RN-001 a RN-090
-│   ├── 10_modelo_de_dados.md         # Modelo ER, entidades, SQLite e Outbox
-│   ├── 11_arquitetura.md             # Visão arquitetural e padrões de infraestrutura
-│   ├── 12_api_rest.md                # Contratos HTTP, payloads e endpoints REST
-│   ├── 13_aplicativo_mobile.md       # Telas, rotas Expo Router e recursos nativos
-│   ├── 14_interface_administrativa_web.md # Mapa de navegação e componentes Web
-│   ├── 15_backlog_do_produto.md      # Épicos e PBIs priorizados
-│   ├── 16_roadmap.md                 # Cronograma de 16 semanas e marcos M1 a M8
-│   ├── 17_criterios_aceite.md        # Especificações BDD de aceitação
-│   ├── 18_definition_of_done.md      # Definição de Pronto (DoD) por camada
-│   └── 19_criterios_de_avaliacao.md  # Rubrica e critérios de avaliação do projeto
-├── api/                              # Backend Java / Spring Boot REST API
-├── web/                              # Painel Web Administrativo
-├── fieldops-mobile/                  # Aplicativo Mobile Expo / React Native
-├── database/                         # Scripts de banco de dados (schema.sql, seed.sql, queries)
-├── docker-compose.yml                # Containers do banco PostgreSQL e infraestrutura local
-└── README.md                         # Documentação principal da solução
+├── docs/                                        # Base de conhecimento técnica e de gestão organizada por domínio
+│   ├── README.md                                # Índice Mestre da documentação com mapa por perfil
+│   ├── produto/                                 # Visão, objetivos, personas, casos de uso e regras (01 a 09)
+│   │   ├── 01_visao_geral.md
+│   │   ├── 02_objetivos.md
+│   │   ├── 03_problema.md
+│   │   ├── 04_personas.md
+│   │   ├── 05_perfis_de_usuario.md
+│   │   ├── 06_casos_de_uso.md
+│   │   ├── 07_fluxo_geral.md
+│   │   ├── 08_funcionalidades.md
+│   │   └── 09_regras_de_negocio.md              # Catálogo canônico consolidado (RN-001 a RN-090)
+│   ├── arquitetura/                             # Engenharia, modelo de dados, API, mobile e web (10 a 14)
+│   │   ├── 10_modelo_de_dados.md
+│   │   ├── 11_arquitetura.md
+│   │   ├── 12_api_rest.md
+│   │   ├── 13_aplicativo_mobile.md
+│   │   └── 14_interface_administrativa_web.md
+│   ├── qualidade/                               # Backlog, roadmap, critérios BDD, DoD e avaliação (15 a 19)
+│   │   ├── 15_backlog_do_produto.md
+│   │   ├── 16_roadmap.md
+│   │   ├── 17_criterios_aceite.md
+│   │   ├── 18_definition_of_done.md
+│   │   └── 19_criterios_de_avaliacao.md
+│   ├── guias/                                   # Manuais práticos de deploy AWS e roteiro de apresentação
+│   │   ├── deploy_aws_learner_lab.md
+│   │   └── guia_apresentacao_e_status.md
+│   └── gestao/                                  # Artefatos formais PMBOK / SENAI ADS (TAP, EAP, Riscos, Custos, etc.)
+├── backend/                                     # Backend Java 21 / Spring Boot 3.3 REST API + Flyway
+├── frontend/                                    # Painel Web Administrativo (React 19 / Vite 8)
+├── fieldops-mobile/                             # Aplicativo Mobile Offline-First (Expo SDK 57 / React Native)
+├── database/                                    # Scripts PostgreSQL 16 (schema.sql, seed.sql, erd.mmd, queries)
+├── scripts/                                     # Verificação estática e testes de consistência do repositório
+├── deploy_aws.sh                                # Script automatizado de deploy em instância AWS EC2 (Learner Lab)
+├── docker-compose.yml                           # Orquestração Docker (PostgreSQL, Backend, Frontend Nginx e Adminer)
+└── README.md                                    # Documentação principal da solução
 ```
 
 ---
 
 ## 6. Índice da Base de Conhecimento
 
-A base de conhecimento do FieldOps foi estruturada de forma modular na pasta `/docs`:
+Consulte o **[Índice Mestre da Documentação (`docs/README.md`)](docs/README.md)** ou acesse diretamente cada módulo:
 
-### Gestão do Projeto
-* [Documento de Abertura do Projeto (TAP)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/gestao/TAP.md)
-* [01. Visão Geral](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/01_visao_geral.md)
-* [02. Objetivos](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/02_objetivos.md)
-* [03. Análise do Problema](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/03_problema.md)
-* [04. Personas](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/04_personas.md)
-* [15. Backlog do Produto (PBIs)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/15_backlog_do_produto.md)
-* [16. Roadmap & Sprints](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/16_roadmap.md)
-* [19. Critérios de Avaliação](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/19_criterios_de_avaliacao.md)
+### Guias Rápidos & Apresentação
+* [Índice Mestre da Documentação](docs/README.md)
+* [Guia Passo a Passo: Deploy no AWS Academy Learner Lab](docs/guias/deploy_aws_learner_lab.md)
+* [Guia de Apresentação Final, Roteiro dos 12 Testes (100 Pontos) e Status](docs/guias/guia_apresentacao_e_status.md)
 
-### Especificação & Regras de Negócio
-* [05. Perfis de Usuário & Permissões](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/05_perfis_de_usuario.md)
-* [06. Catálogo de Casos de Uso](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/06_casos_de_uso.md)
-* [07. Fluxo Geral & Estados](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/07_fluxo_geral.md)
-* [08. Matriz de Funcionalidades (P0/P1/P2)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/08_funcionalidades.md)
-* [09. Regras de Negócio (RN-001 a RN-090)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/09_regras_de_negocio.md)
-* [17. Critérios de Aceitação (BDD)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/17_criterios_aceite.md)
-* [18. Definição de Pronto (DoD)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/18_definition_of_done.md)
+### Produto, Especificação & Regras de Negócio (`docs/produto/`)
+* [01. Visão Geral](docs/produto/01_visao_geral.md)
+* [02. Objetivos](docs/produto/02_objetivos.md)
+* [03. Análise do Problema](docs/produto/03_problema.md)
+* [04. Personas](docs/produto/04_personas.md)
+* [05. Perfis de Usuário & Permissões](docs/produto/05_perfis_de_usuario.md)
+* [06. Catálogo de Casos de Uso](docs/produto/06_casos_de_uso.md)
+* [07. Fluxo Geral & Estados](docs/produto/07_fluxo_geral.md)
+* [08. Matriz de Funcionalidades (P0/P1/P2)](docs/produto/08_funcionalidades.md)
+* [09. Regras de Negócio Consolidadas (RN-001 a RN-090)](docs/produto/09_regras_de_negocio.md)
 
-### Arquitetura & Engenharia
-* [10. Modelo de Dados (PostgreSQL & SQLite Outbox)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/10_modelo_de_dados.md)
-* [11. Arquitetura da Solução](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/11_arquitetura.md)
-* [12. API REST (Contrato HTTP)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/12_api_rest.md)
-* [13. Aplicativo Mobile (Expo / SQLite)](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/13_aplicativo_mobile.md)
-* [14. Interface Administrativa Web](file:///c:/Users/muril/OneDrive/Imagens/Documentos/Eu/SENAI/fieldops/docs/14_interface_administrativa_web.md)
+### Arquitetura & Engenharia (`docs/arquitetura/`)
+* [10. Modelo de Dados (PostgreSQL 16, Snapshots & Outbox)](docs/arquitetura/10_modelo_de_dados.md)
+* [11. Arquitetura da Solução](docs/arquitetura/11_arquitetura.md)
+* [12. API REST (Contrato HTTP e Compatibilidade Mobile)](docs/arquitetura/12_api_rest.md)
+* [13. Aplicativo Mobile (Expo / Offline-First)](docs/arquitetura/13_aplicativo_mobile.md)
+* [14. Interface Administrativa Web (React 19 / Vite 8)](docs/arquitetura/14_interface_administrativa_web.md)
+
+### Qualidade, Planejamento & Avaliação (`docs/qualidade/`)
+* [15. Backlog do Produto (PBIs)](docs/qualidade/15_backlog_do_produto.md)
+* [16. Roadmap & Sprints](docs/qualidade/16_roadmap.md)
+* [17. Critérios de Aceitação (BDD)](docs/qualidade/17_criterios_aceite.md)
+* [18. Definição de Pronto (DoD)](docs/qualidade/18_definition_of_done.md)
+* [19. Critérios de Avaliação e Rubricas](docs/qualidade/19_criterios_de_avaliacao.md)
 
 ---
 
@@ -343,11 +356,11 @@ O desenvolvimento do FieldOps segue práticas ágeis de Engenharia de Software c
 Todos os artefatos formais exigidos na disciplina de **Gestão de Projetos** ministrada pelo **Prof. Deivison Takatu** estão implementados e disponíveis no diretório [`docs/gestao/`](docs/gestao/README.md):
 
 ### 🎯 Avaliação 1 — Definição e Planejamento Inicial
-- 📄 **[Termo de Abertura do Projeto (TAP)](docs/gestao/TAP.md):** Contexto, justificativa, objetivos SMART, limites e marcos.
+- 📄 **[Termo de Abertura do Projeto (TAP)](docs/gestao/tap.md):** Contexto, justificativa, objetivos SMART, limites e marcos.
 - 👥 **[Matriz de Partes Interessadas](docs/gestao/matriz_poder_interesse_stakeholders.md):** Rede de poder x interesse (Fábio Carvalho).
 - 📢 **[Plano de Gerenciamento das Comunicações](docs/gestao/plano_de_comunicacao.md):** Matriz de comunicação (público, canal, frequência, responsável).
 - 📐 **[Declaração de Escopo do Projeto](docs/gestao/declaracao_de_escopo.md):** Limites, exclusões e controle integrado de mudanças.
-- 🌳 **[EAP e Dicionário da Estrutura Analítica](docs/gestao/EAP_e_dicionario.md):** Decomposição em 6 pacotes de entregas e critérios formais.
+- 🌳 **[EAP e Dicionário da Estrutura Analítica](docs/gestao/eap_e_dicionario.md):** Decomposição em 6 pacotes de entregas e critérios formais.
 - 📅 **[Cronograma do Projeto e Matriz RACI](docs/gestao/cronograma_e_recursos.md):** Gantt Mermaid, lista com predecessores e matriz RACI.
 
 ### 🏆 Avaliação 2 — Planejamento Complementar e Entrega Final

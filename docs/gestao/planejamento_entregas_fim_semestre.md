@@ -85,7 +85,7 @@ Para evitar atrasos e assegurar a entrega nos prazos letivos, o escopo foi prior
   * Criação automática de registro na tabela `non_conformities` caso uma resposta seja irregular.
 * **Módulo de Revisão & Dashboard:**
   * `PATCH /inspection-runs/:id/review` (aprovação ou reprovação com justificativa).
-  * `GET /dashboard/summary` (executando as queries consolidadas em [dashboard-queries.sql](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/database/dashboard-queries.sql)).
+  * `GET /dashboard/summary` (executando as queries consolidadas em [dashboard-queries.sql](../../database/dashboard-queries.sql)).
 
 ### 4.3. Frente Frontend Web (Interface do Supervisor)
 * **Estrutura & Navegação:** Unificação do código da branch `origin/feature/react` na pasta `/web` do repositório principal.
@@ -102,10 +102,10 @@ Para evitar atrasos e assegurar a entrega nos prazos letivos, o escopo foi prior
 * **Telas e Recursos Finalizados:**
   1. **Tela de Autenticação:** Login do técnico com armazenamento seguro de token.
   2. **Home / Agenda do Técnico:** Lista de inspeções pendentes do dia (armazenadas em SQLite para acesso imediato sem rede).
-  3. **Scanner de QR Code:** Leitura com a câmera do celular para validar se o técnico está diante do equipamento agendado (RN-025).
-  4. **Execução de Checklist Dinâmico:** Renderização das perguntas do snapshot; se marcar "Não Conforme", abre campo de texto e câmera obrigatória (RN-030 e RN-039).
-  5. **Captura de Geolocalização (GPS):** Armazenamento das coordenadas no início e fim do atendimento (RN-042).
-  6. **Motor de Sincronização Local (Outbox):** Indicador visual de modo offline/online no topo (RN-069) e botão "Sincronizar Agora" que envia as transações pendentes via FIFO com UUID (RN-067/RN-068).
+  3. **Scanner de QR Code:** Leitura com a câmera do celular para validar se o técnico está diante do equipamento agendado (RN-063 e RN-064).
+  4. **Execução de Checklist Dinâmico:** Renderização das perguntas do snapshot; se marcar "Não Conforme", abre campo de texto e câmera obrigatória (RN-038 e RN-039).
+  5. **Captura de Geolocalização (GPS):** Armazenamento das coordenadas no início e fim do atendimento (RN-061 e RN-062).
+  6. **Motor de Sincronização Local (Outbox):** Indicador visual de modo offline/online no topo (RN-071) e botão "Sincronizar Agora" que envia as transações pendentes via FIFO com UUID (RN-067/RN-068).
 
 ### 4.5. Frente de Gestão, QA e Apresentação
 * **Documentação Final Consolidada:** Atualização do documento unificado do PI, cobrindo introdução, justificativa, diagramas de caso de uso, ERD, endpoints da API e manual de execução local.
@@ -145,7 +145,7 @@ O tempo restante do semestre está dividido em 5 Sprints quinzenais:
 #### Sprint 3 (07/10 a 20/10) — *Mobile Operacional & Recursos Nativos*
 * [ ] Integrar tela de login do Mobile com a API.
 * [ ] Implementar persistência local com `expo-sqlite` (salvar inspeções recebidas).
-* [ ] Implementar leitura de QR Code para validação de check-in (RN-025).
+* [ ] Implementar leitura de QR Code para validação de check-in (RN-064).
 * [ ] Implementar captura de foto (câmera) e coordenadas GPS (início e término).
 * [ ] Aplicar a regra condicional de itens reprovados (exigência de texto e foto).
 
@@ -159,7 +159,7 @@ O tempo restante do semestre está dividido em 5 Sprints quinzenais:
 * [ ] Teste de ponta a ponta do "Fluxo Dourado" simulando corte de internet no celular.
 * [ ] Correção de bugs de layout e tratamento de erros visuais (spinners, toasts, alertas).
 * [ ] Ajustes de responsividade no painel Web e desempenho no Mobile.
-* [ ] Validação contra todas as Regras de Negócio ([regras_de_negocio.md](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/docs/regras_de_negocio.md)).
+* [ ] Validação contra todas as Regras de Negócio ([09_regras_de_negocio.md](../produto/09_regras_de_negocio.md)).
 
 #### Sprint Final (18/11 até a Banca) — *Entregáveis Acadêmicos & Defesa*
 * [ ] Fechamento da monografia / relatório escrito final do Projeto Integrador.

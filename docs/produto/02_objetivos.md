@@ -85,7 +85,7 @@ O projeto deverá permitir que os estudantes apliquem, de maneira integrada:
 * Testes e documentação OpenAPI.
 
 ### Desenvolvimento Web Administrativo
-* Angular/React e TypeScript;
+* React 19, Vite 8 e TypeScript/JavaScript;
 * Rotas protegidas;
 * Formulários;
 * Consumo de API;

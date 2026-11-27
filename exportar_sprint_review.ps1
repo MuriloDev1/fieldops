@@ -25,7 +25,7 @@ $null = New-Item -ItemType Directory -Path "$Destino\mobile_apk" -Force
 $null = New-Item -ItemType Directory -Path "$Destino\deploy_aws" -Force
 
 Write-Host "[3/5] Copiando arquivos essenciais da Sprint Review e Gestao de Projetos..." -ForegroundColor Green
-Copy-Item "$SourceDir\GUIA_PROJETO_E_STATUS_APRESENTACAO.md" "$Destino\documentos\" -Force
+Copy-Item "$SourceDir\docs\guias\guia_apresentacao_e_status.md" "$Destino\documentos\" -Force
 Copy-Item "$SourceDir\docs\gestao\*" "$Destino\documentos\" -Recurse -Force
 Copy-Item "$SourceDir\docker-compose.yml" "$Destino\deploy_aws\" -Force
 
@@ -63,10 +63,10 @@ $leiaMe = @"
    - Pronto para instalar em celular Android ou enviar por WhatsApp/Drive.
 
 3. DOCUMENTOS OFICIAIS:
-   - GUIA_PROJETO_E_STATUS_APRESENTACAO.md (12 testes oficiais da banca - 100 pts)
+   - guia_apresentacao_e_status.md (12 testes oficiais da banca - 100 pts)
    - matriz_poder_interesse_stakeholders.md (Matriz de Stakeholders - Fabio Carvalho)
    - sprint_review_slide.md (Slide em formato Markdown)
-   - TAP.md (Termo de Abertura atualizado)
+   - tap.md (Termo de Abertura atualizado)
 
 4. DEPLOY AWS (TESTE 01):
    - A pasta 'deploy_aws' contem o docker-compose.yml para subir na EC2.

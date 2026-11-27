@@ -73,7 +73,7 @@ Considerando que a disciplina possui 2 aulas semanais de conteúdo e 3 de projet
 
 | Dimensão | Pontos |
 | --- | ---: |
-| Arquitetura Angular e organização | 10 |
+| Arquitetura React / Vite e organização | 10 |
 | Autenticação, guards e autorização visual | 10 |
 | Cadastros e formulários | 15 |
 | Construtor de modelos | 20 |

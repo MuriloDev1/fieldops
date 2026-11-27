@@ -106,12 +106,12 @@ Após o script concluir, copie o **IP Público** da sua instância (exemplo: `54
   👉 `http://<SEU-IP-PUBLICO>:8085`
   *(Servidor: `postgres` | Usuário: `fieldops_admin` | Senha: `fieldops_secret_dev` | Banco: `fieldops_db`)*
 
-### 🔑 Credenciais de Teste pré-cadastradas:
-| Perfil | E-mail | Senha |
-|---|---|---|
-| **Supervisor** | `carlos.supervisor@fieldops.com.br` | `Senha@123` |
-| **Técnico de Campo** | `marcos.tecnico@fieldops.com.br` | `Senha@123` |
-| **Administrador** | `admin@fieldops.com.br` | `Senha@123` |
+### 🔑 Credenciais de Teste pré-cadastradas (Seed Oficial):
+| Perfil | Nome | E-mail | Senha |
+|---|---|---|---|
+| **Administrador Geral** | Administrador Geral | `admin@fieldops.com` | `123456` |
+| **Supervisor Operacional** | Roberto Silva | `supervisor@fieldops.com` | `123456` |
+| **Técnico de Campo** | Carlos Lima | `tecnico@fieldops.com` | `123456` |
 
 ---
 

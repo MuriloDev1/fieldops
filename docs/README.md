@@ -1,663 +1,113 @@
-# FieldOps
-## Sistema de Gestão de Operações de Campo
+# 📚 Documentação Técnica e de Gestão — FieldOps
 
-> **Projeto Integrador — Documento de Arquitetura, Requisitos e Evolução do Produto**
+Bem-vindo à base de conhecimento oficial do **FieldOps — Plataforma Integrada de Inspeção em Campo (Offline-First)**.
 
-| Informação | Valor |
-|---|---|
-| **Projeto** | FieldOps |
-| **Versão** | 0.1 |
-| **Status** | Em desenvolvimento |
-| **Data** | 25/08/2026 |
-| **Documento** | Especificação inicial do produto |
+Esta documentação está organizada por domínio em subpastas temáticas, sem duplicidades, cobrindo desde a concepção de produto e regras de negócio (`RN-001` a `RN-090`) até a arquitetura técnica, contratos da API REST, modelo relacional, guias de deploy AWS e artefatos de Gestão de Projetos (PMBOK / SENAI ADS).
 
 ---
 
-## Controle de versões
+## 🧭 Mapa Rápido por Perfil de Leitura
 
-| Versão | Data | Descrição |
-|---|---|---|
-| 0.1 | 25/08/2026 | Documento inicial consolidado a partir dos protótipos do Figma e das decisões atuais do projeto. |
-
----
-
-# 1. Visão do Produto
-
-O **FieldOps** é uma plataforma para gestão de operações de campo, com foco em inspeções técnicas, equipamentos, equipes, agendamentos, não conformidades e aprovação de atividades.
-
-A solução tem como objetivo centralizar o ciclo operacional de uma inspeção, permitindo que diferentes perfis participem de um fluxo estruturado:
-
-**Configuração → Agendamento → Execução → Revisão → Aprovação/Correção → Indicadores**
-
-O projeto será desenvolvido inicialmente a partir dos protótipos existentes no Figma. O front-end será priorizado para validar a experiência do usuário e os principais fluxos antes da implementação definitiva do back-end e do banco de dados.
+| Seu Objetivo / Perfil | Por Onde Começar |
+| :--- | :--- |
+| **☁️ Subir o Ambiente / Deploy AWS & APK** | 1. [Guia Passo a Passo: Deploy no AWS Learner Lab](./guias/deploy_aws_learner_lab.md)<br>2. [Guia de Apresentação, Roteiro dos 12 Testes (100 pts) e Status](./guias/guia_apresentacao_e_status.md)<br>3. [README Principal do Repositório](../README.md) |
+| **🏗️ Entender Arquitetura, API e Banco** | 1. [10. Modelo de Dados (PostgreSQL 16, Snapshots & Outbox)](./arquitetura/10_modelo_de_dados.md)<br>2. [11. Arquitetura da Solução (Consolidada)](./arquitetura/11_arquitetura.md)<br>3. [12. API REST (Contratos HTTP `/api/v1` e Compatibilidade Mobile)](./arquitetura/12_api_rest.md)<br>4. [13. Aplicativo Mobile (Expo / React Native / Offline-First)](./arquitetura/13_aplicativo_mobile.md)<br>5. [14. Interface Administrativa Web (React 19 / Vite 8)](./arquitetura/14_interface_administrativa_web.md) |
+| **📋 Consultar Produto e Regras de Negócio** | 1. [01. Visão Geral](./produto/01_visao_geral.md) e [02. Objetivos](./produto/02_objetivos.md)<br>2. [05. Perfis de Usuário e Matriz RBAC](./produto/05_perfis_de_usuario.md)<br>3. [06. Catálogo de Casos de Uso (`UC-01` a `UC-20`)](./produto/06_casos_de_uso.md)<br>4. [07. Fluxo Geral e Máquina de Estados](./produto/07_fluxo_geral.md)<br>5. [09. Regras de Negócio Consolidadas (`RN-001` a `RN-090`)](./produto/09_regras_de_negocio.md) |
+| **🧪 Qualidade, Critérios de Aceite e Rubricas** | 1. [15. Backlog do Produto (`EP-01` a `EP-10` / `PBI-001` a `PBI-082`)](./qualidade/15_backlog_do_produto.md)<br>2. [17. Critérios de Aceitação BDD](./qualidade/17_criterios_aceite.md)<br>3. [18. Definição de Pronto (DoD)](./qualidade/18_definition_of_done.md)<br>4. [19. Critérios de Avaliação e Rubricas (100 pontos)](./qualidade/19_criterios_de_avaliacao.md) |
+| **📊 Gestão de Projetos (PMBOK / Prof. Deivison Takatu)** | 1. [Índice Central de Gestão de Projetos](./gestao/README.md)<br>2. [Termo de Abertura do Projeto (TAP)](./gestao/tap.md)<br>3. [EAP e Dicionário da EAP](./gestao/eap_e_dicionario.md)<br>4. [Matriz de Poder/Interesse dos Stakeholders (Fábio Carvalho)](./gestao/matriz_poder_interesse_stakeholders.md)<br>5. [Relatório Técnico-Acadêmico Final Consolidado](./gestao/relatorio_final_consolidado_gestao.md) |
 
 ---
 
-# 2. Objetivos
-
-## 2.1 Objetivo geral
-
-Desenvolver uma plataforma capaz de organizar e digitalizar processos de inspeção e operações de campo, proporcionando maior controle operacional, padronização e rastreabilidade.
-
-## 2.2 Objetivos específicos
-
-- Centralizar informações de inspeções e equipamentos.
-- Permitir a criação de modelos de inspeção configuráveis.
-- Organizar o agendamento e a atribuição de atividades.
-- Permitir o registro de respostas, observações e evidências.
-- Disponibilizar um fluxo de revisão e aprovação.
-- Destacar não conformidades e atividades atrasadas.
-- Disponibilizar indicadores para acompanhamento operacional.
-- Criar uma base arquitetural preparada para integração entre front-end, API e banco de dados.
-
----
-
-# 3. Problema e Contexto
-
-Operações de campo envolvem diferentes elementos: técnicos, equipamentos, locais, clientes, inspeções, evidências e decisões de supervisão.
-
-Quando essas informações são controladas por processos manuais ou ferramentas desconectadas, podem surgir dificuldades de acompanhamento, falta de padronização, perda de evidências, atrasos e baixa visibilidade sobre a operação.
-
-O FieldOps propõe centralizar esse processo em uma plataforma única, permitindo acompanhar a atividade desde sua configuração até a conclusão.
-
----
-
-# 4. Usuários e Perfis
-
-## 4.1 Supervisor
-
-Responsável pelo acompanhamento operacional e pela tomada de decisões.
-
-**Responsabilidades previstas:**
-- Visualizar indicadores.
-- Acompanhar inspeções.
-- Identificar atrasos e não conformidades.
-- Agendar atividades.
-- Atribuir técnicos.
-- Revisar inspeções.
-- Aprovar ou solicitar correções.
-- Acompanhar resultados.
-
-## 4.2 Técnico
-
-Responsável pela execução das atividades em campo.
-
-**Responsabilidades previstas:**
-- Consultar atividades atribuídas.
-- Visualizar informações do equipamento e local.
-- Executar inspeções.
-- Registrar respostas.
-- Adicionar observações.
-- Anexar evidências fotográficas.
-- Finalizar e enviar inspeções para revisão.
-
-## 4.3 Administrador
-
-Responsável pela configuração e manutenção da plataforma.
-
-**Responsabilidades previstas:**
-- Gerenciar usuários e cadastros.
-- Gerenciar equipamentos.
-- Criar modelos de inspeção.
-- Configurar perguntas.
-- Configurar regras de validação.
-- Administrar configurações.
-
-> **Nota:** permissões definitivas e matriz de acesso ainda serão definidas.
-
----
-
-# 5. Módulos Identificados
-
-A partir dos protótipos atuais, foram identificados os seguintes módulos:
-
-1. **Dashboard**
-2. **Operações**
-3. **Gestão de Equipamentos**
-4. **Gestão de Técnicos**
-5. **Modelos de Inspeção**
-6. **Agendamento e Atribuição**
-7. **Execução de Inspeções**
-8. **Revisão e Aprovação**
-9. **Relatórios**
-10. **Configurações**
-
----
-
-# 6. Dashboard
-
-O Dashboard representa a visão geral da operação para o supervisor.
-
-### Indicadores identificados
-
-- Inspeções concluídas no mês.
-- Taxa de não conformidade.
-- Técnicos em campo.
-- Inspeções atrasadas.
-
-### Recursos identificados
-
-- Gráfico de andamento semanal.
-- Ações rápidas.
-- Lista de não conformidades.
-- Filtros.
-- Exportação.
-- Paginação.
-
-### Objetivo
-
-Permitir que o supervisor identifique rapidamente o estado da operação e priorize situações que exigem atenção.
-
----
-
-# 7. Gestão de Equipamentos
-
-O módulo de equipamentos será responsável pelo cadastro e acompanhamento dos ativos utilizados nas operações.
-
-### Dados identificados
-
-- Nome do equipamento.
-- Código QR.
-- Cliente vinculado.
-- Local.
-- Status.
-- Ações.
-
-### Funcionalidades previstas
-
-- Listagem.
-- Pesquisa.
-- Filtros.
-- Cadastro.
-- Edição.
-- Consulta.
-- Ativação/inativação.
-- Paginação.
-
----
-
-# 8. Construtor de Modelos de Inspeção
-
-Um dos diferenciais do FieldOps é a possibilidade de criar modelos de inspeção configuráveis.
-
-### Tipos de pergunta identificados
-
-- Texto curto.
-- Parágrafo.
-- Múltipla escolha.
-- Conforme/Não Conforme.
-- Captura de foto.
-- Assinatura digital.
-
-### Regras e evidências
-
-As perguntas poderão possuir regras condicionais.
-
-**Exemplo:**
-
-> Se o resultado for **Não Conforme**, exigir observação.
-
-> Se o resultado for **Não Conforme**, exigir evidência fotográfica.
-
-A estrutura deverá ser preparada para futuras regras adicionais sem necessidade de alterar toda a aplicação.
-
----
-
-# 9. Agendamento e Atribuição
-
-O módulo de agendamento permitirá organizar as atividades de campo e associá-las aos técnicos.
-
-### Recursos identificados
-
-- Visualização semanal.
-- Visualização mensal.
-- Navegação entre períodos.
-- Criação de nova atribuição.
-- Lista de técnicos disponíveis.
-- Pesquisa/filtro de técnicos.
-- Especialidades.
-- Status de disponibilidade.
-
-### Fluxo previsto
-
-**Supervisor → Atividade → Data/Horário → Técnico → Atribuição**
-
----
-
-# 10. Execução de Inspeções
-
-Durante a execução, o técnico deverá preencher o modelo associado à atividade.
-
-O processo poderá registrar:
-
-- Respostas.
-- Conformidade.
-- Observações.
-- Fotografias.
-- Assinatura.
-- Data e horário.
-- Técnico responsável.
-- Equipamento.
-- Local.
-
-Ao finalizar, a inspeção será encaminhada para o próximo estágio do fluxo.
-
----
-
-# 11. Revisão e Aprovação
-
-O supervisor deverá conseguir revisar os resultados antes de concluir o processo.
-
-### Informações apresentadas
-
-- Técnico.
-- Data.
-- Horário.
-- Local.
-- Itens da inspeção.
-- Resultado de cada item.
-- Observação do técnico.
-- Evidências fotográficas.
-- Comentário do supervisor.
-
-### Decisões previstas
-
-**Aprovar inspeção**
-
-ou
-
-**Reprovar / Solicitar correção**
-
----
-
-# 12. Fluxo Operacional
-
-O fluxo macro atual é:
+## 📂 Estrutura Completa do Diretório `docs/`
 
 ```text
-┌───────────────────────┐
-│ Criar modelo          │
-│ de inspeção           │
-└───────────┬───────────┘
-            ↓
-┌───────────────────────┐
-│ Agendar atividade     │
-└───────────┬───────────┘
-            ↓
-┌───────────────────────┐
-│ Atribuir técnico      │
-└───────────┬───────────┘
-            ↓
-┌───────────────────────┐
-│ Executar inspeção     │
-└───────────┬───────────┘
-            ↓
-┌───────────────────────┐
-│ Registrar resultados  │
-│ e evidências          │
-└───────────┬───────────┘
-            ↓
-┌───────────────────────┐
-│ Revisão do supervisor │
-└───────────┬───────────┘
-            ↓
-       ┌────┴────┐
-       ↓         ↓
-   APROVAR    CORRIGIR
-       ↓         │
-   Concluído ←───┘
+docs/
+├── README.md                                      # Índice Mestre da documentação
+├── produto/                                       # Especificação de produto, domínio e regras (01 a 09)
+│   ├── 01_visao_geral.md
+│   ├── 02_objetivos.md
+│   ├── 03_problema.md
+│   ├── 04_personas.md
+│   ├── 05_perfis_de_usuario.md
+│   ├── 06_casos_de_uso.md
+│   ├── 07_fluxo_geral.md
+│   ├── 08_funcionalidades.md
+│   └── 09_regras_de_negocio.md
+├── arquitetura/                                   # Engenharia de software, banco, API, mobile e web (10 a 14)
+│   ├── 10_modelo_de_dados.md
+│   ├── 11_arquitetura.md
+│   ├── 12_api_rest.md
+│   ├── 13_aplicativo_mobile.md
+│   └── 14_interface_administrativa_web.md
+├── qualidade/                                     # Planejamento ágil, BDD, DoD e avaliação (15 a 19)
+│   ├── 15_backlog_do_produto.md
+│   ├── 16_roadmap.md
+│   ├── 17_criterios_aceite.md
+│   ├── 18_definition_of_done.md
+│   └── 19_criterios_de_avaliacao.md
+├── guias/                                         # Manuais operacionais de deploy AWS e apresentação à banca
+│   ├── deploy_aws_learner_lab.md
+│   └── guia_apresentacao_e_status.md
+└── gestao/                                        # Artefatos formais PMBOK / Scrum (Avaliações 1 e 2)
+    ├── README.md
+    ├── tap.md
+    ├── declaracao_de_escopo.md
+    ├── eap_e_dicionario.md
+    ├── eap.jpeg
+    ├── cronograma_e_recursos.md
+    ├── matriz_poder_interesse_stakeholders.md
+    ├── plano_de_comunicacao.md
+    ├── plano_de_custos_e_orcamento.md
+    ├── plano_de_qualidade.md
+    ├── matriz_e_plano_de_riscos.md
+    ├── monitoramento_controle_encerramento.md
+    ├── relatorio_final_consolidado_gestao.md
+    ├── desafio_gestao_portfolio_metaltech.md
+    ├── planejamento_entregas_fim_semestre.md
+    ├── sprint_review_monocromatico.md
+    ├── sprint_review_slide.md
+    ├── sprint_review_gestao_slide.md
+    ├── templates_abnt_docx/
+    └── historico/
+        ├── especificacao_inicial_v01.md
+        ├── plano_implantacao_inicial.md
+        └── relatorio_estado_atual_set2026.md
 ```
 
 ---
 
-# 13. Status e Classificações
-
-Os protótipos apresentam diferentes indicadores de estado.
-
-### Inspeções
-
-- Conforme.
-- Não Conforme.
-- Crítico.
-- Alta.
-- Baixa.
-- Atrasada.
-
-### Equipamentos
-
-- Ativo.
-- Inativo.
-
-### Técnicos
-
-- Disponível.
-- Em campo.
-- Fora de turno.
-
-> A taxonomia definitiva de status e suas regras de transição ainda será definida.
-
----
-
-# 14. Arquitetura de Desenvolvimento
-
-A estratégia atual é desenvolver o projeto de forma incremental.
-
-```text
-Figma
-  ↓
-Front-end
-  ↓
-Dados mockados
-  ↓
-Validação dos fluxos
-  ↓
-API / Back-end
-  ↓
-Banco de dados
-  ↓
-Integração
-  ↓
-Testes e Deploy
-```
-
-A prioridade inicial será o front-end, permitindo validar visualmente e funcionalmente o produto antes de fechar a implementação do back-end.
-
----
-
-# 15. Stack Tecnológica
-
-## Front-end
-
-**Status: a definir**
-
-Stack inicialmente recomendada:
-
-- React
-- TypeScript
-- Vite
-- React Router
-- Tailwind CSS
-- Lucide React
-- Recharts
-
-## Back-end
-
-**A definir.**
-
-## Banco de dados
-
-**A definir.**
-
-## Infraestrutura e deploy
-
-**A definir.**
-
----
-
-# 16. Estrutura Conceitual do Front-end
-
-```text
-src/
-├── components/
-│   ├── ui/
-│   ├── layout/
-│   ├── forms/
-│   └── tables/
-│
-├── pages/
-│   ├── dashboard/
-│   ├── operations/
-│   ├── equipment/
-│   ├── inspections/
-│   ├── scheduling/
-│   ├── review/
-│   ├── reports/
-│   └── settings/
-│
-├── layouts/
-├── routes/
-├── services/
-├── hooks/
-├── types/
-├── mocks/
-├── utils/
-└── assets/
-```
-
-Essa estrutura é inicial e poderá ser alterada conforme o projeto evoluir.
-
----
-
-# 17. Requisitos Funcionais
-
-| ID | Requisito | Estado |
-|---|---|---|
-| RF01 | Exibir Dashboard operacional | Definido |
-| RF02 | Cadastrar equipamentos | Definido |
-| RF03 | Listar equipamentos | Definido |
-| RF04 | Pesquisar equipamentos | Definido |
-| RF05 | Filtrar equipamentos | Definido |
-| RF06 | Criar modelos de inspeção | Definido |
-| RF07 | Adicionar tipos de perguntas | Definido |
-| RF08 | Configurar regras condicionais | Definido |
-| RF09 | Agendar inspeções | Definido |
-| RF10 | Atribuir inspeções a técnicos | Definido |
-| RF11 | Executar inspeções | Definido |
-| RF12 | Registrar observações | Definido |
-| RF13 | Registrar evidências | Definido |
-| RF14 | Revisar inspeções | Definido |
-| RF15 | Aprovar inspeções | Definido |
-| RF16 | Solicitar correções | Definido |
-| RF17 | Gerenciar técnicos | A definir |
-| RF18 | Gerar relatórios | A definir |
-| RF19 | Gerenciar usuários e permissões | A definir |
-| RF20 | Autenticação | A definir |
-
----
-
-# 18. Requisitos Não Funcionais
-
-Os seguintes requisitos serão considerados durante a evolução do projeto:
-
-- **RNF01 — Usabilidade:** interface clara e intuitiva.
-- **RNF02 — Responsividade:** adaptação a diferentes tamanhos de tela.
-- **RNF03 — Segurança:** proteção de dados e controle de acesso.
-- **RNF04 — Desempenho:** resposta adequada às operações do sistema.
-- **RNF05 — Manutenibilidade:** código organizado e modular.
-- **RNF06 — Escalabilidade:** arquitetura preparada para expansão.
-- **RNF07 — Disponibilidade:** sistema acessível conforme infraestrutura definida.
-- **RNF08 — Rastreabilidade:** registro das principais ações e decisões.
-
----
-
-# 19. Entidades Iniciais
-
-O modelo de dados deverá ser refinado durante a implementação.
-
-Entidades candidatas:
-
-- Usuário.
-- Técnico.
-- Supervisor.
-- Cliente.
-- Local.
-- Equipamento.
-- Modelo de Inspeção.
-- Pergunta.
-- Regra.
-- Inspeção.
-- Resposta.
-- Evidência.
-- Agendamento.
-- Não Conformidade.
-- Aprovação.
-
----
-
-# 20. Roadmap
-
-## Fase 01 — Fundação do Front-end
-
-- [ ] Definir stack.
-- [ ] Criar repositório.
-- [ ] Configurar projeto.
-- [ ] Criar identidade visual.
-- [ ] Criar Sidebar.
-- [ ] Criar Header.
-- [ ] Criar componentes reutilizáveis.
-- [ ] Configurar rotas.
-
-## Fase 02 — Interfaces principais
-
-- [ ] Dashboard.
-- [ ] Equipamentos.
-- [ ] Agendamento.
-- [ ] Modelos de inspeção.
-- [ ] Revisão de inspeção.
-
-## Fase 03 — Interações
-
-- [ ] Formulários.
-- [ ] Validações.
-- [ ] Filtros.
-- [ ] Paginação.
-- [ ] Modais.
-- [ ] Estados de carregamento.
-- [ ] Estados de erro.
-- [ ] Dados mockados.
-
-## Fase 04 — Back-end
-
-- [ ] Definir arquitetura.
-- [ ] Definir banco.
-- [ ] Criar API.
-- [ ] Criar autenticação.
-- [ ] Implementar regras de negócio.
-
-## Fase 05 — Integração
-
-- [ ] Conectar front-end e API.
-- [ ] Substituir mocks.
-- [ ] Implementar persistência.
-- [ ] Testar fluxos completos.
-
-## Fase 06 — Finalização
-
-- [ ] Testes.
-- [ ] Correções.
-- [ ] Responsividade.
-- [ ] Segurança.
-- [ ] Deploy.
-- [ ] Documentação final.
-- [ ] Preparação da apresentação.
-
----
-
-# 21. Pendências e Decisões
-
-- [ ] Confirmar requisitos oficiais do Projeto Integrador.
-- [ ] Confirmar stack do front-end.
-- [ ] Definir back-end.
-- [ ] Definir banco de dados.
-- [ ] Definir autenticação.
-- [ ] Definir perfis e permissões.
-- [ ] Definir arquitetura da API.
-- [ ] Definir hospedagem.
-- [ ] Revisar todos os fluxos do Figma.
-- [ ] Definir escopo mínimo da primeira versão.
-- [ ] Definir funcionalidades extras/diferenciais.
-
----
-
-# 22. Protótipos Disponíveis
-
-Os protótipos atuais contemplam:
-
-1. Dashboard do Supervisor.
-2. Construtor de Modelos de Inspeção.
-3. Listagem de Equipamentos.
-4. Revisão e Aprovação de Inspeção.
-5. Agendamento e Atribuição de Inspeções.
-
-Esses protótipos serão utilizados como referência para a implementação do front-end.
-
----
-
-# 23. Diretrizes Visuais
-
-A interface atual apresenta:
-
-- Azul escuro como cor principal.
-- Fundo claro.
-- Cards com bordas discretas.
-- Botões de ação destacados.
-- Badges para status.
-- Ícones para ações e navegação.
-- Tabelas administrativas.
-- Sidebar persistente.
-- Header superior.
-- Layout orientado à produtividade operacional.
-
-A identidade visual poderá ser refinada conforme o Design System for consolidado.
-
----
-
-# 24. Critério de Evolução do Documento
-
-Este documento deverá ser tratado como um artefato vivo do projeto.
-
-Sempre que ocorrer uma mudança relevante, deverá ser atualizado:
-
-- Requisitos.
-- Fluxos.
-- Arquitetura.
-- Tecnologias.
-- Banco de dados.
-- Protótipos.
-- Roadmap.
-- Decisões técnicas.
-- Histórico de versões.
-
----
-
-# 25. Histórico de Decisões
-
-| Data | Decisão | Impacto |
-|---|---|---|
-| 25/08/2026 | Desenvolvimento será iniciado pelo front-end | Permite validar as interfaces antes da implementação definitiva do back-end |
-| 25/08/2026 | Dados mockados serão utilizados inicialmente | Desacopla o desenvolvimento visual da API |
-| 25/08/2026 | Figma será a principal referência visual inicial | Mantém o desenvolvimento alinhado aos protótipos |
-
----
-
-# 26. Estado Atual do Projeto
-
-**Status geral:** 🟡 Em planejamento / início do desenvolvimento.
-
-### Já definido
-
-- Conceito do FieldOps.
-- Principais módulos.
-- Fluxo geral de inspeção.
-- Protótipos iniciais.
-- Estratégia de iniciar pelo front-end.
-
-### Em definição
-
-- Stack definitiva.
-- Back-end.
-- Banco de dados.
-- Autenticação.
-- Permissões.
-- Modelo de dados.
-- Infraestrutura.
-
-### Próximo passo recomendado
-
-**Configurar o projeto do front-end e implementar o Design System base (Sidebar, Header, navegação, cores, tipografia, botões, cards e tabelas).**
-
----
-
-> **FieldOps — Documento vivo do Projeto Integrador**
->
-> Versão 0.1 · 25/08/2026
+## 📑 Sumário Detalhado dos Módulos
+
+### 1. Produto e Negócio (`docs/produto/`)
+- **[01. Visão Geral](./produto/01_visao_geral.md):** Proposta de valor, declaração da visão e os 4 pilares da plataforma.
+- **[02. Objetivos](./produto/02_objetivos.md):** Objetivos gerais, específicos por camada, acadêmicos e indicadores de sucesso do MVP.
+- **[03. Problema](./produto/03_problema.md):** Dores operacionais de técnicos, supervisores, administradores e clientes.
+- **[04. Personas](./produto/04_personas.md):** Perfis de uso (*Carlos* — Técnico, *Marina* — Supervisora, *Ana* — Admin, *Roberto* — Cliente).
+- **[05. Perfis de Usuário](./produto/05_perfis_de_usuario.md):** Matriz de permissões RBAC (`ADMIN`, `SUPERVISOR`, `TECHNICIAN`, `CLIENT_VIEWER`).
+- **[06. Casos de Uso](./produto/06_casos_de_uso.md):** Especificação de `UC-01` a `UC-20` com fluxos principais e alternativos.
+- **[07. Fluxo Geral](./produto/07_fluxo_geral.md):** Ciclo de vida ponta a ponta, máquina de estados de negócio e estados de sincronização.
+- **[08. Funcionalidades](./produto/08_funcionalidades.md):** Priorização `P0` (MVP), `P1` e `P2` e tipos de resposta suportados.
+- **[09. Regras de Negócio (`RN-001` a `RN-090`)](./produto/09_regras_de_negocio.md):** Catálogo canônico consolidado com comportamentos detalhados no App e no Servidor.
+
+### 2. Arquitetura e Engenharia (`docs/arquitetura/`)
+- **[10. Modelo de Dados](./arquitetura/10_modelo_de_dados.md):** Modelagem relacional completa das 15 tabelas PostgreSQL, snapshots imutáveis, fila Outbox e índices.
+- **[11. Arquitetura da Solução](./arquitetura/11_arquitetura.md):** Visão distribuída, árvore real dos módulos (`backend/`, `frontend/`, `fieldops-mobile/`), Outbox, idempotência por UUID e RNF-001 a RNF-012.
+- **[12. API REST](./arquitetura/12_api_rest.md):** Contratos HTTP `/api/v1/*`, rotas de compatibilidade mobile, payloads JSON, códigos HTTP e Swagger.
+- **[13. Aplicativo Mobile](./arquitetura/13_aplicativo_mobile.md):** Arquitetura React Native + Expo SDK 57, rascunho persistente offline (`AsyncStorage`), scanner QR Code (`CameraView`), assinatura SVG e APK Android.
+- **[14. Interface Administrativa Web](./arquitetura/14_interface_administrativa_web.md):** Arquitetura React 19 + Vite 8 + React Router 7, rotas reais, construtor de modelos, drawer de revisão e linha do tempo de auditoria (`HistoryPage`).
+
+### 3. Qualidade, Backlog e Avaliação (`docs/qualidade/`)
+- **[15. Backlog do Produto](./qualidade/15_backlog_do_produto.md):** Épicos `EP-01` a `EP-10` e histórias de usuário `PBI-001` a `PBI-082`.
+- **[16. Roadmap](./qualidade/16_roadmap.md):** Planejamento de 16 semanas em 8 sprints e marcos `M1` a `M8`.
+- **[17. Critérios de Aceitação](./qualidade/17_criterios_aceite.md):** Cenários BDD (*Dado / Quando / Então*) para todos os módulos.
+- **[18. Definition of Done (DoD)](./qualidade/18_definition_of_done.md):** Critérios de conclusão por história, camada, sprint e MVP.
+- **[19. Critérios de Avaliação](./qualidade/19_criterios_de_avaliacao.md):** Rubricas de 100 pontos do produto integrado, Mobile Expo, Backend Spring Boot e Web React.
+
+### 4. Guias Operacionais e READMEs por Módulo
+- **[Guia de Deploy no AWS Academy Learner Lab](./guias/deploy_aws_learner_lab.md):** Passo a passo com `deploy_aws.sh` em instância EC2.
+- **[Guia de Apresentação Final e Roteiro dos 12 Testes da Banca](./guias/guia_apresentacao_e_status.md):** Checklist de 100 pontos, link do APK Android e resumo técnico.
+- **Documentação específica de cada pacote de código:**
+  - [Backend Spring Boot (`backend/README.md`)](../backend/README.md)
+  - [Frontend Web React (`frontend/README.md`)](../frontend/README.md)
+  - [Aplicativo Mobile Expo (`fieldops-mobile/README.md`)](../fieldops-mobile/README.md)
+  - [Banco de Dados PostgreSQL (`database/README.md`)](../database/README.md)

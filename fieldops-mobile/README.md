@@ -9,10 +9,10 @@ O aplicativo é a ferramenta de trabalho em campo dos técnicos, permitindo cons
 ## 📱 Tecnologias Utilizadas
 
 - **React Native 0.86+**
-- **Expo SDK 57** (Expo Router, Expo Camera, Expo Barcode Scanner, Expo Location)
+- **Expo SDK 57** (`expo-camera` / `CameraView`, `expo-image-picker`, `expo-secure-store`, `@react-native-community/netinfo`)
 - **TypeScript**
-- **SQLite Local (expo-sqlite)** para persistência e fila Outbox resiliente
-- **Lucide Icons / Expo Vector Icons**
+- **AsyncStorage & SecureStore** para persistência de rascunho em andamento (`@fieldops/rascunho-em-andamento`), fila Outbox resiliente (`@fieldops/inspecoes-pendentes-offline`) e armazenamento seguro de tokens JWT
+- **React Native SVG & Expo Vector Icons** (Assinatura digital nativa `SignaturePad` e ícones)
 
 ---
 
@@ -67,13 +67,13 @@ npx expo start
    - Ative o Modo Avião do celular.
    - O técnico continua acessando suas ordens de serviço, equipamentos e formulários normalmente.
 
-3. **Check-in via QR Code (RN-025):**
-   - Ao abrir a inspeção, o app aciona o scanner de câmera para ler o QR Code do equipamento (ex: `QR-KSB-01`, `QR-CCM-02`).
-   - Se o código conferir, a inspeção transiciona para `IN_PROGRESS` e captura a localização GPS inicial (RN-042).
+3. **Check-in via QR Code (RN-063 e RN-064):**
+   - Ao abrir a inspeção, o app aciona o scanner de câmera (`CameraView`) para ler o QR Code do equipamento (ex: `QR-BOMBA-04-ALPHA`, `COMP-001`, `EQ-101`).
+   - Se o código conferir, a inspeção transiciona para `IN_PROGRESS` e registra o início presencial (RN-034, RN-061).
 
 4. **Preenchimento do Checklist Dinâmico:**
-   - Respostas conformes e não conformes.
-   - Caso um item receba status **Não Conforme**, o app obriga a inserção de justificativa textual e disparo de foto pela câmera nativa (RN-030 e RN-039).
+   - Respostas conformes e não conformes com salvamento automático de rascunho (`RN-066`).
+   - Caso um item receba status **Não Conforme**, o app obriga a inserção de justificativa textual e disparo de foto pela câmera nativa ou galeria (RN-037, RN-038 e RN-039).
 
 5. **Finalização e Fila Outbox:**
    - Ao concluir a inspeção, uma transação é registrada na tabela local `outbox` com UUID idempotente.

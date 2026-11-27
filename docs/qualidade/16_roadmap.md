@@ -44,7 +44,7 @@ Cada sprint terá duas semanas:
 
 | Sprint | Semanas | Conteúdo principal de Expo | Entrega mobile | Entrega administrativa | Entrega backend | Incremento demonstrável |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 1–2 | Arquitetura, TypeScript, Expo Router, componentes e qualidade | Projeto base, rotas protegidas simuladas, design system e dados mockados | Projeto Angular, layout, rotas e telas iniciais | API base, PostgreSQL, migrações e OpenAPI inicial | Três aplicações executáveis com contrato inicial |
+| 1 | 1–2 | Arquitetura, TypeScript, navegação, componentes e qualidade | Projeto base, rotas protegidas simuladas, design system e dados mockados | Projeto React + Vite, layout, rotas e telas iniciais | API base, PostgreSQL, migrações e OpenAPI inicial | Três aplicações executáveis com contrato inicial |
 | 2 | 3–4 | Consumo de API, autenticação, sessão segura e tratamento de erros | Login real, sessão, logout e tela inicial | Login, usuários e cadastros básicos | JWT, autorização, usuários, clientes, locais e equipamentos | Usuários autenticados e cadastros disponíveis |
 | 3 | 5–6 | Dados remotos, cache, listas, filtros e estados de interface | Lista e detalhes de inspeções inicialmente mockados e depois integrados | Construtor de modelos e agendamento | Modelos versionados, snapshot, inspeções e atribuição | Supervisor cria e atribui uma inspeção |
 | 4 | 7–8 | React Hook Form, validação e formulários dinâmicos | Início, checklist, respostas, observações e progresso | Acompanhamento das inspeções | Consulta mobile, respostas, transições e validações | Técnico executa uma inspeção online |

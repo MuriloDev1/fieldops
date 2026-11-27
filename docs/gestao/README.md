@@ -24,11 +24,11 @@ Em estrito alinhamento com a estrutura da equipe:
 ## 📂 Mapa Completo de Artefatos de Gestão
 
 ### 🎯 1. Artefatos da Avaliação 1 (Definição e Planejamento Inicial — 5,0 Pontos)
-1. **[Termo de Abertura do Projeto (TAP)](TAP.md):** Justificativa, objetivos SMART, limites, premissas, restrições e marcos iniciais.
+1. **[Termo de Abertura do Projeto (TAP)](tap.md):** Justificativa, objetivos SMART, limites, premissas, restrições e marcos iniciais.
 2. **[Matriz de Partes Interessadas (Stakeholders)](matriz_poder_interesse_stakeholders.md):** Análise aprofundada de poder x interesse fundamentada na metodologia de Fábio Câmara Araújo de Carvalho.
 3. **[Plano de Gerenciamento das Comunicações](plano_de_comunicacao.md):** Matriz completa com público, conteúdo, frequência, canal, responsável e fluxo de escalonamento.
 4. **[Declaração de Escopo do Projeto](declaracao_de_escopo.md):** Fronteiras de escopo (inclusões vs. exclusões explícitas), critérios de aceitação e controle de mudanças.
-5. **[EAP e Dicionário da Estrutura Analítica](EAP_e_dicionario.md):** Decomposição em 6 componentes (1.0 a 6.4) orientada a resultados e dicionário com critérios formais de aceitação.
+5. **[EAP e Dicionário da Estrutura Analítica](eap_e_dicionario.md):** Decomposição em 6 componentes (1.0 a 6.4) orientada a resultados e dicionário com critérios formais de aceitação.
 6. **[Cronograma do Projeto e Matriz de Recursos (RACI)](cronograma_e_recursos.md):** Gráfico de Gantt Mermaid, lista de atividades com predecessores (A01 a A18), marcos e matriz RACI.
 
 ---
@@ -42,11 +42,15 @@ Em estrito alinhamento com a estrutura da equipe:
 
 ---
 
-### 🏭 3. Atividades Complementares da Disciplina
+### 🏭 3. Atividades Complementares da Disciplina e Histórico
 1. **[Resolução do Desafio MetalTech S.A. (Portfólio e Programas)](desafio_gestao_portfolio_metaltech.md):** Resolução integral do desafio de PMO para 8 projetos com teto de R$ 2,5 milhões, eliminação de conflitos de recursos, roadmap de 12 meses e slide executivo pronto para pitch de 3 minutos.
 2. **[Slide Executivo Monocromático para Sprint Review](sprint_review_monocromatico.md):** Apresentação visual limpa no estilo dark code minimalista para a banca avaliadora.
-3. **[Planejamento das Entregas de Fim de Semestre](planejamento_entregas_fim_semestre.md):** Detalhamento dos ciclos de entrega e evolução do MVP.
-4. **[Relatório do Estado Atual do FieldOps](relatorio_estado_atual_fieldops.md):** Diagnóstico das três frentes (Web, Mobile, Backend) e próximos passos.
+3. **[Slide Executivo de Governança e Gestão](sprint_review_gestao_slide.md)** e **[Slide Executivo Geral](sprint_review_slide.md)**.
+4. **[Planejamento das Entregas de Fim de Semestre](planejamento_entregas_fim_semestre.md):** Detalhamento dos ciclos de entrega e evolução do MVP.
+5. **Histórico de Evolução (`historico/`):**
+   - [Especificação Inicial v0.1 (Ago/2026)](historico/especificacao_inicial_v01.md)
+   - [Plano de Implantação Inicial](historico/plano_implantacao_inicial.md)
+   - [Relatório do Estado Atual (Set/2026)](historico/relatorio_estado_atual_set2026.md)
 
 ---
 

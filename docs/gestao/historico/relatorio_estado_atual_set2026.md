@@ -47,20 +47,20 @@ A análise das ramificações no Git revela que o código-fonte está atualmente
 ## 2. Detalhamento por Camada do Sistema
 
 ### 2.1. Gestão e Especificação de Requisitos (Status: Concluído)
-* **Termo de Abertura do Projeto (TAP):** Formalizado em [TAP.md](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/docs/gestao/TAP.md), detalhando objetivos, escopo, stakeholders, restrições e critérios de sucesso.
-* **Estrutura Analítica do Projeto (EAP):** Mapeada graficamente em [EAP.jpeg](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/docs/gestao/EAP.jpeg).
-* **Regras de Negócio (RN-001 a RN-089):** Documentadas minuciosamente em [regras_de_negocio.md](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/docs/regras_de_negocio.md). Entre as regras principais:
+* **Termo de Abertura do Projeto (TAP):** Formalizado em [tap.md](../tap.md), detalhando objetivos, escopo, stakeholders, restrições e critérios de sucesso.
+* **Estrutura Analítica do Projeto (EAP):** Mapeada graficamente em [eap.jpeg](../eap.jpeg).
+* **Regras de Negócio (RN-001 a RN-090):** Documentadas minuciosamente em [09_regras_de_negocio.md](../../produto/09_regras_de_negocio.md). Entre as regras principais:
   * **RN-021:** Snapshots imutáveis de checklists no momento do agendamento/execução.
-  * **RN-025:** Check-in com validação obrigatória via leitura de QR Code do equipamento.
-  * **RN-030 e RN-039:** Exigência condicional de justificativa escrita e foto obrigatória para itens críticos reprovados.
-  * **RN-042:** Coleta de geolocalização (GPS) no check-in e check-out.
+  * **RN-064:** Check-in com validação obrigatória via leitura de QR Code do equipamento.
+  * **RN-038 e RN-039:** Exigência condicional de justificativa escrita e foto obrigatória para itens críticos reprovados.
+  * **RN-061 e RN-062:** Coleta de geolocalização (GPS) no check-in e check-out.
   * **RN-068 e RN-074:** Idempotência via UUIDs e duplo carimbo de data/hora (`executed_at` vs `synchronized_at`).
-* **Arquitetura da Solução:** Detalhada em [arquitetura.md](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/docs/arquitetura.md), definindo o fluxo do ciclo de vida da inspeção e a estratégia *Outbox Pattern*.
+* **Arquitetura da Solução:** Detalhada em [11_arquitetura.md](../../arquitetura/11_arquitetura.md), definindo o fluxo do ciclo de vida da inspeção e a estratégia *Outbox Pattern*.
 
 ---
 
 ### 2.2. Camada de Dados — PostgreSQL (Status: 90%)
-* **Schema DDL Completo:** Arquivo [schema.sql](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/database/schema.sql) com 14 tabelas relacionais:
+* **Schema DDL Completo:** Arquivo [schema.sql](../../../database/schema.sql) com 14 tabelas relacionais:
   * `organizations`, `users`, `sites`, `equipment_types`, `equipment`
   * `inspection_templates`, `inspection_template_questions`, `inspection_question_options`
   * `inspection_assignments`, `inspection_runs`, `inspection_answers`
@@ -70,8 +70,8 @@ A análise das ramificações no Git revela que o código-fonte está atualmente
   * Tipos ENUM nativos (`user_role`, `equipment_status`, `assignment_status`, `run_status`, `severity`, etc.).
   * Índices compostos e índice de busca textual GIN para equipamentos (`idx_equipment_search`).
   * Trilha de auditoria desacoplada e suporte a metadados via `jsonb`.
-* **Diagrama ERD:** Disponibilizado em sintaxe Mermaid no arquivo [erd.mmd](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/database/erd.mmd).
-* **Queries Analíticas:** Arquivo [dashboard-queries.sql](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/database/dashboard-queries.sql) pronto, fornecendo agregações para o painel do supervisor (total de inspeções, taxa de não conformidade, volume semanal e listagem priorizada).
+* **Diagrama ERD:** Disponibilizado em sintaxe Mermaid no arquivo [erd.mmd](../../../database/erd.mmd).
+* **Queries Analíticas:** Arquivo [dashboard-queries.sql](../../../database/dashboard-queries.sql) pronto, fornecendo agregações para o painel do supervisor (total de inspeções, taxa de não conformidade, volume semanal e listagem priorizada).
 * **Pendência:** Criar o script de carga inicial de testes (`seed.sql`) e provisionar a instância do PostgreSQL.
 
 ---
@@ -101,14 +101,14 @@ A análise das ramificações no Git revela que o código-fonte está atualmente
   * **Perfil do Técnico:** Visualização de dados cadastrais e botão de logout.
 * **Pendências:**
   * Integração com SQLite local (módulo `expo-sqlite`) para persistência offline.
-  * Leitor de QR Code (módulo `expo-barcode-scanner` ou `expo-camera`) para check-in (RN-025).
-  * Coleta de GPS (módulo `expo-location`) (RN-042).
-  * Captura de evidências fotográficas e regra de bloqueio condicional (RN-030 e RN-031).
+  * Leitor de QR Code (módulo `expo-barcode-scanner` ou `expo-camera`) para check-in (RN-064).
+  * Coleta de GPS (módulo `expo-location`) (RN-061).
+  * Captura de evidências fotográficas e regra de bloqueio condicional (RN-037, RN-038 e RN-039).
 
 ---
 
 ### 2.5. Backend / API REST (Status: 10%)
-* **Documentação de Rotas:** 20 endpoints mapeados em [implementation-plan.md](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/implementation-plan.md).
+* **Documentação de Rotas:** 20 endpoints mapeados em [plano_implantacao_inicial.md](./plano_implantacao_inicial.md).
 * **Estado Atual:** Não há código de servidor ativo na branch `main`. Anteriormente existiu uma pasta `/api` básica que foi removida para reestruturação técnica.
 * **Necessidade Imediata:** Definir a stack do backend (Node.js/Express, NestJS, ou Supabase Backend) e iniciar a implementação dos controllers e middlewares de validação/idempotência.
 
@@ -143,4 +143,4 @@ A análise das ramificações no Git revela que o código-fonte está atualmente
    * Instalar e configurar `expo-sqlite` para armazenar o snapshot do checklist e equipamentos localmente.
    * Conectar a tela de equipamentos ao endpoint real da API.
 5. **Evolução Web:**
-   * Integrar os dados do Dashboard com as queries de [dashboard-queries.sql](file:///c:/Users/muril/OneDrive/Documents/Senai-ADS/SEMESTRE-4/fieldops/database/dashboard-queries.sql).
+   * Integrar os dados do Dashboard com as queries de [dashboard-queries.sql](../../../database/dashboard-queries.sql).

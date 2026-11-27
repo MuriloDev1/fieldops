@@ -16,7 +16,7 @@ O roteiro de avaliação oficial da banca possui **12 verificações sequenciais
 | Teste | Descrição / Verificação Oficial | Pontos | Status Atual | Detalhes da Implementação |
 | :---: | :--- | :---: | :---: | :--- |
 | **01** | **AWS em produção**<br>URL pública do frontend Web, API e banco na AWS sem `localhost` ou túnel. | 15 | 🟡 Pendente de deploy | Backend e Frontend prontos em Docker. Falta instanciar no AWS Learner Lab (`docker compose up -d`). |
-| **02** | **APK Android instalado**<br>Arquivo APK autônomo gerado pelo Expo, rodando no Android sem Expo Go ou Metro. | 10 | 🟡 Pronto no código | Configurado [`fieldops-mobile/eas.json`](./fieldops-mobile/eas.json) e [`app.json`](./fieldops-mobile/app.json) para gerar APK (`buildType: "apk"`). Falta disparar o build. |
+| **02** | **APK Android instalado**<br>Arquivo APK autônomo gerado pelo Expo, rodando no Android sem Expo Go ou Metro. | 10 | 🟡 Pronto no código | Configurado [`fieldops-mobile/eas.json`](../../fieldops-mobile/eas.json) e [`app.json`](../../fieldops-mobile/app.json) para gerar APK (`buildType: "apk"`). Falta disparar o build. |
 | **03** | **Login no Web**<br>Autenticar no Web com perfil Administrador ou Supervisor. | 5 | ✅ Pronto | Autenticação JWT via Spring Boot `/api/v1/auth/login`. Usuários de seed ativos no banco. |
 | **04** | **Cadastros**<br>Cadastrar Cliente, Local e Equipamento vinculado ao local. Recarregar listagem. | 5 | ✅ Pronto | Endpoints e telas de Cliente, Local e Equipamento integrados ao banco via API. |
 | **05** | **Modelo de inspeção**<br>Criar e publicar modelo com 1 seção e ao menos 2 itens (1 obrigatório). | 5 | ✅ Pronto | Backend possui `InspectionTemplateController` e versionamento ativo. Tela `TemplatesPage.jsx` integrada. |
@@ -35,8 +35,8 @@ O roteiro de avaliação oficial da banca possui **12 verificações sequenciais
 
 ### A. Mobile e Offline-First (`fieldops-mobile/`)
 1. **Configuração de APK Android Autônomo:**
-   - Criado [`fieldops-mobile/eas.json`](./fieldops-mobile/eas.json) com profiles `preview` e `production` apontando para `"buildType": "apk"`.
-   - Atualizado [`fieldops-mobile/app.json`](./fieldops-mobile/app.json) com package `com.fieldops.mobile`, permissões de `CAMERA`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE` e plugins nativos.
+   - Criado [`fieldops-mobile/eas.json`](../../fieldops-mobile/eas.json) com profiles `preview` e `production` apontando para `"buildType": "apk"`.
+   - Atualizado [`fieldops-mobile/app.json`](../../fieldops-mobile/app.json) com package `com.fieldops.mobile`, permissões de `CAMERA`, `READ_EXTERNAL_STORAGE`, `WRITE_EXTERNAL_STORAGE` e plugins nativos.
    - **Configurador Dinâmico de Servidor:** Modal na tela de Login permitindo ao usuário alterar o IP/URL da API em tempo de execução (ideal para **AWS Learner Lab**, onde o IP público muda a cada reinício de sessão, dispensando gerar um novo APK).
 2. **Leitor de QR Code Nativo (Teste 07):**
    - Instalado `expo-camera` (`CameraView`) compatível com Expo 57.
@@ -55,7 +55,7 @@ O roteiro de avaliação oficial da banca possui **12 verificações sequenciais
 
 ### B. Backend Spring Boot (`backend/`)
 1. **Segurança e Robustez JSON:**
-   - Atualizados [`InspectionService.java`](./backend/src/main/java/com/fieldops/service/InspectionService.java) e [`InspectionResponseDTO.java`](./backend/src/main/java/com/fieldops/dto/inspection/InspectionResponseDTO.java) para utilizar o Jackson `ObjectMapper` ao serializar e desserializar `photoUrl` e `signatureUrl` na coluna `value_json` (JSONB) do PostgreSQL.
+   - Atualizados [`InspectionService.java`](../../backend/src/main/java/com/fieldops/service/InspectionService.java) e [`InspectionResponseDTO.java`](../../backend/src/main/java/com/fieldops/dto/inspection/InspectionResponseDTO.java) para utilizar o Jackson `ObjectMapper` ao serializar e desserializar `photoUrl` e `signatureUrl` na coluna `value_json` (JSONB) do PostgreSQL.
    - Elimina qualquer risco de erro de escape com imagens Base64 ou vetores SVG.
 2. **Compilação e Testes:**
    - Compilado com Java 21 e Maven: `BUILD SUCCESS` com 0 erros.

@@ -43,7 +43,7 @@ Essa classificação agrupa os stakeholders em quatro quadrantes táticos bem de
 
 ## 2. Identificação das Partes Interessadas (Stakeholders) do FieldOps
 
-Com base nos artefatos oficiais do projeto ([TAP](TAP.md), [Personas](../04_personas.md), [Perfis de Usuário](../05_perfis_de_usuario.md), [Regras de Negócio](../09_regras_de_negocio.md), [Critérios de Avaliação](../19_criterios_de_avaliacao.md) e [Guia de Apresentação](../../GUIA_PROJETO_E_STATUS_APRESENTACAO.md)), foram identificadas as seguintes partes interessadas:
+Com base nos artefatos oficiais do projeto ([TAP](tap.md), [Personas](../produto/04_personas.md), [Perfis de Usuário](../produto/05_perfis_de_usuario.md), [Regras de Negócio](../produto/09_regras_de_negocio.md), [Critérios de Avaliação](../qualidade/19_criterios_de_avaliacao.md) e [Guia de Apresentação](../guias/guia_apresentacao_e_status.md)), foram identificadas as seguintes partes interessadas:
 
 | ID | Parte Interessada (Stakeholder) | Categoria | Descrição e Papel no Projeto |
 | :---: | :--- | :--- | :--- |
@@ -85,7 +85,7 @@ Com base nos artefatos oficiais do projeto ([TAP](TAP.md), [Personas](../04_pers
 - **Banca Avaliadora / Docentes:**
   - **Estratégia:** Realização de demonstrações práticas de ponta a ponta ("Fluxo Dourado"), exibição de código limpo, cobertura de testes e apresentação do APK autônomo com stack Docker em nuvem.
   - **Canal / Frequência:** Apresentações parciais por Sprint, checkpoints de projeto, repositório GitHub atualizado e documentação executiva.
-  - **Métricas de Sucesso:** Cumprimento integral dos 12 testes do [`GUIA_PROJETO_E_STATUS_APRESENTACAO.md`](../../GUIA_PROJETO_E_STATUS_APRESENTACAO.md) totalizando 100 pontos.
+  - **Métricas de Sucesso:** Cumprimento integral dos 12 testes do [`guia_apresentacao_e_status.md`](../guias/guia_apresentacao_e_status.md) totalizando 100 pontos.
 
 - **Supervisor de Operações (Marina):**
   - **Estratégia:** Disponibilização de painel com interface intuitiva para construtor de checklists dinâmicos, acompanhamento em tempo real das inspeções no Web e fluxo transparente de aprovação/reprovação com motivo formal.
@@ -169,7 +169,7 @@ A aplicação da **Matriz de Rede de Poder/Interesse** no FieldOps consolida a c
 2. **Garantia de Adoção:** O cuidado em *manter informado* o **Técnico de Campo** traduziu-se na implementação prioritária da arquitetura *Offline-First Real* e no leitor de QR Code, removendo fricções operacionais no uso do aplicativo.
 3. **Sustentação em Nuvem:** A gestão das restrições de infraestrutura (*manter satisfeito*) resultou na criação de uma stack Docker coesa e resiliente para execução contínua no ambiente **AWS EC2**.
 
-Este artefato passa a compor a suíte oficial de governança do projeto na pasta [`docs/gestao/`](file:///c:/Users/PEDRO%20VIEIRA/Documents/FieldOps/fieldops/docs/gestao/) do repositório GitHub.
+Este artefato passa a compor a suíte oficial de governança do projeto na pasta [`docs/gestao/`](./README.md) do repositório GitHub.
 
 ---
 

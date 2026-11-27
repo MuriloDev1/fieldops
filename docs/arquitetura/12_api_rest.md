@@ -68,8 +68,8 @@ GET  /api/v1/auth/me
 
 ```json
 {
-  "email": "tecnico@fieldops.local",
-  "password": "senha-informada-pelo-usuario"
+  "email": "tecnico@fieldops.com",
+  "password": "123456"
 }
 ```
 
@@ -79,11 +79,11 @@ GET  /api/v1/auth/me
 {
   "accessToken": "token",
   "refreshToken": "token-de-renovacao",
-  "expiresIn": 900,
+  "expiresIn": 86400,
   "user": {
-    "id": "8a50e30d-2a58-4a24-944e-10a9948abf01",
-    "name": "Carlos Técnico",
-    "email": "tecnico@fieldops.local",
+    "id": "90000000-0000-0000-0000-000000000003",
+    "name": "Carlos Lima",
+    "email": "tecnico@fieldops.com",
     "role": "TECHNICIAN"
   }
 }
@@ -398,3 +398,37 @@ Quando o backend ainda não estiver pronto, mobile e web poderão utilizar mocks
 - Valores de enum deverão ser tratados de forma controlada.
 - O mobile deverá informar sua versão quando necessário para diagnóstico.
 - A API poderá recusar versões incompatíveis com mensagem clara.
+
+---
+
+## 12.19 Rotas de Healthcheck e Compatibilidade Direta Mobile (`MobileCompatibilityController`)
+
+Para garantir interoperabilidade total com o aplicativo móvel (`fieldops-mobile`) e monitoramento de infraestrutura na AWS EC2, o backend expõe também os seguintes endpoints diretos e aliases sob `/api/v1`:
+
+```http
+GET    /                                          # Mensagem raiz de status da API
+GET    /health                                    # Health check (status: online, database: connected)
+GET    /api/v1/health                             # Health check sob prefixo /api/v1
+
+POST   /auth/login                                # Alias direto de autenticação para o app mobile
+POST   /auth/refresh                              # Alias direto de renovação de token JWT
+POST   /auth/logout                               # Alias direto de encerramento de sessão
+
+GET    /equipments                                # Lista equipamentos com status normalizado para o mobile
+GET    /api/v1/equipments                         # Alias versionado
+GET    /equipments/{id}                           # Detalhes do equipamento por UUID
+GET    /equipments/code/{code}                    # Busca equipamento por código / etiqueta QR Code
+GET    /api/v1/equipments/code/{code}             # Alias versionado
+POST   /equipments                                # Cadastra equipamento pelo app mobile
+PATCH  /equipments/{id}                           # Atualiza parcialmente status ou dados do equipamento
+
+GET    /inspections                               # Lista inspeções no formato normalizado para o app mobile
+GET    /inspections/{id}                          # Detalhes da inspeção por UUID
+POST   /inspections                               # Cria e inicia inspeção avulsa pelo app mobile
+POST   /inspections/{id}/answers                  # Salva resposta individual (com photoUrl Base64 / signatureUrl SVG)
+POST   /api/v1/inspections/{id}/answers           # Alias versionado
+PATCH  /inspections/{id}/complete                 # Conclui inspeção em campo sem duplicar registro
+PATCH  /api/v1/inspections/{id}/complete          # Alias versionado
+PATCH  /inspections/{id}/review                   # Aprova ou reprova inspeção com atualização automática do ativo
+PATCH  /api/v1/inspections/{id}/review            # Alias versionado
+```

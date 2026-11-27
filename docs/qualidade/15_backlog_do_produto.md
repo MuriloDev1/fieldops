@@ -19,7 +19,7 @@ Criar um banco de dados chamado **Product Backlog — FieldOps** com as seguinte
 | Critérios de aceitação | Texto ou relação | Condições de aprovação. |
 | Pontos | Número | Estimativa relativa. |
 | Evidências | Arquivos/URL | Pull request, vídeo, prints ou relatório. |
-| Disciplina | Seleção múltipla | Expo, Spring Boot, Angular ou Integração. |
+| Disciplina | Seleção múltipla | Expo, Spring Boot, React/Vite ou Integração. |
 
 ---
 
@@ -48,7 +48,7 @@ Criar um banco de dados chamado **Product Backlog — FieldOps** com as seguinte
 | --- | --- | --- | --- | --- |
 | PBI-001 | Como equipe, quero repositórios e convenções definidos para desenvolver os componentes de forma coordenada. | Todos | P0 | 1 |
 | PBI-002 | Como desenvolvedor mobile, quero um projeto Expo com TypeScript, rotas e estrutura por features para iniciar o produto. | Mobile | P0 | 1 |
-| PBI-003 | Como desenvolvedor web, quero um projeto Angular/React com layout, rotas e estrutura modular para iniciar o painel. | Admin | P0 | 1 |
+| PBI-003 | Como desenvolvedor web, quero um projeto React com Vite, layout, rotas e estrutura modular para iniciar o painel. | Admin | P0 | 1 |
 | PBI-004 | Como desenvolvedor backend, quero uma API Spring Boot conectada ao PostgreSQL e com migrações para iniciar os serviços. | API/Banco | P0 | 1 |
 | PBI-005 | Como equipe, quero lint, verificação de tipos e fluxo de pull request para manter um padrão mínimo de qualidade. | Todos | P0 | 1 |
 | PBI-006 | Como integrador, quero um contrato inicial OpenAPI e dados simulados para que os frontends possam avançar em paralelo. | API/Integração | P0 | 1 |

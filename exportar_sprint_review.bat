@@ -23,10 +23,10 @@ mkdir "%DEST_DIR%\mobile_apk"
 mkdir "%DEST_DIR%\deploy_aws"
 
 echo [3/5] Copiando arquivos essenciais da Sprint Review...
-copy /y "%SOURCE_DIR%GUIA_PROJETO_E_STATUS_APRESENTACAO.md" "%DEST_DIR%\documentos\" >nul
+copy /y "%SOURCE_DIR%docs\guias\guia_apresentacao_e_status.md" "%DEST_DIR%\documentos\" >nul
 copy /y "%SOURCE_DIR%docs\gestao\sprint_review_slide.md" "%DEST_DIR%\documentos\" >nul
 copy /y "%SOURCE_DIR%docs\gestao\matriz_poder_interesse_stakeholders.md" "%DEST_DIR%\documentos\" >nul
-copy /y "%SOURCE_DIR%docs\gestao\TAP.md" "%DEST_DIR%\documentos\" >nul
+copy /y "%SOURCE_DIR%docs\gestao\tap.md" "%DEST_DIR%\documentos\" >nul
 copy /y "%SOURCE_DIR%docker-compose.yml" "%DEST_DIR%\deploy_aws\" >nul
 
 :: Copia do Slide HTML (com fallback do cache caso exista)
@@ -57,10 +57,10 @@ echo    - O arquivo "FieldOps-v1.0.0.apk" esta na pasta "mobile_apk".
 echo    - Pode ser instalado diretamente em qualquer celular Android ou emulador.
 echo.
 echo 3. DOCUMENTOS OFICIAIS DA SPRINT:
-echo    - GUIA_PROJETO_E_STATUS_APRESENTACAO.md (Checklist dos 12 testes da banca - 100 pts)
+echo    - guia_apresentacao_e_status.md (Checklist dos 12 testes da banca - 100 pts)
 echo    - matriz_poder_interesse_stakeholders.md (Matriz de Stakeholders - Fabio Carvalho)
 echo    - sprint_review_slide.md (Resumo em Markdown)
-echo    - TAP.md (Termo de Abertura atualizado)
+echo    - tap.md (Termo de Abertura atualizado)
 echo.
 echo 4. DEPLOY AWS (TESTE 01):
 echo    - A pasta "deploy_aws" contem o docker-compose.yml para subir na EC2.

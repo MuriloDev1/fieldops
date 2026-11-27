@@ -40,7 +40,7 @@ O FieldOps é uma solução distribuída composta por três pilares tecnológico
 
 ## 4. Termo de Abertura e Integração
 
-O projeto foi formalizado através do [Termo de Abertura do Projeto (TAP)](TAP.md), fixando:
+O projeto foi formalizado através do [Termo de Abertura do Projeto (TAP)](tap.md), fixando:
 - **Objetivo Geral:** Entregar uma plataforma integrada capaz de gerenciar o ciclo completo de vistorias (planejamento, atribuição, execução em campo, sincronização e homologação).
 - **Justificativa Estratégica:** Eliminar 100% do extravio de laudos em papel, reduzir em 70% o tempo de liberação de auditorias e assegurar validade jurídica dos relatórios através de snapshots imutáveis de templates.
 - **Premissas Principais:** Os técnicos utilizam aparelhos móveis compatíveis com Android ou iOS; a equipe tem autonomia técnica sobre a arquitetura; o cronograma é delimitado pelas 15 semanas do semestre letivo.
@@ -62,7 +62,7 @@ A identificação e engajamento das partes interessadas foi fundamentada na meto
 
 ## 6. Gerenciamento do Escopo e EAP
 
-O gerenciamento do escopo estabeleceu com precisão os limites do projeto, conforme registrado na [Declaração de Escopo](declaracao_de_escopo.md) e na [Estrutura Analítica do Projeto e Dicionário (EAP)](EAP_e_dicionario.md).
+O gerenciamento do escopo estabeleceu com precisão os limites do projeto, conforme registrado na [Declaração de Escopo](declaracao_de_escopo.md) e na [Estrutura Analítica do Projeto e Dicionário (EAP)](eap_e_dicionario.md).
 
 ### 🌳 Resumo da Estrutura Analítica do Projeto (EAP):
 - **1.0 Gerenciamento do Projeto:** TAP, Escopo, EAP, Cronograma, Planos Integrados e Relatório Final.
@@ -148,11 +148,11 @@ A equipe multidisciplinar operou com papéis claramente demarcados, superando de
 
 ## 14. Apêndices e Anexos
 
-- **Apêndice A:** [Termo de Abertura do Projeto (TAP)](TAP.md)
+- **Apêndice A:** [Termo de Abertura do Projeto (TAP)](tap.md)
 - **Apêndice B:** [Matriz de Stakeholders e Rede de Poder/Interesse](matriz_poder_interesse_stakeholders.md)
 - **Apêndice C:** [Plano de Gerenciamento das Comunicações](plano_de_comunicacao.md)
 - **Apêndice D:** [Declaração de Escopo do Projeto](declaracao_de_escopo.md)
-- **Apêndice E:** [Estrutura Analítica do Projeto e Dicionário da EAP](EAP_e_dicionario.md)
+- **Apêndice E:** [Estrutura Analítica do Projeto e Dicionário da EAP](eap_e_dicionario.md)
 - **Apêndice F:** [Cronograma do Projeto e Matriz RACI](cronograma_e_recursos.md)
 - **Apêndice G:** [Plano de Custos, Orçamento e EVM](plano_de_custos_e_orcamento.md)
 - **Apêndice H:** [Plano de Gerenciamento da Qualidade e Aceitação](plano_de_qualidade.md)

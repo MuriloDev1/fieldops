@@ -57,7 +57,7 @@ docker compose up -d postgres
 # No Windows (PowerShell / Prompt):
 .\mvnw.cmd spring-boot:run
 ```
-*O Flyway aplicará automaticamente `V1__initial_schema.sql` (schema com 14 tabelas relacionais) e `V2__seed_data.sql` (carga completa de dados).*
+*O Flyway aplicará automaticamente `V1__initial_schema.sql` (schema com 15 tabelas relacionais) e `V2__seed_data.sql` (carga completa de dados).*
 
 ---
 
